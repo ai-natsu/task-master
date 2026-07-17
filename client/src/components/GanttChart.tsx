@@ -1,14 +1,9 @@
 import { useMemo } from "react";
 import clsx from "clsx";
-import {
-  addDays,
-  differenceInCalendarDays,
-  format,
-  isSameDay,
-  startOfDay,
-} from "date-fns";
+import { differenceInCalendarDays, format, isSameDay, startOfDay } from "date-fns";
 import type { Task } from "../types";
 import { buildTaskTree, flattenNodes } from "../utils/tree";
+import { computeBar, computeMonths, computeRange } from "../utils/gantt";
 import { useStatuses } from "../api/statuses";
 
 const DAY_W = 28;
@@ -26,39 +21,13 @@ export function GanttChart({ tasks, onEdit }: Props) {
 
   const rows = useMemo(() => flattenNodes(buildTaskTree(tasks)), [tasks]);
 
-  const { days, rangeStart } = useMemo(() => {
-    const today = startOfDay(new Date());
-    const dates: Date[] = [];
-    for (const { node } of rows) {
-      if (node.startDate) dates.push(startOfDay(new Date(node.startDate)));
-      if (node.dueDate) dates.push(startOfDay(new Date(node.dueDate)));
-    }
-    let min = dates.length ? new Date(Math.min(...dates.map((d) => d.getTime()))) : today;
-    let max = dates.length ? new Date(Math.max(...dates.map((d) => d.getTime()))) : addDays(today, 13);
-    if (today < min) min = today;
-    if (today > max) max = today;
-    min = addDays(min, -3);
-    max = addDays(max, 7);
-    const count = differenceInCalendarDays(max, min) + 1;
-    return {
-      rangeStart: min,
-      days: Array.from({ length: count }, (_, i) => addDays(min, i)),
-    };
-  }, [rows]);
-
   const today = startOfDay(new Date());
+  const { days, rangeStart } = useMemo(
+    () => computeRange(rows.map((r) => r.node), today),
+    [rows, today.getTime()]
+  );
   const todayOffset = differenceInCalendarDays(today, rangeStart);
-
-  const months = useMemo(() => {
-    const acc: { label: string; count: number }[] = [];
-    for (const d of days) {
-      const label = format(d, "yyyy年M月");
-      const last = acc[acc.length - 1];
-      if (last && last.label === label) last.count += 1;
-      else acc.push({ label, count: 1 });
-    }
-    return acc;
-  }, [days]);
+  const months = useMemo(() => computeMonths(days), [days]);
 
   if (rows.length === 0) {
     return (
@@ -118,15 +87,9 @@ export function GanttChart({ tasks, onEdit }: Props) {
         {/* タスク行 */}
         {rows.map(({ node, depth }) => {
           const statusDef = statusById.get(node.status);
-          const start = node.startDate ? startOfDay(new Date(node.startDate)) : null;
-          const due = node.dueDate ? startOfDay(new Date(node.dueDate)) : null;
-          const barStart = start ?? due;
-          const barEnd = due ?? start;
-          const hasBar = barStart && barEnd;
-          const left = hasBar ? differenceInCalendarDays(barStart!, rangeStart) * DAY_W : 0;
-          const width = hasBar
-            ? (differenceInCalendarDays(barEnd!, barStart!) + 1) * DAY_W - 4
-            : 0;
+          const bar = computeBar(node, rangeStart);
+          const left = bar ? bar.offsetDays * DAY_W : 0;
+          const width = bar ? bar.spanDays * DAY_W - 4 : 0;
 
           return (
             <div
@@ -162,7 +125,7 @@ export function GanttChart({ tasks, onEdit }: Props) {
                     style={{ left: todayOffset * DAY_W + DAY_W / 2 }}
                   />
                 )}
-                {hasBar && (
+                {bar && (
                   <div
                     onClick={() => onEdit(node)}
                     className={clsx(
@@ -174,7 +137,7 @@ export function GanttChart({ tasks, onEdit }: Props) {
                       width: Math.max(width, DAY_W - 4),
                       backgroundColor: statusDef?.color ?? "#6366f1",
                     }}
-                    title={`${node.title}\n${start ? format(start, "MM/dd") : "?"} 〜 ${due ? format(due, "MM/dd") : "?"}`}
+                    title={`${node.title}\n${node.startDate ? format(new Date(node.startDate), "MM/dd") : "?"} 〜 ${node.dueDate ? format(new Date(node.dueDate), "MM/dd") : "?"}`}
                   />
                 )}
               </div>
