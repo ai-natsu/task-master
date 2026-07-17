@@ -1,24 +1,12 @@
 import { Router } from "express";
-import { z } from "zod";
 import { prisma } from "../db.js";
+import {
+  statusCreateSchema as createSchema,
+  statusUpdateSchema as updateSchema,
+  statusReorderSchema as reorderSchema,
+} from "../schemas.js";
 
 const router = Router();
-
-const createSchema = z.object({
-  label: z.string().min(1).max(50),
-  color: z.string().optional(),
-  isDone: z.boolean().optional(),
-});
-
-const updateSchema = z.object({
-  label: z.string().min(1).max(50).optional(),
-  color: z.string().optional(),
-  isDone: z.boolean().optional(),
-});
-
-const reorderSchema = z.object({
-  ids: z.array(z.string()),
-});
 
 router.get("/", async (_req, res) => {
   const statuses = await prisma.status.findMany({ orderBy: { order: "asc" } });
