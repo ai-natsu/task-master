@@ -270,11 +270,11 @@ npm run dev:client         # http://localhost:5173  ← ブラウザではこち
 ユニット/統合は **Vitest**、E2E は **Playwright**。スクリプトは分離している。詳細な方針とケース一覧は [docs/TEST_DESIGN.md](docs/TEST_DESIGN.md)。
 
 ```bash
-npm test           # Vitest（server: API統合 42件 / client: ユニット・コンポーネント 15件）
+npm test           # Vitest（server: API統合 47件 / client: ユニット・コンポーネント 15件）
 npm run test:e2e   # Playwright E2E（5シナリオ）
 ```
 
-- **Vitest（server）**: Supertest で各エンドポイントを検証。専用 DB `server/test.db` を各テスト前にリセット。循環参照検出・統計（isDone 駆動）・アーカイブ除外・ステータス削除制約を重点的にカバー。
+- **Vitest（server）**: Supertest で各エンドポイントを検証。専用 DB `server/test.db` を各テスト前にリセット。循環参照検出・統計（isDone 駆動）・アーカイブ除外・ステータス削除制約を重点的にカバー。加えて `app.test.ts` で配線（health / 404 / CORS / JSON 解析 / ルーターのマウント）を検証する — これらは他テストの通り道に乗らず、壊れても素通りしてしまうため。
 - **Vitest（client）**: `utils/tree.ts` とドラッグ判定ロジック `utils/dnd.ts`（純関数に切り出し済み）、`StatsCards` の描画。
 - **Playwright**: `playwright.config.ts` の `webServer` が専用 DB `server/e2e.db` でサーバー/クライアントを自動起動。プロジェクト作成→サブタスク、カンバンのドラッグでのステータス変更＋永続化、ステータス追加/削除制約、アーカイブ/復元を検証。初回のみ `npx playwright install chromium` が必要。
 
