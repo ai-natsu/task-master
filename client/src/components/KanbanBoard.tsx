@@ -11,7 +11,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
@@ -20,6 +20,7 @@ import type { StatusDef, Task } from "../types";
 import { PriorityBadge, TagPill } from "./Badges";
 import { useReorderTasks, useUpdateTask } from "../api/tasks";
 import { useStatuses } from "../api/statuses";
+import { planKanbanDrag } from "../utils/dnd";
 
 interface Props {
   tasks: Task[];
@@ -75,6 +76,7 @@ function Column({ status, tasks, onEdit }: { status: StatusDef; tasks: Task[]; o
   return (
     <div
       ref={setNodeRef}
+      data-testid={`kanban-col-${status.id}`}
       className={clsx(
         "flex min-h-[300px] w-64 shrink-0 flex-col gap-2 rounded-xl border border-slate-200 bg-slate-100/60 p-3 dark:border-slate-800 dark:bg-slate-900/60",
         isOver && "border-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/40"
@@ -132,43 +134,17 @@ export function KanbanBoard({ tasks, onEdit }: Props) {
     const { active, over } = event;
     if (!over) return;
 
-    const task = tasks.find((t) => t.id === active.id);
-    if (!task) return;
-
     const overData = over.data.current as { type?: string; statusId?: string } | undefined;
-    let targetStatus: string;
-    let targetIndex: number;
+    if (overData?.type !== "card" && overData?.type !== "column") return;
 
-    if (overData?.type === "card") {
-      const overTask = tasks.find((t) => t.id === over.id);
-      if (!overTask) return;
-      targetStatus = overTask.status;
-      targetIndex = columns[targetStatus]?.findIndex((t) => t.id === overTask.id) ?? 0;
-    } else if (overData?.type === "column") {
-      targetStatus = overData.statusId!;
-      targetIndex = columns[targetStatus]?.length ?? 0;
-    } else {
-      return;
-    }
+    const plan = planKanbanDrag(tasks, String(active.id), {
+      id: String(over.id),
+      type: overData.type,
+      statusId: overData.statusId,
+    });
 
-    const source = columns[task.status] ?? [];
-
-    if (targetStatus === task.status) {
-      // 同じ列内での並び替え
-      const oldIndex = source.findIndex((t) => t.id === task.id);
-      if (oldIndex === -1 || oldIndex === targetIndex) return;
-      const newList = arrayMove(source, oldIndex, targetIndex);
-      reorder.mutate(newList.map((t, i) => ({ id: t.id, order: i })));
-    } else {
-      // 列をまたぐ移動: ステータス変更 + ドロップ位置に挿入
-      updateTask.mutate({ id: task.id, status: targetStatus });
-      const target = [...(columns[targetStatus] ?? [])];
-      target.splice(targetIndex, 0, task);
-      reorder.mutate([
-        ...target.map((t, i) => ({ id: t.id, order: i })),
-        ...source.filter((t) => t.id !== task.id).map((t, i) => ({ id: t.id, order: i })),
-      ]);
-    }
+    if (plan.statusChange) updateTask.mutate(plan.statusChange);
+    if (plan.reorder) reorder.mutate(plan.reorder);
   };
 
   const activeStatusDef = activeTask ? statuses.find((s) => s.id === activeTask.status) : undefined;
