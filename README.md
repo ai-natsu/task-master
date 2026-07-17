@@ -10,6 +10,7 @@
 - [API仕様](#api仕様)
 - [セットアップ](#セットアップ)
 - [使い方](#使い方)
+- [テスト](#テスト)
 - [ディレクトリ構成](#ディレクトリ構成)
 
 ## 画面要件
@@ -263,6 +264,23 @@ npm run dev:client         # http://localhost:5173  ← ブラウザではこち
 
 - プロジェクト詳細画面右上の「統計を表示」で、そのプロジェクトに絞った完了率・期限超過件数などを表示
 - サイドバーの「ダッシュボード」では、全プロジェクト横断の統計と、期限超過／期限が近いタスクの一覧を確認できる
+
+## テスト
+
+ユニット/統合は **Vitest**、E2E は **Playwright**。スクリプトは分離している。詳細な方針とケース一覧は [docs/TEST_DESIGN.md](docs/TEST_DESIGN.md)。
+
+```bash
+npm test           # Vitest（server: 78件 / client: 55件）
+npm run test:e2e   # Playwright E2E（5シナリオ）
+```
+
+- **Vitest（server）**: Supertest で各エンドポイントを検証。専用 DB `server/test.db` を各テスト前にリセット。循環参照検出・統計（isDone 駆動）・アーカイブ除外・ステータス削除制約を重点的にカバー。
+  - `validation.test.ts` … zod スキーマの境界値（上限ちょうど＝成功 / 上限超過＝400 を対で確認）。
+  - `app.test.ts` … 配線（health / 404 / CORS / JSON 解析 / ルーターのマウント）。他テストの通り道に乗らず、壊れても素通りしてしまうため専用テストで守る。
+- **Vitest（client）**: `utils/tree.ts` とドラッグ判定ロジック `utils/dnd.ts`（純関数に切り出し済み）、`StatsCards` の描画。
+- **Playwright**: `playwright.config.ts` の `webServer` が専用 DB `server/e2e.db` でサーバー/クライアントを自動起動。プロジェクト作成→サブタスク、カンバンのドラッグでのステータス変更＋永続化、ステータス追加/削除制約、アーカイブ/復元を検証。初回のみ `npx playwright install chromium` が必要。
+
+いずれのテストも開発用 `dev.db` には触れない。
 
 ## ディレクトリ構成
 

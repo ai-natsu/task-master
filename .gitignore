@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 build/
+*.tsbuildinfo
 
 # Env & secrets
 .env
@@ -14,6 +15,13 @@ build/
 *.db
 *.db-journal
 server/prisma/*.db
+
+# Test artifacts
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+**/coverage/
 
 # Logs
 *.log
