@@ -1,6 +1,6 @@
 # テスト設計書 — TaskMaster
 
-本書は TaskMaster のテスト方針とテストケースを定義する。設計に対応するテストは実装済みで、全て green（ユニット/統合 93 件 + E2E 5 件）。
+本書は TaskMaster のテスト方針とテストケースを定義する。設計に対応するテストは実装済みで、全て green（ユニット/統合 133 件 + E2E 5 件）。
 
 ## 目次
 
@@ -19,7 +19,7 @@
 ## 実行方法
 
 ```bash
-npm test           # = test:unit（Vitest: server 78 + client 15）
+npm test           # = test:unit（Vitest: server 78 + client 55）
 npm run test:e2e   # Playwright E2E（server/e2e.db を自動初期化して起動）
 ```
 
@@ -36,7 +36,7 @@ npm run test:e2e   # Playwright E2E（server/e2e.db を自動初期化して起�
 
 | レイヤー | 対象 | 目的 | 詳細 |
 |---|---|---|---|
-| ユニット（純粋関数） | `client/src/utils/{tree,dnd}.ts`、`server/src/schemas.ts` — 副作用のないロジック | 変換・計算・検証規則の正しさを高速に検証 | [§3](#sec-3) |
+| ユニット（純粋関数） | `client/src/utils/{tree,dnd,gantt}.ts`、`server/src/schemas.ts` — 副作用のないロジック | 変換・計算・検証規則の正しさを高速に検証 | [§3](#sec-3) |
 | API 統合 | `server/src/routes/*.ts` + Prisma + テスト用 SQLite | DB の挙動込みでしか守れないもの（制約・カスケード・集計・配線）を検証 | [§2](#sec-2) |
 | コンポーネント | `client/src/components`・`pages` | API をモックし、描画とユーザー操作を検証 | [§4](#sec-4) |
 | E2E | 実サーバー + 実ブラウザ | 主要フローが通しで動くことを検証 | [§5](#sec-5) |
@@ -112,6 +112,7 @@ task-master/
       ├─ test/factories.ts     # makeTask
       ├─ utils/tree.test.ts    # 純粋関数ユニット
       ├─ utils/dnd.test.ts     # ドラッグ判定ロジック
+      ├─ utils/gantt.test.ts   # ガントの日付グリッド計算
       └─ components/*.test.tsx # コンポーネント
 ```
 
@@ -358,6 +359,29 @@ zod スキーマ自体の網羅的な検証は**単体テストに寄せてい�
 >
 > なお、サーバーの Vitest 設定は `setupFiles` を持たない。DB 初期化は各統合テストが `import "../test/setup.js"` で明示的に取り込む方式とし、DB を使わない本節がその代償を払わないようにしている。
 
+### 3.3 `client/src/utils/gantt.ts`（日付グリッド計算）
+
+ガントチャートの日付計算をコンポーネントから純関数として切り出したもの。`today` は引数で受け取る設計とし、時計を読まないためフェイクタイマー無しで決定的に検証できる。描画そのものは E2E（E-7）が担保する。
+
+| # | 関数 | ケース | 期待結果 |
+|---|---|---|---|
+| GA-1 | `computeBar` | 開始日と期限の両方あり | `spanDays` は両端を含む日数、`offsetDays` は range 起点からの日数 |
+| GA-1b | `computeBar` | 開始日と期限が同日 | 1 日分 |
+| GA-2a | `computeBar` | 期限のみ | 1 日分 |
+| GA-2b | `computeBar` | 開始日のみ | 1 日分 |
+| GA-3 | `computeBar` | 両方なし | `null`（バーを描かない） |
+| GA-3b | `computeBar` | range 起点より前の日付 | `offsetDays` が負値 |
+| GA-4a | `computeRange` | 日付を持つタスク複数 | 最小〜最大を内包し、前 3 日・後 7 日の余白が付く |
+| GA-4b | `computeRange` | today が全タスクより前 | today を含むまで範囲が広がる |
+| GA-4c | `computeRange` | today が全タスクより後 | 同上 |
+| GA-4d | `computeRange` | 日付を持つタスクが無い | today 起点の 2 週間 + 余白 |
+| GA-4e | `computeRange` | タスクが空配列 | 破綻せず範囲を返す |
+| GA-4f | `computeRange` | `days` の連続性 | 起点から 1 日刻みで並ぶ |
+| GA-6 | `computeMonths` | 月をまたぐ日付列 | 月ごとのラベルと列数にまとめる |
+| GA-6b | `computeMonths` | 空配列 | 空 |
+
+> **タイムゾーンに注意**: `startOfDay` はローカル時刻で動くため、テストの入力は `"2026-07-10T00:00:00"`（`Z` 無し＝ローカル）で組み立て、検証も date-fns の `format` で行う。UTC の `toISOString()` で比較すると、実行環境のタイムゾーン次第で 1 日ずれる（実際に最初の実装で発生した）。
+
 ---
 
 <a id="sec-4"></a>
@@ -377,24 +401,18 @@ zod スキーマ自体の網羅的な検証は**単体テストに寄せてい�
 
 > **役割分担**: DnD の実ポインタ操作は E2E（Playwright §5）で検証する。Vitest 側（C-1〜C-6）では `handleDragEnd` 相当の判定ロジックを純関数として切り出し、「どの入力（active/over）で reorder / updateTask がどう呼ばれるか」を高速に検証する。ドラッグの物理挙動＝Playwright、判定分岐＝Vitest、と二層で守る。
 
-### 4.2 ガントチャート `GanttChart`
+> ガントチャートの日付計算は `utils/gantt.ts` の純関数として切り出したため、コンポーネントテストではなく [§3.3](#sec-3) のユニットテストで扱う。描画自体は E2E（E-7）が担保する。
 
-| # | ケース | 期待結果 |
-|---|---|---|
-| GA-1 | start/due 両方あり | バー幅 = 日数+1、開始位置が range 起点からの日数 |
-| GA-2 | due のみ / start のみ | 1 日分のバー |
-| GA-3 | 両方なし | バー非表示 |
-| GA-4 | 日付範囲 | 全タスクの min/due と今日を内包し、前後に余白を付与 |
-| GA-5 | 今日ライン | today が範囲内なら縦ラインの left 位置が正しい |
+### 4.2 表示系・フォーム
 
-### 4.3 表示系・フォーム
+いずれも API を `vi.mock` で差し替え、描画とユーザー操作を検証する。
 
 | # | 対象 | ケース | 期待結果 |
 |---|---|---|---|
-| V-1 | `StatusBadge` | status を渡す | ラベル表示、色がスタイルに反映 |
-| V-2 | StatsCards 優先度 | 並び順 | 緊急→高→中→低（降順） |
-| V-3 | `FilterBar` | ステータス選択 | `onChange` が status 付きで発火 |
-| V-4 | `TaskFormModal` | 送信 | title 空なら送信不可、開始日/期限/タグ/親が値に含まれる |
+| V-1 | `Badges`（`PriorityBadge` / `StatusBadge` / `TagPill`） | 各バッジを描画 | 優先度は日本語ラベル（低/中/高/緊急）、ステータス・タグは色がインラインスタイルに反映。`TagPill` は `onRemove` 指定時のみ削除ボタンを出し、クリックで呼ばれる |
+| V-2 | `StatsCards` | 優先度の並び順 | 緊急→高→中→低（降順） |
+| V-3 | `FilterBar` | ステータス / 優先度 / タグ / 検索の各操作 | `onChange` が該当キー付きで発火。「すべて」を選ぶと `undefined`。フィルタ未指定なら「クリア」非表示、押すと全条件リセット |
+| V-4 | `TaskFormModal` | 送信・入力・変換 | `open=false` なら非描画。title が空/空白のみなら `onSubmit` を呼ばない。開始日/期限/優先度/親/タグが送信値に含まれる。`taskToFormValue` は日付を `YYYY-MM-DD` に切り出す |
 | V-5 | `ProjectsList` | アーカイブ操作 | 「アーカイブ」で `updateProject({archived:true})`、チェックで一覧再取得 |
 | V-6 | `Sidebar` | 描画 | 旧「+ 追加」が無い／「📁 プロジェクト一覧」リンクがある |
 | V-7 | `Dashboard` | プロジェクト数カード | 非アーカイブ件数を表示 |
@@ -493,13 +511,14 @@ zod スキーマ自体の網羅的な検証は**単体テストに寄せてい�
 
 | ファイル | テスト種別 | 実装状態 | 備考 |
 |---|---|---|---|
-| `utils/tree.ts` | UT | ✅ | 純関数 |
-| `utils/dnd.ts` | UT | ✅ | ドラッグ判定を純関数化済 |
-| `components/StatsCards.tsx` | UT | ✅ | 優先度並び順など表示ロジック |
-| `components/Badges.tsx` | UT | ⬜ | 表示専用（ラベル・色） |
-| `components/FilterBar.tsx` | UT | ⬜ | 選択で `onChange` 発火 |
-| `components/TaskFormModal.tsx` | UT | ⬜ | 送信可否・値組み立て（ロジック抽出推奨） |
-| `components/ProjectFormModal.tsx` | UT | ⬜ | 同上 |
+| `utils/tree.ts` | UT | ✅ | 純関数（§3.1） |
+| `utils/dnd.ts` | UT | ✅ | ドラッグ判定を純関数化済（§4.1） |
+| `utils/gantt.ts` | UT | ✅ | 日付グリッド計算を純関数化済（§3.3） |
+| `components/StatsCards.tsx` | UT | ✅ | 優先度並び順など表示ロジック（V-2） |
+| `components/Badges.tsx` | UT | ✅ | ラベル・色・削除ボタン（V-1） |
+| `components/FilterBar.tsx` | UT | ✅ | 各操作で `onChange` 発火・クリア（V-3） |
+| `components/TaskFormModal.tsx` | UT | ✅ | 送信可否・値組み立て・`taskToFormValue`（V-4） |
+| `components/ProjectFormModal.tsx` | UT | ⬜ | 送信可否・値組み立て |
 | `components/ConfirmDialog.tsx` | UT | ⬜ | open 制御・確定/取消 |
 | `api/client.ts` | UT | ⬜ | `fetch` をモックしエラー整形を検証 |
 
@@ -507,7 +526,7 @@ zod スキーマ自体の網羅的な検証は**単体テストに寄せてい�
 
 | ファイル | 分担 | 実装状態 |
 |---|---|---|
-| `components/GanttChart.tsx` | 日付範囲・バー幅の計算=UT（要抽出）／描画=E2E | ⬜UT / △E2E |
+| `components/GanttChart.tsx` | 日付範囲・バー幅の計算=UT(`gantt.ts`)／描画=E2E | ✅ / △ |
 | `components/KanbanBoard.tsx` | 判定=UT(`dnd.ts`)／ドラッグ挙動=E2E | ✅ / ✅ |
 | `components/TaskTree.tsx`・`TaskNode.tsx` | 判定=UT(`dnd.ts`)／並び替え=E2E | ✅ / ⬜ |
 
