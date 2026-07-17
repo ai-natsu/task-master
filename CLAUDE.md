@@ -20,7 +20,10 @@ Server-only (run from `server/`):
 - `npx prisma generate` — regenerate the Prisma client
 - `npm run seed` — reset and repopulate `dev.db` with sample projects/tasks/tags (destructive: deletes all rows first)
 
-No test suite exists yet.
+Testing (Vitest for unit/integration, Playwright for E2E — separate scripts; see `docs/TEST_DESIGN.md`):
+- `npm test` — Vitest across both workspaces (`server` API integration via Supertest on `server/test.db`; `client` unit/component on jsdom)
+- `npm run test:e2e` — Playwright E2E; `playwright.config.ts` `webServer` auto-starts server+client on a dedicated `server/e2e.db` (first run: `npx playwright install chromium`)
+- Server tests reset `test.db` in `src/test/setup.ts`; `createApp()` in `src/app.ts` is exported separately from `src/index.ts` so Supertest can mount it without `listen`. Kanban/tree drag decisions live in `client/src/utils/dnd.ts` as pure functions (`planKanbanDrag`/`planTreeDrag`) for unit testing. No test touches `dev.db`.
 
 Windows note: Node.js was installed via winget; if a shell doesn't see `node`/`npm` on PATH, prepend the current session PATH from machine+user env vars, or use the full path `C:\Program Files\nodejs\`. `.claude/launch.json` uses `server/dev.cmd` and `client/dev.cmd` wrapper scripts (not raw `npm`) so the preview tool's dev servers can find Node regardless of its own stale PATH.
 

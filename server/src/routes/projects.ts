@@ -1,22 +1,12 @@
 import { Router } from "express";
-import { z } from "zod";
 import { prisma } from "../db.js";
+import {
+  projectCreateSchema as createSchema,
+  projectUpdateSchema as updateSchema,
+  projectReorderSchema as reorderSchema,
+} from "../schemas.js";
 
 const router = Router();
-
-const createSchema = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().max(2000).optional(),
-  color: z.string().optional(),
-});
-
-const updateSchema = createSchema.partial().extend({
-  archived: z.boolean().optional(),
-});
-
-const reorderSchema = z.object({
-  ids: z.array(z.string()),
-});
 
 router.get("/", async (req, res) => {
   const includeArchived = req.query.includeArchived === "true";

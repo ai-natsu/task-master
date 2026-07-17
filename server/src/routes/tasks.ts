@@ -1,48 +1,13 @@
 import { Router } from "express";
-import { z } from "zod";
 import { prisma } from "../db.js";
-import { PRIORITIES } from "../constants.js";
+import {
+  taskCreateSchema as createSchema,
+  taskUpdateSchema as updateSchema,
+  taskMoveSchema as moveSchema,
+  taskReorderSchema as reorderSchema,
+} from "../schemas.js";
 
 const router = Router();
-
-const createSchema = z.object({
-  title: z.string().min(1).max(300),
-  description: z.string().max(5000).optional(),
-  projectId: z.string(),
-  parentId: z.string().nullable().optional(),
-  status: z.string().optional(),
-  priority: z.enum(PRIORITIES).optional(),
-  startDate: z.string().datetime().nullable().optional(),
-  dueDate: z.string().datetime().nullable().optional(),
-  tagIds: z.array(z.string()).optional(),
-});
-
-const updateSchema = z.object({
-  title: z.string().min(1).max(300).optional(),
-  description: z.string().max(5000).nullable().optional(),
-  status: z.string().optional(),
-  priority: z.enum(PRIORITIES).optional(),
-  startDate: z.string().datetime().nullable().optional(),
-  dueDate: z.string().datetime().nullable().optional(),
-  tagIds: z.array(z.string()).optional(),
-});
-
-const moveSchema = z.object({
-  parentId: z.string().nullable().optional(),
-  projectId: z.string().optional(),
-  order: z.number().int().optional(),
-});
-
-const reorderSchema = z.object({
-  items: z.array(
-    z.object({
-      id: z.string(),
-      order: z.number().int(),
-      parentId: z.string().nullable().optional(),
-      projectId: z.string().optional(),
-    })
-  ),
-});
 
 const taskInclude = {
   tags: { include: { tag: true } },
