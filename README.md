@@ -270,7 +270,7 @@ npm run dev:client         # http://localhost:5173  ← ブラウザではこち
 ユニット/統合は **Vitest**、E2E は **Playwright**。スクリプトは分離している。詳細な方針とケース一覧は [docs/TEST_DESIGN.md](docs/TEST_DESIGN.md)。
 
 ```bash
-npm test           # Vitest（server: 78件 / client: 15件）
+npm test           # Vitest（server: 78件 / client: 55件）
 npm run test:e2e   # Playwright E2E（5シナリオ）
 ```
 
