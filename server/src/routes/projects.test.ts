@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
+import "../test/setup.js";
 import { createApp } from "../app.js";
 import { prisma } from "../db.js";
 import { makeProject, makeTask, seedStatuses } from "../test/factories.js";

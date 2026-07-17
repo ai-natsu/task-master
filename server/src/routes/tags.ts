@@ -1,13 +1,8 @@
 import { Router } from "express";
-import { z } from "zod";
 import { prisma } from "../db.js";
+import { tagCreateSchema as createSchema } from "../schemas.js";
 
 const router = Router();
-
-const createSchema = z.object({
-  name: z.string().min(1).max(50),
-  color: z.string().optional(),
-});
 
 router.get("/", async (_req, res) => {
   const tags = await prisma.tag.findMany({ orderBy: { name: "asc" } });

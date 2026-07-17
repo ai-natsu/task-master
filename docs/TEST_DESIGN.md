@@ -1,13 +1,13 @@
 # テスト設計書 — TaskMaster
 
-本書は TaskMaster のテスト方針とテストケースを定義する。設計に対応するテストは実装済みで、全て green（ユニット/統合 90 件 + E2E 5 件）。
+本書は TaskMaster のテスト方針とテストケースを定義する。設計に対応するテストは実装済みで、全て green（ユニット/統合 93 件 + E2E 5 件）。
 
 ## 目次
 
 - [実行方法](#sec-run)
 - [1. テスト方針](#sec-1)
 - [2. サーバー API 統合テスト](#sec-2)
-- [3. クライアント ユニットテスト（純粋関数）](#sec-3)
+- [3. ユニットテスト（純粋関数）](#sec-3)
 - [4. クライアント コンポーネントテスト（API はモック）](#sec-4)
 - [5. E2E（Playwright）](#sec-5)
 - [6. 優先度と網羅の考え方](#sec-6)
@@ -19,7 +19,7 @@
 ## 実行方法
 
 ```bash
-npm test           # = test:unit（Vitest: server 75 + client 15）
+npm test           # = test:unit（Vitest: server 78 + client 15）
 npm run test:e2e   # Playwright E2E（server/e2e.db を自動初期化して起動）
 ```
 
@@ -36,8 +36,8 @@ npm run test:e2e   # Playwright E2E（server/e2e.db を自動初期化して起�
 
 | レイヤー | 対象 | 目的 | 詳細 |
 |---|---|---|---|
-| ユニット（純粋関数） | `client/src/utils/tree.ts` 等の副作用のないロジック | 変換・計算ロジックの正しさを高速に検証 | [§3](#sec-3) |
-| API 統合 | `server/src/routes/*.ts` + Prisma + テスト用 SQLite | エンドポイントの入出力・バリデーション・DB 反映を検証 | [§2](#sec-2) |
+| ユニット（純粋関数） | `client/src/utils/{tree,dnd}.ts`、`server/src/schemas.ts` — 副作用のないロジック | 変換・計算・検証規則の正しさを高速に検証 | [§3](#sec-3) |
+| API 統合 | `server/src/routes/*.ts` + Prisma + テスト用 SQLite | DB の挙動込みでしか守れないもの（制約・カスケード・集計・配線）を検証 | [§2](#sec-2) |
 | コンポーネント | `client/src/components`・`pages` | API をモックし、描画とユーザー操作を検証 | [§4](#sec-4) |
 | E2E | 実サーバー + 実ブラウザ | 主要フローが通しで動くことを検証 | [§5](#sec-5) |
 
@@ -103,7 +103,8 @@ task-master/
 │     ├─ test/setup.ts         # test.db を作り直して migrate、各テスト前に全行削除
 │     ├─ test/factories.ts     # seedStatuses / makeProject / makeTask
 │     ├─ routes/*.test.ts      # API 統合テスト（Supertest）
-│     └─ routes/validation.test.ts # zod スキーマの境界値（§2.6）
+│     ├─ schemas.ts            # 全ルーターの zod スキーマ（export して単体テスト可能に）
+│     └─ schemas.test.ts       # zod スキーマの境界値（§3.2・DB 不要 = 高速）
 └─ client/
    ├─ vitest.config.ts         # environment: "jsdom"、Vite 設定を継承
    └─ src/
@@ -128,6 +129,31 @@ task-master/
 <a id="sec-2"></a>
 
 ## 2. サーバー API 統合テスト
+
+### 本章で何を検証するか
+
+Supertest で `createApp()` にリクエストを送り、**Express → zod → Prisma → SQLite → レスポンス**の全経路を本物のまま通す。モックは使わない。
+
+```
+テスト → Supertest → Express（ルーティング / json / cors）
+                        → zod（型・必須・上限の検証）
+                          → Prisma → SQLite（test.db）
+テスト ← status / body ←─────────────────────┘
+        ＋ Prisma で DB の実際の状態も直接確認
+```
+
+**統合テストでしか守れないもの**を主眼に置く。いずれも DB の挙動が本質で、モックに置き換えると「モックが期待通り呼ばれたか」を確認するだけになり、検証の意味が失われる。
+
+| 検証対象 | 例 | 該当 |
+|---|---|---|
+| カスケード削除 | プロジェクトを消すと配下タスクも消える | P-8 / T-13 / G-3 |
+| 外部キー制約 | 使用中のステータスは削除できない | S-5 |
+| トランザクション | 並び替えの一括更新が 1 単位で反映される | P-9 / T-14 |
+| 集計クエリ | 完了率・期限超過の算出（`isDone` 駆動） | ST-1〜ST-9 |
+| 再帰的な DB 探索 | 循環参照の検出（子孫を辿る） | M-1〜M-5 |
+| ルーティング・配線 | パス、`express.json()`、`cors()` | A-1〜A-5 |
+
+逆に、**DB を必要としない検証は本章に置かない**。zod スキーマの網羅（境界値）は純粋関数として単体テストへ寄せている（2.6 および [§3.2](#sec-3) を参照）。
 
 ### 2.0 アプリ配線（`app.ts`）
 
@@ -154,7 +180,7 @@ task-master/
 | # | リクエスト | 条件 | 期待結果 |
 |---|---|---|---|
 | P-1 | POST `/api/projects` | リクエストボディに `name` のみ指定 | 201。レスポンスの `order` は既存の最大 +1、`archived` は既定値 false |
-| P-2 | POST `/api/projects` | リクエストボディの `name` が空文字 | 400（zod のバリデーションエラー）。境界値の詳細は §2.6 |
+| P-2 | POST `/api/projects` | リクエストボディの `name` が空文字 | 400（zod のバリデーションエラー）。境界値の網羅は §3.2（単体テスト） |
 | P-3 | GET `/api/projects` | クエリ文字列なし | 200。`archived=false` のプロジェクトのみを `order` 昇順で返し、各要素に `_count.tasks` を含む |
 | P-4 | GET `/api/projects` | クエリ文字列 `includeArchived=true` | 200。アーカイブ済みのプロジェクトも含めて返す |
 | P-5 | PATCH `/api/projects/:id` | パスパラメータに既存 id、リクエストボディに `archived: true` | 200。以降 P-3（クエリなしの GET）の結果から除外される |
@@ -238,70 +264,30 @@ task-master/
 
 ### 2.6 バリデーション（zod スキーマの境界値）
 
-2.1〜2.5 は各エンドポイントの振る舞いが主題で、バリデーションは「空の name で 400」のように**副次的にしか触れていない**。本節は各ルーターに定義された zod スキーマそのものを対象とし、**上限ちょうど（成功）と上限超過（400）を対で**検証する。下限がある項目は下限未満も併せて確認する。
+zod スキーマ自体の網羅的な検証は**単体テストに寄せている**（[§3.2](#sec-3)）。スキーマは純粋関数であり、DB も HTTP も不要なためである。実測で 28 件が 8.7 秒（統合）から 31 件が 15 ミリ秒（単体）になった。
 
-上限ちょうどと超過の両方を置くことで、境界が仕様どおりの位置にあることが特定できる（片方だけでは境界の位置がずれていても気づけない）。
+統合テスト側に残すのは、**「zod が HTTP 経路に実際に組み込まれているか」**を示す代表ケースのみ。
 
-**対象スキーマの制約**
-
-| エンドポイント | 項目 | 型・制約 |
+| # | 検証内容 | 場所 |
 |---|---|---|
-| POST `/api/projects` | `name` | string、1〜200 文字、必須 |
-| POST `/api/projects` | `description` | string、最大 2000 文字、任意 |
-| PATCH `/api/projects/:id` | `archived` | boolean、任意 |
-| POST `/api/tasks` | `title` | string、1〜300 文字、必須 |
-| POST `/api/tasks` | `description` | string、最大 5000 文字、任意 |
-| POST `/api/tasks` | `projectId` | string、必須 |
-| POST `/api/tasks` | `priority` | enum（LOW / MEDIUM / HIGH / URGENT）、任意 |
-| POST `/api/tasks` | `startDate` / `dueDate` | ISO8601 の datetime 文字列 または null、任意 |
-| POST `/api/tasks` | `tagIds` | string の配列、任意 |
-| PATCH `/api/tasks/reorder` | `items[].order` | 整数、必須 |
-| POST `/api/tags` | `name` | string、1〜50 文字、必須 |
-| POST `/api/statuses` | `label` | string、1〜50 文字、必須 |
-| POST `/api/statuses` | `isDone` | boolean、任意 |
+| P-2 | 不正なボディが 400 として返る（zod がルーターに繋がっている） | 2.1 |
+| A-4 | `express.json()` が body を解析し、zod の 400 に到達する | 2.0 |
 
-**テストケース**
+この 2 件が「配線」を、§3.2 の 31 件が「規則そのもの」を担保する二層構造とする。全ての境界値を HTTP 経由で確認するのは、同じ検証に約 580 倍の時間を払うことになるため行わない。
 
-| # | リクエスト | 条件 | 期待結果 |
-|---|---|---|---|
-| Z-1 | POST `/api/projects` | リクエストボディに `name` を含めない（必須項目の欠落） | 400 |
-| Z-2 | POST `/api/projects` | `name` が空文字（0 文字＝下限 1 未満） | 400 |
-| Z-3 | POST `/api/projects` | `name` が 1 文字（下限ちょうど） | 201 |
-| Z-4 | POST `/api/projects` | `name` が 200 文字（上限ちょうど） | 201 |
-| Z-5 | POST `/api/projects` | `name` が 201 文字（上限超過） | 400 |
-| Z-6 | POST `/api/projects` | `name` が文字列でない（数値 123） | 400 |
-| Z-7 | POST `/api/projects` | `description` が 2000 文字（上限ちょうど） | 201 |
-| Z-8 | POST `/api/projects` | `description` が 2001 文字（上限超過） | 400 |
-| Z-9 | PATCH `/api/projects/:id` | `archived` が真偽値でない（文字列 "yes"） | 400 |
-| Z-10 | POST `/api/tasks` | `title` が空文字（下限 1 未満） | 400 |
-| Z-11 | POST `/api/tasks` | `title` が 300 文字（上限ちょうど） | 201 |
-| Z-12 | POST `/api/tasks` | `title` が 301 文字（上限超過） | 400 |
-| Z-13 | POST `/api/tasks` | `description` が 5000 文字（上限ちょうど） | 201 |
-| Z-14 | POST `/api/tasks` | `description` が 5001 文字（上限超過） | 400 |
-| Z-15 | POST `/api/tasks` | `projectId` を含めない（必須項目の欠落） | 400 |
-| Z-16 | POST `/api/tasks` | `priority` が enum 外の値（"SUPER"） | 400 |
-| Z-17 | POST `/api/tasks` | `priority` が enum の値（"URGENT"） | 201 |
-| Z-18 | POST `/api/tasks` | `dueDate` が ISO8601 でない（"2026-07-14" — 日付のみで時刻なし） | 400 |
-| Z-19 | POST `/api/tasks` | `dueDate` が null（nullable として許容） | 201 |
-| Z-20 | POST `/api/tasks` | `tagIds` が配列でない（文字列） | 400 |
-| Z-21 | PATCH `/api/tasks/reorder` | `items[].order` が整数でない（1.5） | 400 |
-| Z-22 | POST `/api/tags` | `name` が空文字（下限 1 未満） | 400 |
-| Z-23 | POST `/api/tags` | `name` が 50 文字（上限ちょうど） | 201 |
-| Z-24 | POST `/api/tags` | `name` が 51 文字（上限超過） | 400 |
-| Z-25 | POST `/api/statuses` | `label` が空文字（下限 1 未満） | 400 |
-| Z-26 | POST `/api/statuses` | `label` が 50 文字（上限ちょうど） | 201 |
-| Z-27 | POST `/api/statuses` | `label` が 51 文字（上限超過） | 400 |
-| Z-28 | POST `/api/statuses` | `isDone` が真偽値でない（文字列 "true"） | 400 |
-
-> T-3 / T-11（不正な `status`）は zod ではなく**ルート内の存在チェック**による 400 のため、本節ではなく 2.2 に置く。`status` は `z.string()` で型だけを検証し、実在するかは Status テーブルへの問い合わせで確認している。
+> T-3 / T-11（不正な `status`）は zod ではなく**ルート内の存在チェック**による 400 のため、単体テストではなく 2.2 に置く。`status` は `z.string()` で型だけを検証し、実在するかは Status テーブルへの問い合わせで確認している — DB が要るので統合テストの領分である。
 
 ---
 
 <a id="sec-3"></a>
 
-## 3. クライアント ユニットテスト（純粋関数）
+## 3. ユニットテスト（純粋関数）
 
-### 3.1 `utils/tree.ts`
+対象は DB もネットワークも要らない純粋なロジックのみ。ミリ秒で終わり、結果が実行環境に左右されない。
+
+サーバー側は**ロジックがルートハンドラ内に書かれ Prisma と密結合している**ため、単体テストできる対象がほぼ無い（純粋関数はごく一部）。唯一切り出せた zod スキーマを 3.2 で扱う。クライアント側は `tree.ts` / `dnd.ts` を意図的に純関数として抽出してあり、3.1 / §4.1 が対象。
+
+### 3.1 `client/src/utils/tree.ts`
 
 | # | 関数 | ケース | 期待結果 |
 |---|---|---|---|
@@ -311,6 +297,66 @@ task-master/
 | U-4 | `flattenWithDepth` | 3 階層ツリー | 深さ注釈付きで DFS 順に平坦化 |
 | U-5 | `flattenNodes` | 同上 | `{node, depth}` 列、親→子の順 |
 | U-6 | `countAll` | ネストツリー | 子孫を含む総数 |
+
+### 3.2 `server/src/schemas.ts`（zod スキーマ）
+
+全ルーターのリクエストボディ用スキーマを `schemas.ts` に集約して export し、**スキーマを直接呼んで**検証する（HTTP も DB も介さない）。ルーター側は同じスキーマを import して使うため、テストと本番で同一の定義を共有する。
+
+**方針**: 上限がある項目は**上限ちょうど（合格）と上限超過（不合格）を対で**置く。片方だけでは境界がずれていても気づけないが、対にすることで境界の位置が特定できる。下限がある項目は下限未満・下限ちょうども確認する。
+
+| エンドポイントの用途 | 項目 | 制約 |
+|---|---|---|
+| プロジェクト作成 | `name` | string、1〜200 文字、必須 |
+| プロジェクト作成 | `description` | string、最大 2000 文字、任意 |
+| プロジェクト更新 | `archived` | boolean、任意 |
+| タスク作成 | `title` | string、1〜300 文字、必須 |
+| タスク作成 | `description` | string、最大 5000 文字、任意 |
+| タスク作成 | `projectId` | string、必須 |
+| タスク作成 | `priority` | enum（LOW / MEDIUM / HIGH / URGENT）、任意 |
+| タスク作成 | `startDate` / `dueDate` | ISO8601 datetime または null、任意 |
+| タスク作成 | `tagIds` | string の配列、任意 |
+| タスク並び替え | `items[].order` | 整数、必須 |
+| タグ作成 | `name` | string、1〜50 文字、必須 |
+| ステータス作成 | `label` | string、1〜50 文字、必須 |
+| ステータス作成 | `isDone` | boolean、任意 |
+
+| # | 対象スキーマ | 条件 | 期待結果 |
+|---|---|---|---|
+| Z-1 | `projectCreateSchema` | `name` を含めない（必須項目の欠落） | 不合格 |
+| Z-2 | `projectCreateSchema` | `name` が空文字（0 文字＝下限 1 未満） | 不合格 |
+| Z-3 | `projectCreateSchema` | `name` が 1 文字（下限ちょうど） | 合格 |
+| Z-4 | `projectCreateSchema` | `name` が 200 文字（上限ちょうど） | 合格 |
+| Z-5 | `projectCreateSchema` | `name` が 201 文字（上限超過） | 不合格 |
+| Z-6 | `projectCreateSchema` | `name` が文字列でない（数値 123） | 不合格 |
+| Z-7 | `projectCreateSchema` | `description` が 2000 文字（上限ちょうど） | 合格 |
+| Z-8 | `projectCreateSchema` | `description` が 2001 文字（上限超過） | 不合格 |
+| Z-9 | `projectUpdateSchema` | `archived` が真偽値でない（文字列 "yes"） | 不合格 |
+| Z-9b | `projectUpdateSchema` | 空オブジェクト（全項目が任意） | 合格 |
+| Z-10 | `taskCreateSchema` | `title` が空文字（下限 1 未満） | 不合格 |
+| Z-11 | `taskCreateSchema` | `title` が 300 文字（上限ちょうど） | 合格 |
+| Z-12 | `taskCreateSchema` | `title` が 301 文字（上限超過） | 不合格 |
+| Z-13 | `taskCreateSchema` | `description` が 5000 文字（上限ちょうど） | 合格 |
+| Z-14 | `taskCreateSchema` | `description` が 5001 文字（上限超過） | 不合格 |
+| Z-15 | `taskCreateSchema` | `projectId` を含めない（必須項目の欠落） | 不合格 |
+| Z-16 | `taskCreateSchema` | `priority` が enum 外の値（"SUPER"） | 不合格 |
+| Z-17 | `taskCreateSchema` | `priority` が enum の 4 値それぞれ | いずれも合格 |
+| Z-18 | `taskCreateSchema` | `dueDate` が ISO8601 でない（"2026-07-14" — 日付のみ） | 不合格 |
+| Z-19 | `taskCreateSchema` | `dueDate` が null（nullable として許容） | 合格 |
+| Z-19b | `taskCreateSchema` | `dueDate` が ISO8601 datetime | 合格 |
+| Z-20 | `taskCreateSchema` | `tagIds` が配列でない（文字列） | 不合格 |
+| Z-21 | `taskReorderSchema` | `items[].order` が整数でない（1.5） | 不合格 |
+| Z-21b | `taskReorderSchema` | `items[].order` が整数（0） | 合格 |
+| Z-22 | `tagCreateSchema` | `name` が空文字（下限 1 未満） | 不合格 |
+| Z-23 | `tagCreateSchema` | `name` が 50 文字（上限ちょうど） | 合格 |
+| Z-24 | `tagCreateSchema` | `name` が 51 文字（上限超過） | 不合格 |
+| Z-25 | `statusCreateSchema` | `label` が空文字（下限 1 未満） | 不合格 |
+| Z-26 | `statusCreateSchema` | `label` が 50 文字（上限ちょうど） | 合格 |
+| Z-27 | `statusCreateSchema` | `label` が 51 文字（上限超過） | 不合格 |
+| Z-28 | `statusCreateSchema` | `isDone` が真偽値でない（文字列 "true"） | 不合格 |
+
+> **なぜ統合ではなく単体か**: 同じ 28 ケースを HTTP 経由で確認していた時期は 8.7 秒（1 件あたり約 310ms — DB リセット + リクエスト + ルーティング + Prisma 接続を毎回払う）かかっていた。スキーマを直接呼ぶ形にして 31 件が 15ms になった（約 580 倍）。検証内容は同じで、コストだけが減っている。
+>
+> なお、サーバーの Vitest 設定は `setupFiles` を持たない。DB 初期化は各統合テストが `import "../test/setup.js"` で明示的に取り込む方式とし、DB を使わない本節がその代償を払わないようにしている。
 
 ---
 
@@ -437,6 +483,7 @@ task-master/
 | `routes/tags.ts` | 統合 | ✅ | 一意制約(409)・カスケード解除 |
 | `routes/stats.ts` | 統合 | ✅ | 集計・isDone 駆動 |
 | `routes/statuses.ts` | 統合 | ✅ | 削除制約（使用中/最後の1件） |
+| `schemas.ts` | **UT** | ✅ | zod スキーマ（純粋関数）。境界値を §3.2 で網羅。DB も HTTP も不要 |
 | `app.ts` | 統合 | ✅ | 配線の検証（§2.0 A-1〜A-5）。cors / health は他テストの通り道に乗らないため専用テストが要る |
 | `db.ts` / `constants.ts` | 統合(間接) | ✅ | 統合テスト経由で通過 |
 | `index.ts` | — | — | `listen` の起動コード |

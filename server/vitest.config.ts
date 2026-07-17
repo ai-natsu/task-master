@@ -5,7 +5,9 @@ export default defineConfig({
     environment: "node",
     globals: true,
     include: ["src/**/*.test.ts"],
-    setupFiles: ["src/test/setup.ts"],
+    // No global setupFiles: DB setup is opt-in via `import "../test/setup.js"`
+    // so pure unit tests (schemas.test.ts) don't pay for a database they
+    // never touch.
     // Set before any module (incl. db.ts → PrismaClient) reads it.
     env: {
       DATABASE_URL: "file:./test.db",
