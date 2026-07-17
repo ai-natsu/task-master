@@ -1,6 +1,6 @@
 # テスト設計書 — TaskMaster
 
-本書は TaskMaster のテスト方針とテストケースを定義する。設計に対応するテストは実装済みで、全て green（ユニット/統合 57 件 + E2E 5 件）。
+本書は TaskMaster のテスト方針とテストケースを定義する。設計に対応するテストは実装済みで、全て green（ユニット/統合 62 件 + E2E 5 件）。
 
 ## 目次
 
@@ -19,7 +19,7 @@
 ## 実行方法
 
 ```bash
-npm test           # = test:unit（Vitest: server 42 + client 15）
+npm test           # = test:unit（Vitest: server 47 + client 15）
 npm run test:e2e   # Playwright E2E（server/e2e.db を自動初期化して起動）
 ```
 
@@ -99,6 +99,7 @@ task-master/
 │  ├─ vitest.config.ts         # env で DATABASE_URL="file:./test.db" を注入
 │  └─ src/
 │     ├─ app.ts                # createApp()（listen と分離し Supertest から使う）
+│     ├─ app.test.ts           # 配線の検証（health / 404 / CORS / json / mount）
 │     ├─ test/setup.ts         # test.db を作り直して migrate、各テスト前に全行削除
 │     ├─ test/factories.ts     # seedStatuses / makeProject / makeTask
 │     └─ routes/*.test.ts      # API 統合テスト（Supertest）
@@ -126,6 +127,22 @@ task-master/
 <a id="sec-2"></a>
 
 ## 2. サーバー API 統合テスト
+
+### 2.0 アプリ配線（`app.ts`）
+
+各リソースのテスト（2.1 以降）は、リクエストの通り道にある設定 — ルーターのマウントパス、`express.json()` — を**暗黙的に**検証する。マウントパスを間違えれば 404 になり、各テストが落ちるためである。
+
+一方、**通り道に乗らない設定は暗黙的にすら検証されない**。`cors()` は Supertest がブラウザではないため影響を受けず、`/api/health` は誰も叩かない。実際、`cors()` を削除しても 2.1 以降の 42 件は全て green のままだった（ブラウザからのアクセスは壊れているにもかかわらず）。この穴を塞ぐのが本節である。
+
+| # | ケース | 期待結果 |
+|---|---|---|
+| A-1 | GET `/api/health` | 200、`{ok:true}` |
+| A-2 | GET 未定義パス | 404 |
+| A-3 | CORS ヘッダー | `access-control-allow-origin: *`（消すと 2.1 以降は素通りする） |
+| A-4 | JSON ボディ解析 | `Content-Type: application/json` の body が届き zod の 400 に到達する |
+| A-5 | 全リソースルーターのマウント | `/api/{projects,tasks,tags,statuses,stats}` が 404 にならない |
+
+> カバレッジ 100% は「全行が**実行された**」を意味し、「全設定が**正しいと確認された**」ではない。`cors()` の行は実行されるためカバレッジには計上されるが、A-3 が無ければ検証はされていなかった。
 
 ### 2.1 `/api/projects`
 
@@ -299,6 +316,7 @@ task-master/
 ## 6. 優先度と網羅の考え方
 
 - **最優先（回帰が致命的）**: M-1〜M-5（循環参照）、ST-4〜ST-9（統計・isDone）、S-5/S-6（削除制約）、P-3〜P-6・T-6・ST-8（アーカイブ除外）。
+- **見落としやすい**: A-1〜A-5（配線）。他テストの通り道に乗らない設定は、壊れても全テストが green のままになるため、専用テストでしか守れない。
 - **次点**: DnD ロジック（C-1〜C-6）、tree ユニット（U-1〜U-6）。
 - **カバレッジ目安**: サーバー routes は分岐網羅を重視、クライアントは純ロジックと主要コンポーネントのハッピーパス＋境界。
 
@@ -350,7 +368,8 @@ task-master/
 | `routes/tags.ts` | 統合 | ✅ | 一意制約(409)・カスケード解除 |
 | `routes/stats.ts` | 統合 | ✅ | 集計・isDone 駆動 |
 | `routes/statuses.ts` | 統合 | ✅ | 削除制約（使用中/最後の1件） |
-| `app.ts` / `db.ts` / `constants.ts` | 統合(間接) | ✅ | 統合テスト経由で通過 |
+| `app.ts` | 統合 | ✅ | 配線の検証（§2.0 A-1〜A-5）。cors / health は他テストの通り道に乗らないため専用テストが要る |
+| `db.ts` / `constants.ts` | 統合(間接) | ✅ | 統合テスト経由で通過 |
 | `index.ts` | — | — | `listen` の起動コード |
 | `prisma/seed.ts` | — | — | 開発用データ投入 |
 
