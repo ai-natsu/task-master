@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "_comment": "組織強制レイヤーのテンプレート。実運用では各端末の C:\\ProgramData\\ClaudeCode\\managed-settings.json (Windows) / /Library/Application Support/ClaudeCode/managed-settings.json (macOS) / /etc/claude-code/managed-settings.json (Linux) に配置する。これはリポジトリ内の見本であり、そのままでは適用されない。REPLACE_WITH_ORG_UUID を自組織のIDに置換すること。",
+
+  "forceLoginMethod": "claudeai",
+  "forceLoginOrgUUID": "REPLACE_WITH_ORG_UUID",
+  "requiredMinimumVersion": "2.1.212",
+
+  "availableModels": ["opus", "sonnet"],
+  "enforceAvailableModels": true,
+
+  "permissions": {
+    "defaultMode": "ask",
+    "disableBypassPermissionsMode": true,
+
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(./secrets/**)",
+      "Read(**/secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(**/.aws/**)",
+      "Read(**/.ssh/**)",
+      "Read(**/.npmrc)",
+      "Read(**/.netrc)",
+      "Read(**/*credentials*)",
+
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)"
+    ]
+  },
+
+  "allowManagedMcpServersOnly": true,
+  "allowedMcpServers": [{ "serverName": "github" }],
+  "strictKnownMarketplaces": true,
+  "disableSideloadFlags": true,
+
+  "claudeMd": "秘密情報の原則: .env / secrets/ / 鍵ファイル・認証情報は開かない・出力しない・外部送信しない。値が必要なら変数名だけ扱い値には触れない。破壊的操作(rm -rf, force push)は行わない。"
+}
