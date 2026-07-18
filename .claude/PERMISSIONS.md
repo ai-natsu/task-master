@@ -33,3 +33,42 @@
 3. 端末管理ツール（MDM 等）での一括配布を推奨。
 
 > 注意: managed に `allowManagedPermissionRulesOnly: true` を入れると `settings.json` の `allow` が無効化され、全操作が確認対象になる。本構成では意図的に有効化していない。
+
+## 配布とメンバーによる改変防止（承認者のみ変更可）
+
+`managed-settings.json` は「所定パスにあるファイルを Claude Code が最優先で読む」だけの仕組みで、**誰がそのファイルを書けるかは OS の権限管理で担保する**。強い順に 3 段階。
+
+### 1. NTFS ACL で読み取り専用にする（基本・必須）
+
+`C:\ProgramData` 配下は既定で一般ユーザーがファイルを作成できるため、明示的にロックする。管理者 PowerShell で実行:
+
+```powershell
+New-Item -ItemType Directory -Force "C:\ProgramData\ClaudeCode" | Out-Null
+icacls "C:\ProgramData\ClaudeCode" /inheritance:r
+icacls "C:\ProgramData\ClaudeCode" /grant:r "SYSTEM:(OI)(CI)F" "Administrators:(OI)(CI)F" "Users:(OI)(CI)RX"
+# ファイル配置後
+icacls "C:\ProgramData\ClaudeCode\managed-settings.json" /grant:r "SYSTEM:F" "Administrators:F" "Users:R"
+```
+
+これでローカル管理者権限を持たないメンバーは書き換え不可になり、承認者（管理者）だけが変更できる。
+
+### 2. MDM / 構成管理で再適用する（ドリフト防止・推奨）
+
+ACL だけでは、管理者権限を持つ者が一時的に変えた場合に検知できない。Intune / Jamf / グループポリシー(GPO) でファイルと ACL を定期再配布すれば、勝手な変更が上書きで戻る。MDM は SYSTEM 権限で動くためユーザーは停止できない。「承認者のみ変更」を運用面で担保する現実解。
+
+### 3. サーバー管理設定（Enterprise・ローカルファイル不要）
+
+Claude for Enterprise の server-managed settings は設定を組織サーバーから配信する。ローカルの編集可能ファイルに依存せず、認証済みの組織メンバーに適用され、キャッシュされたサーバー設定はローカルの managed ファイルを置換する。開発者が自 PC の管理者でも触れる実ファイルが無いのが利点。最も「承認者のみ・ローカル改変不可」に近い。
+
+### 併せて効く Claude Code 側の対策（本テンプレに設定済み）
+
+managed に置くことでメンバーの下位設定では無効化できない:
+
+- `disableBypassPermissionsMode: true` — 確認プロンプトのバイパス禁止
+- `disableSideloadFlags: true` — `--mcp-config` / `--agents` 等の抜け道禁止
+- `requiredMinimumVersion` — 古い版でキーが無視されるのを防止
+
+### 限界
+
+- 開発者に自 PC のローカル管理者権限を与えている場合、ACL は管理者本人には効かない。真の強制には 2.（MDM 再適用）または 3.（サーバー管理設定）が必要。
+- managed 系の設定ソースはマージされない。MDM の device 管理ファイルと Enterprise のサーバー管理設定を併用する場合、`forceLoginOrgUUID` 等は両方に記載する（サーバー設定がキャッシュされると device ファイルを置換するため）。
