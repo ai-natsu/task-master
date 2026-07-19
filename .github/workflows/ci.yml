@@ -37,6 +37,14 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate --schema server/prisma/schema.prisma
 
+      # --- 静的解析（ESLint） ---
+      # 当面は非ブロッキング（advisory）: 既存プロダクトコードは未対応のため、
+      # 結果は表示するが CI は失敗させない。コード側をクリーンアップ後に
+      # continue-on-error を外してマージゲート化する（docs/STATIC_ANALYSIS.md 参照）。
+      - name: Lint (ESLint)
+        run: npm run check
+        continue-on-error: true
+
       # --- テスト（失敗すると以降の build は実行されない） ---
       - name: Unit & integration tests
         if: env.COVERAGE != 'true'
