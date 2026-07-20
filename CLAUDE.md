@@ -16,20 +16,30 @@ Run from the repo root (npm workspaces: `server`, `client`).
 - `npm run build` — build both workspaces
 
 Server-only (run from `server/`):
+
 - `npx prisma migrate dev --name <name>` — create/apply a migration after editing `prisma/schema.prisma`
 - `npx prisma generate` — regenerate the Prisma client
 - `npm run seed` — reset and repopulate `dev.db` with sample projects/tasks/tags (destructive: deletes all rows first)
 
 Testing (Vitest for unit/integration, Playwright for E2E — separate scripts; see `docs/TEST_DESIGN.md`):
+
 - `npm test` — Vitest across both workspaces (`server` API integration via Supertest on `server/test.db`; `client` unit/component on jsdom)
 - `npm run test:e2e` — Playwright E2E; `playwright.config.ts` `webServer` auto-starts server+client on a dedicated `server/e2e.db` (first run: `npx playwright install chromium`)
 - Server tests reset `test.db` in `src/test/setup.ts`; `createApp()` in `src/app.ts` is exported separately from `src/index.ts` so Supertest can mount it without `listen`. Kanban/tree drag decisions live in `client/src/utils/dnd.ts` as pure functions (`planKanbanDrag`/`planTreeDrag`) for unit testing. No test touches `dev.db`.
+
+Static analysis (ESLint only; config: `eslint.config.mjs`). Prettier was evaluated but deferred — see `docs/STATIC_ANALYSIS.md` for the decision and the re-enable steps.
+
+- `npm run lint` / `npm run lint:fix` — ESLint (type-aware `recommendedTypeChecked` + `eslint-plugin-security` on server + `react-hooks`/`no-unsanitized` on client)
+- `npm run check` — `eslint .`; this is the exact command the CI gate and the `code-style` skill both run
+- Test files (`*.test.ts(x)`, `e2e/`, `src/test/`) relax the `any`-family rules. Formatting (whitespace/line-wrapping) is intentionally not enforced.
+- Three layers share `npm run check`: a PostToolUse hook (`.claude/hooks/style-check.cmd`) auto-fixes each edited `.ts`/`.tsx` with ESLint, the `/code-style` skill does a whole-repo pass, and CI is the merge gate. See `.claude/skills/README.md`.
 
 Windows note: Node.js was installed via winget; if a shell doesn't see `node`/`npm` on PATH, prepend the current session PATH from machine+user env vars, or use the full path `C:\Program Files\nodejs\`. `.claude/launch.json` uses `server/dev.cmd` and `client/dev.cmd` wrapper scripts (not raw `npm`) so the preview tool's dev servers can find Node regardless of its own stale PATH.
 
 ## Architecture
 
 **server/** — Express + TypeScript + Prisma + SQLite (`server/dev.db`, schema in `server/prisma/schema.prisma`).
+
 - `src/index.ts` — Express app wiring; routes mounted under `/api/{projects,tasks,tags,stats}`
 - `src/routes/*.ts` — one router per resource; validation via `zod` schemas defined inline in each file
 - `src/db.ts` — shared `PrismaClient` singleton
@@ -39,9 +49,10 @@ Windows note: Node.js was installed via winget; if a shell doesn't see `node`/`n
 - Moving a task between parents (`PATCH /api/tasks/:id/move`) walks descendants (`isDescendantOrSelf` in `routes/tasks.ts`) to reject cycles before writing.
 
 **client/** — React + TypeScript + Vite + Tailwind, React Query for all server state, `react-router-dom` for routing, `@dnd-kit` for drag-and-drop.
+
 - `src/api/*.ts` — one file per resource, each exporting React Query hooks (`useTasks`, `useCreateTask`, etc.); `src/api/client.ts` is the thin `fetch` wrapper all of them share
 - `src/utils/tree.ts` — converts the flat `Task[]` the API returns into a nested tree (`buildTaskTree`) and back to a flat, depth-annotated list for the "parent task" picker (`flattenWithDepth`); the tree is rebuilt client-side, the server only ever stores/returns flat rows with `parentId`
-- `src/components/TaskTree.tsx` + `TaskNode.tsx` — recursive tree renderer; a single top-level `DndContext` wraps nested per-level `SortableContext`s (one per sibling group) so drag-and-drop reordering works at any depth. `onDragEnd` only reorders within the same `parentId` group — moving a task to a *different* parent is done via the parent-picker in the edit form, not by dragging.
+- `src/components/TaskTree.tsx` + `TaskNode.tsx` — recursive tree renderer; a single top-level `DndContext` wraps nested per-level `SortableContext`s (one per sibling group) so drag-and-drop reordering works at any depth. `onDragEnd` only reorders within the same `parentId` group — moving a task to a _different_ parent is done via the parent-picker in the edit form, not by dragging.
 - `src/components/GanttChart.tsx` — day-grid Gantt (bars span `startDate`→`dueDate`, single-day bar if only one is set); third view mode in `ProjectView` alongside tree and kanban
 - `src/pages/ProjectView.tsx` — when no filters (search/status/priority/tag) are active it renders the unfiltered task list (needed so the tree stays intact); as soon as a filter is active it switches to the server-filtered flat list instead, since filtering by matching descendants only doesn't make sense as a tree
 - `src/pages/Dashboard.tsx` — cross-project overview (global stats, overdue/upcoming lists, project cards)
