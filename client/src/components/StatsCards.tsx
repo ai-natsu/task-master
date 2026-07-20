@@ -35,7 +35,7 @@ export function StatsCards({ stats }: { stats: Stats }) {
         <Card label="タスク総数" value={stats.total} />
         <Card label="完了率" value={`${stats.completionRate}%`} accent="text-emerald-600" />
         <Card label="期限超過" value={stats.overdue} accent={stats.overdue > 0 ? "text-red-600" : ""} />
-        <Card label="7日以内に期限" value={stats.dueSoon} accent="text-amber-600" />
+        <Card label="3日以内に期限" value={stats.dueSoon} accent="text-amber-600" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
