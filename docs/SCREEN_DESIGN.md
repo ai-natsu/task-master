@@ -19,6 +19,7 @@
 - **入出力**: `出` = 表示のみ／`入` = 入力のみ／`入出` = 表示かつ変更可。
 - **項目ID**: `I-<画面番号><連番>`、**アクションID**: `AC-<画面番号><連番>`。
 - レイアウト図は構成の骨子を示すワイヤーフレームであり、寸法・配色は Tailwind 実装に従う。
+- レイアウト図は Mermaid（`block-beta`）で作図しているが、GitHub は同図種を描画しないため **PNG 画像として埋め込む**。編集用の Mermaid 原本は各図直下の `<details>` に併記する。原本を編集したら `node scripts/render-wireframes.mjs` で画像を再生成する。
 - データ源の API は基本設計書 §5 の API-ID を併記する。
 
 ---
@@ -28,6 +29,10 @@
 パス `/`。全プロジェクト横断（非アーカイブ）の統計と、注意すべきタスクを俯瞰する。
 
 ### 画面レイアウト
+
+![ダッシュボード ワイヤーフレーム](images/wf-scr-01.png)
+
+<details><summary>Mermaid 原本（編集用。画像の再生成は <code>node scripts/render-wireframes.mjs</code>）</summary>
 
 ```mermaid
 block-beta
@@ -48,6 +53,8 @@ block-beta
   style s6 fill:#fffbeb,stroke:#fcd34d
   style cap fill:transparent,stroke-width:0px
 ```
+
+</details>
 
 ### 入出力項目一覧
 
@@ -82,6 +89,10 @@ block-beta
 
 ### 画面レイアウト
 
+![プロジェクト一覧 ワイヤーフレーム](images/wf-scr-02.png)
+
+<details><summary>Mermaid 原本（編集用。画像の再生成は <code>node scripts/render-wireframes.mjs</code>）</summary>
+
 ```mermaid
 block-beta
   columns 1
@@ -98,6 +109,8 @@ block-beta
   style chk fill:transparent,stroke-width:0px
   style note fill:transparent,stroke-width:0px
 ```
+
+</details>
 
 ### 入出力項目一覧
 
@@ -130,6 +143,10 @@ block-beta
 
 ### 画面レイアウト
 
+![プロジェクト詳細 ワイヤーフレーム](images/wf-scr-03.png)
+
+<details><summary>Mermaid 原本（編集用。画像の再生成は <code>node scripts/render-wireframes.mjs</code>）</summary>
+
 ```mermaid
 block-beta
   columns 1
@@ -149,6 +166,8 @@ block-beta
   style st fill:transparent,stroke-width:0px
   style md fill:transparent,stroke-width:0px
 ```
+
+</details>
 
 ### 入出力項目一覧
 
@@ -190,6 +209,10 @@ block-beta
 
 ### 画面レイアウト
 
+![設定（ステータス） ワイヤーフレーム](images/wf-scr-04.png)
+
+<details><summary>Mermaid 原本（編集用。画像の再生成は <code>node scripts/render-wireframes.mjs</code>）</summary>
+
 ```mermaid
 block-beta
   columns 1
@@ -206,6 +229,8 @@ block-beta
   style desc fill:transparent,stroke-width:0px
   style err fill:transparent,stroke-width:0px
 ```
+
+</details>
 
 ### 入出力項目一覧
 
@@ -239,6 +264,10 @@ SCR-02・COM-01 から開く。プロジェクトの作成・編集。
 
 ### 画面レイアウト
 
+![プロジェクト作成/編集モーダル ワイヤーフレーム](images/wf-scr-05.png)
+
+<details><summary>Mermaid 原本（編集用。画像の再生成は <code>node scripts/render-wireframes.mjs</code>）</summary>
+
 ```mermaid
 block-beta
   columns 1
@@ -253,6 +282,8 @@ block-beta
   style bar fill:#e2e8f0,stroke:#94a3b8
   style save fill:#6366f1,color:#ffffff,stroke:#4f46e5
 ```
+
+</details>
 
 ### 入出力項目一覧
 
@@ -280,6 +311,10 @@ SCR-03 から開く。タスクの作成・編集。
 
 ### 画面レイアウト
 
+![タスク作成/編集モーダル ワイヤーフレーム](images/wf-scr-06.png)
+
+<details><summary>Mermaid 原本（編集用。画像の再生成は <code>node scripts/render-wireframes.mjs</code>）</summary>
+
 ```mermaid
 block-beta
   columns 1
@@ -297,6 +332,8 @@ block-beta
   style bar fill:#e2e8f0,stroke:#94a3b8
   style save fill:#6366f1,color:#ffffff,stroke:#4f46e5
 ```
+
+</details>
 
 ### 入出力項目一覧
 
@@ -332,6 +369,10 @@ block-beta
 
 ### 画面レイアウト
 
+![サイドバー ワイヤーフレーム](images/wf-com-01.png)
+
+<details><summary>Mermaid 原本（編集用。画像の再生成は <code>node scripts/render-wireframes.mjs</code>）</summary>
+
 ```mermaid
 block-beta
   columns 1
@@ -349,6 +390,8 @@ block-beta
   style bar fill:#e2e8f0,stroke:#94a3b8
   style hd fill:transparent,stroke-width:0px
 ```
+
+</details>
 
 ### 入出力項目一覧
 
@@ -377,6 +420,10 @@ block-beta
 
 ### 画面レイアウト
 
+![確認ダイアログ ワイヤーフレーム](images/wf-com-02.png)
+
+<details><summary>Mermaid 原本（編集用。画像の再生成は <code>node scripts/render-wireframes.mjs</code>）</summary>
+
 ```mermaid
 block-beta
   columns 1
@@ -390,6 +437,8 @@ block-beta
   style bar fill:#e2e8f0,stroke:#94a3b8
   style del fill:#ef4444,color:#ffffff,stroke:#dc2626
 ```
+
+</details>
 
 ### 入出力項目一覧
 
