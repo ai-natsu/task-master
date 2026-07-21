@@ -77,8 +77,10 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
         </select>
 
         <span
+          onClick={() => onEdit(node)}
+          title="クリックして編集"
           className={clsx(
-            "flex-1 truncate text-sm",
+            "flex-1 cursor-pointer truncate text-sm hover:text-indigo-600 dark:hover:text-indigo-400",
             isDone && "text-slate-400 line-through"
           )}
         >

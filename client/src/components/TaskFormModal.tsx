@@ -39,12 +39,16 @@ const empty: TaskFormValue = {
 export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, onClose }: Props) {
   const [value, setValue] = useState<TaskFormValue>({ ...empty, ...initial });
   const [newTagName, setNewTagName] = useState("");
+  const [error, setError] = useState("");
   const { data: tags = [] } = useTags();
   const { data: statuses = [] } = useStatuses();
   const createTag = useCreateTag();
 
   useEffect(() => {
-    if (open) setValue({ ...empty, ...initial });
+    if (open) {
+      setValue({ ...empty, ...initial });
+      setError("");
+    }
   }, [open, initial]);
 
   if (!open) return null;
@@ -74,10 +78,16 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
             <input
               autoFocus
               value={value.title}
-              onChange={(e) => setValue((v) => ({ ...v, title: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
+              onChange={(e) => {
+                setValue((v) => ({ ...v, title: e.target.value }));
+                if (error) setError("");
+              }}
+              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm dark:bg-slate-900 ${
+                error ? "border-red-400" : "border-slate-300 dark:border-slate-600"
+              }`}
               placeholder="タスク名を入力"
             />
+            {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
           </div>
 
           <div>
@@ -199,7 +209,13 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
             キャンセル
           </button>
           <button
-            onClick={() => value.title.trim() && onSubmit(value)}
+            onClick={() => {
+              if (!value.title.trim()) {
+                setError("タイトルを入力してください");
+                return;
+              }
+              onSubmit(value);
+            }}
             className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
           >
             {mode === "create" ? "作成" : "保存"}

@@ -4,9 +4,19 @@ interface Props {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  confirmLabel?: string;
+  danger?: boolean;
 }
 
-export function ConfirmDialog({ open, title, message, onConfirm, onCancel }: Props) {
+export function ConfirmDialog({
+  open,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  confirmLabel = "削除する",
+  danger = true,
+}: Props) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -22,9 +32,13 @@ export function ConfirmDialog({ open, title, message, onConfirm, onCancel }: Pro
           </button>
           <button
             onClick={onConfirm}
-            className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+            className={
+              danger
+                ? "rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+                : "rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+            }
           >
-            削除する
+            {confirmLabel}
           </button>
         </div>
       </div>

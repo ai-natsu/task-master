@@ -16,6 +16,7 @@ export function ProjectsList() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Project | undefined>();
   const [deleting, setDeleting] = useState<Project | undefined>();
+  const [archiving, setArchiving] = useState<Project | undefined>();
 
   const handleSubmit = (value: ProjectFormValue) => {
     if (editing) {
@@ -92,7 +93,7 @@ export function ProjectsList() {
                 編集
               </button>
               <button
-                onClick={() => updateProject.mutate({ id: p.id, archived: !p.archived })}
+                onClick={() => setArchiving(p)}
                 className="rounded-lg px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30"
               >
                 {p.archived ? "復元" : "アーカイブ"}
@@ -133,6 +134,23 @@ export function ProjectsList() {
           setDeleting(undefined);
         }}
         onCancel={() => setDeleting(undefined)}
+      />
+
+      <ConfirmDialog
+        open={!!archiving}
+        title={archiving?.archived ? "プロジェクトを復元" : "プロジェクトをアーカイブ"}
+        message={
+          archiving?.archived
+            ? `「${archiving?.name}」を復元しますか？一覧に再表示されます。`
+            : `「${archiving?.name}」をアーカイブしますか？一覧では非表示になります（「アーカイブ済みも表示」で再表示できます）。`
+        }
+        confirmLabel={archiving?.archived ? "復元する" : "アーカイブする"}
+        danger={false}
+        onConfirm={() => {
+          if (archiving) updateProject.mutate({ id: archiving.id, archived: !archiving.archived });
+          setArchiving(undefined);
+        }}
+        onCancel={() => setArchiving(undefined)}
       />
     </div>
   );
