@@ -1,10 +1,18 @@
-# Dependencies
-node_modules/
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Build output
-dist/
-build/
-*.tsbuildinfo
+# Nuitka build output
+packaging/*.build/
+packaging/*.dist/
+packaging/*.onefile-build/
+*.exe
 
 # Env & secrets
 .env
@@ -14,18 +22,9 @@ build/
 # Database
 *.db
 *.db-journal
-server/prisma/*.db
-
-# Test artifacts
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-**/coverage/
 
 # Logs
 *.log
-npm-debug.log*
 
 # OS / editor
 .DS_Store

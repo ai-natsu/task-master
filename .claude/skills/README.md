@@ -11,35 +11,10 @@
 
 ## スキル一覧
 
-| スキル | 呼び出し | 役割 |
-|---|---|---|
-| code-style | `/code-style [check] [パス]` | ESLint の検査・修正（Prettier は今回見送り） |
+現在、プロジェクト専用スキルは無い（旧 `code-style` は Node/TypeScript 版の
+ESLint 向けだったため、Python 版への書き直しに伴い削除した）。
 
 （スキルを追加したらここに 1 行足す）
-
-## code-style の詳細
-
-### 引数
-| 形式 | 動作 |
-|---|---|
-| `/code-style` | 検査 → 自動修正 → 手動修正 → 再検証（既定） |
-| `/code-style check` | 検査のみ・コード変更なし（CI と同一判定） |
-| `/code-style <パス>` | 範囲を限定して修正（例: `/code-style server`） |
-
-### 品質3層でのスキルの位置づけ
-
-```
-フック（編集直後の1ファイル自動整形）
-  → スキル /code-style（リポジトリ全体の一括仕上げ）
-    → CI（npm run check がマージゲート）
-```
-
-3層とも同じコマンド（`npm run check` = `eslint .`）を共有するため、
-「手元で通れば CI も通る」が成立する。整形（Prettier）は今回見送り
-（経緯は [../../docs/STATIC_ANALYSIS.md](../../docs/STATIC_ANALYSIS.md)）。
-
-### 禁止事項
-`eslint-disable` の無断追加 / ルール緩和 / 無関係リファクタの混入（詳細は SKILL.md）
 
 ## スキルとサブエージェント・フックの使い分け
 
