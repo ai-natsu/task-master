@@ -2,11 +2,17 @@
 
 データファイル(taskmaster.db)の配置場所は「実行ファイルと同じフォルダ」とする
 (ユーザー指定)。Nuitka --onefile でビルドした exe は起動時に一時フォルダへ
-展開されるため、素の sys.argv[0] は使えない場合がある。Nuitka が提供する
-NUITKA_ONEFILE_PARENT 環境変数（元の exe があるフォルダを指す）を優先的に使う。
-この経路は実機ビルド後の検証が必要（フェーズ8で確認）。
+自身を展開して実行するため、素の sys.argv[0] / __file__ は展開先の一時パスを
+指してしまい使えない。
+
+Nuitka がセットする環境変数 NUITKA_ONEFILE_PARENT は「元の exe のパス」では
+なく「起動元(ブートストラップ)プロセスの PID」である（実機ビルドで確認済み・
+Nuitka の OnefileBootstrap.c 参照）。そのため Windows API
+(QueryFullProcessImageNameW) でその PID から実行ファイルのフルパスを逆引きし、
+その親フォルダを使う。
 """
 
+import ctypes
 import os
 import sqlite3
 import sys
@@ -23,11 +29,35 @@ DEFAULT_STATUSES = [
     ("WITHDRAWN", "取下げ", "#94a3b8", 3, 1),
 ]
 
+_PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+
+def _onefile_parent_dir() -> Path | None:
+    pid_str = os.environ.get("NUITKA_ONEFILE_PARENT")
+    if not pid_str:
+        return None
+    try:
+        pid = int(pid_str)
+        kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+        handle = kernel32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            return None
+        try:
+            buf = ctypes.create_unicode_buffer(32768)
+            size = ctypes.c_uint32(len(buf))
+            if not kernel32.QueryFullProcessImageNameW(handle, 0, buf, ctypes.byref(size)):
+                return None
+            return Path(buf.value).resolve().parent
+        finally:
+            kernel32.CloseHandle(handle)
+    except OSError:
+        return None
+
 
 def get_app_dir() -> Path:
-    onefile_parent = os.environ.get("NUITKA_ONEFILE_PARENT")
-    if onefile_parent:
-        return Path(onefile_parent).resolve()
+    onefile_parent_dir = _onefile_parent_dir()
+    if onefile_parent_dir is not None:
+        return onefile_parent_dir
     if "__compiled__" in globals():
         return Path(sys.argv[0]).resolve().parent
     # 開発時（`python -m app.main` 等）はリポジトリルート直下に置く
