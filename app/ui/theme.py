@@ -17,3 +17,7 @@ TEXT_MUTED = ("#64748b", "#94a3b8")     # 補助テキスト (slate-500 / slate-
 
 ACCENT = "#6366f1"       # indigo-500（主要アクション）
 ACCENT_HOVER = "#4f46e5"  # indigo-600
+
+# 旧Web版はTailwindの既定sans-serifスタック(Windows上ではSegoe UIに解決)。
+# CustomTkinter既定の"Roboto"のままだと混在して見た目が揃わないため統一する。
+FONT_FAMILY = "Segoe UI"
