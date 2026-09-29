@@ -1,12 +1,14 @@
 """カンバンボード（旧 client/src/components/KanbanBoard.tsx の移植）。
 
 CustomTkinter/Tkinter にはドラッグ用のネイティブAPIが無いため、
-ButtonPress-1でドラッグ開始位置を記録し、ButtonRelease-1で
+ButtonPress-1でドラッグ開始位置を記録し、B1-Motionでカーソルに追従する
+フローティングウィンドウ(擬似ドラッグプレビュー)を表示、ButtonRelease-1で
 winfo_containing()により実際にカーソル下にあるウィジェットを特定して
-列/カードを判定する方式を採る（フローティングのドラッグ中プレビューは省略）。
+列/カードを判定する方式を採る。
 """
 
 import datetime
+import tkinter as tk
 
 import customtkinter as ctk
 
@@ -31,6 +33,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
         self.filters = filters or {}
 
         self._drag_task_id: str | None = None
+        self._drag_ghost: tk.Toplevel | None = None
         self._card_widgets: dict[str, ctk.CTkFrame] = {}
         self._column_containers: dict[int, str] = {}
 
@@ -129,17 +132,43 @@ class KanbanBoardWidget(ctk.CTkFrame):
             ).pack(side="right")
 
         for widget in (card, title_label, meta_row):
-            widget.bind("<ButtonPress-1>", lambda _e, t=task: self._start_drag(t))
+            widget.bind("<ButtonPress-1>", lambda e, t=task: self._start_drag(e, t))
+            widget.bind("<B1-Motion>", self._on_drag_motion)
             widget.bind("<ButtonRelease-1>", self._end_drag)
             widget.bind("<Double-Button-1>", lambda _e, t=task: self._edit(t))
 
-    def _start_drag(self, task) -> None:
+    def _start_drag(self, event, task) -> None:
         self._drag_task_id = task.id
         card = self._card_widgets.get(task.id)
         if card:
-            card.configure(border_color="#6366f1", border_width=2)
+            card.configure(border_color=theme.ACCENT, border_width=2)
+
+        ghost = tk.Toplevel(self)
+        ghost.overrideredirect(True)
+        try:
+            ghost.attributes("-alpha", 0.85)
+            ghost.attributes("-topmost", True)
+        except tk.TclError:
+            pass  # 一部環境では透過/最前面がサポートされないため握りつぶす
+        ctk.CTkLabel(
+            ghost, text=task.title, fg_color=theme.ACCENT, text_color="#ffffff",
+            corner_radius=8, padx=12, pady=6, font=ctk.CTkFont(weight="bold"),
+        ).pack()
+        ghost.geometry(f"+{event.x_root + 12}+{event.y_root + 12}")
+        self._drag_ghost = ghost
+
+    def _on_drag_motion(self, event) -> None:
+        if self._drag_ghost is not None:
+            self._drag_ghost.geometry(f"+{event.x_root + 12}+{event.y_root + 12}")
 
     def _end_drag(self, event) -> None:
+        if self._drag_ghost is not None:
+            self._drag_ghost.destroy()
+            self._drag_ghost = None
+            # 直後にwinfo_containingでドロップ先を判定するため、ゴースト
+            # ウィンドウの消去をウィンドウマネージャに確実に反映させる。
+            self.update_idletasks()
+
         if not self._drag_task_id:
             return
         active_id, self._drag_task_id = self._drag_task_id, None
