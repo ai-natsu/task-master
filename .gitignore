@@ -9,9 +9,7 @@ venv/
 .ruff_cache/
 
 # Nuitka build output
-packaging/*.build/
-packaging/*.dist/
-packaging/*.onefile-build/
+packaging/dist/
 *.exe
 
 # Env & secrets
