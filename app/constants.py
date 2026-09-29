@@ -1,0 +1,1 @@
+PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"]
