@@ -18,6 +18,10 @@ TEXT_MUTED = ("#64748b", "#94a3b8")     # 補助テキスト (slate-500 / slate-
 ACCENT = "#6366f1"       # indigo-500（主要アクション）
 ACCENT_HOVER = "#4f46e5"  # indigo-600
 
-# 旧Web版はTailwindの既定sans-serifスタック(Windows上ではSegoe UIに解決)。
-# CustomTkinter既定の"Roboto"のままだと混在して見た目が揃わないため統一する。
-FONT_FAMILY = "Segoe UI"
+# UIは全て日本語のため、日本語グリフを持つゴシック体を直接指定する。
+# "Segoe UI"はASCII/欧文専用フォントで日本語グリフを持たず、Windowsが
+# 自動的に別フォントへ代替表示する際、環境によっては明朝体(serif)が
+# 選ばれてしまい意図せず古い見た目になる（実機検証で確認）。
+# "Yu Gothic UI" はWindows 10/11の日本語UI既定フォントで、この代替の
+# 揺れが起きず、欧文・数字も違和感なく表示できる。
+FONT_FAMILY = "Yu Gothic UI"
