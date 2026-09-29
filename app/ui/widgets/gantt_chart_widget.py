@@ -22,6 +22,7 @@ ROW_H = 36
 LABEL_W = 220
 HEADER_H = 24
 SUBHEADER_H = 20
+_EDGE_PX = 6  # バー端のドラッグ判定幅(px)
 
 
 class GanttChartWidget(ctk.CTkFrame):
@@ -31,6 +32,8 @@ class GanttChartWidget(ctk.CTkFrame):
         self.project_id = project_id
         self.on_change = on_change or (lambda: None)
         self.filters = filters or {}
+        self._range_start: datetime.date | None = None
+        self._drag: dict | None = None
 
         self.canvas = tk.Canvas(self, highlightthickness=0, background="#ffffff")
         h_scroll = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
@@ -68,6 +71,7 @@ class GanttChartWidget(ctk.CTkFrame):
         days = gantt_range.days
         months = compute_months(days)
         today_offset = (today - gantt_range.range_start).days
+        self._range_start = gantt_range.range_start
 
         total_width = LABEL_W + len(days) * DAY_W
         total_height = HEADER_H + SUBHEADER_H + len(rows) * ROW_H
@@ -164,10 +168,85 @@ class GanttChartWidget(ctk.CTkFrame):
                     fill=status.color if status else "#6366f1", outline="",
                     stipple="gray50" if is_done else "",
                 )
-                self.canvas.tag_bind(bar_item, "<Button-1>", lambda _e, t=task: self._edit(t))
+                self.canvas.tag_bind(
+                    bar_item, "<ButtonPress-1>",
+                    lambda e, t=task, bi=bar_item: self._on_bar_press(e, t, bi),
+                )
+                self.canvas.tag_bind(bar_item, "<B1-Motion>", self._on_bar_motion)
+                self.canvas.tag_bind(bar_item, "<ButtonRelease-1>", self._on_bar_release)
+                self.canvas.tag_bind(bar_item, "<Motion>", self._on_bar_hover)
+                self.canvas.tag_bind(
+                    bar_item, "<Leave>", lambda _e: self.canvas.configure(cursor="")
+                )
 
             self.canvas.tag_bind(label_bg, "<Button-1>", lambda _e, t=task: self._edit(t))
             self.canvas.tag_bind(label_text, "<Button-1>", lambda _e, t=task: self._edit(t))
+
+    # --- ガントバーのドラッグ（平行移動・端のリサイズ） -------------------
+    def _bar_mode_at(self, event_x: float, x0: float, x1: float) -> str:
+        if event_x - x0 <= _EDGE_PX:
+            return "resize-left"
+        if x1 - event_x <= _EDGE_PX:
+            return "resize-right"
+        return "move"
+
+    def _on_bar_hover(self, event) -> None:
+        item = self.canvas.find_withtag("current")
+        if not item:
+            return
+        x0, _y0, x1, _y1 = self.canvas.coords(item[0])
+        mode = self._bar_mode_at(event.x, x0, x1)
+        cursor = "sb_h_double_arrow" if mode != "move" else "fleur"
+        self.canvas.configure(cursor=cursor)
+
+    def _on_bar_press(self, event, task, bar_item: int) -> None:
+        coords = self.canvas.coords(bar_item)
+        x0, _y0, x1, _y1 = coords
+        mode = self._bar_mode_at(event.x, x0, x1)
+        self._drag = {
+            "task": task, "bar_item": bar_item, "mode": mode,
+            "start_x": event.x, "orig_coords": coords, "moved": False,
+        }
+
+    def _on_bar_motion(self, event) -> None:
+        drag = self._drag
+        if drag is None:
+            return
+        dx = event.x - drag["start_x"]
+        if abs(dx) > 2:
+            drag["moved"] = True
+        x0, y0, x1, y1 = drag["orig_coords"]
+        if drag["mode"] == "move":
+            new_x0, new_x1 = x0 + dx, x1 + dx
+        elif drag["mode"] == "resize-left":
+            new_x0, new_x1 = min(x0 + dx, x1 - DAY_W), x1
+        else:  # resize-right
+            new_x0, new_x1 = x0, max(x1 + dx, x0 + DAY_W)
+        self.canvas.coords(drag["bar_item"], new_x0, y0, new_x1, y1)
+        drag["live_coords"] = (new_x0, y0, new_x1, y1)
+
+    def _on_bar_release(self, _event) -> None:
+        drag, self._drag = self._drag, None
+        if drag is None:
+            return
+        task = drag["task"]
+        if not drag["moved"]:
+            self._edit(task)
+            return
+
+        x0, _y0, x1, _y1 = drag.get("live_coords", drag["orig_coords"])
+        range_start = self._range_start
+        start_offset = round((x0 - 2 - LABEL_W) / DAY_W)
+        due_offset = round((x1 + 2 - LABEL_W) / DAY_W) - 1
+        new_start = range_start + datetime.timedelta(days=start_offset)
+        new_due = range_start + datetime.timedelta(days=max(due_offset, start_offset))
+
+        update_task(
+            self.app.conn, task.id,
+            start_date=new_start.isoformat(), due_date=new_due.isoformat(),
+        )
+        self.refresh()
+        self.on_change()
 
     def _edit(self, task) -> None:
         result = ask_task_form(self.app, self.app.conn, self.project_id, task=task)
