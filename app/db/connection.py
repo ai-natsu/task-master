@@ -19,7 +19,7 @@ import sys
 import uuid
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # v2: Holiday テーブル追加
 DB_FILENAME = "taskmaster.db"
 
 DEFAULT_STATUSES = [
