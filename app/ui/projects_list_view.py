@@ -4,6 +4,7 @@ import customtkinter as ctk
 
 from app.db.projects import create_project, delete_project, list_projects, update_project
 from app.db.tasks import list_tasks
+from app.ui import theme
 from app.ui.widgets.confirm_dialog import ask_confirm
 from app.ui.widgets.project_form_dialog import ask_project_form
 
@@ -22,7 +23,13 @@ class ProjectsListView(ctk.CTkScrollableFrame):
             header, text="プロジェクト一覧", font=ctk.CTkFont(size=18, weight="bold")
         )
         title.pack(side="left")
-        ctk.CTkButton(header, text="+ 新しいプロジェクト", command=self._create).pack(side="right")
+        ctk.CTkButton(
+            header,
+            text="+ 新しいプロジェクト",
+            fg_color=theme.ACCENT,
+            hover_color=theme.ACCENT_HOVER,
+            command=self._create,
+        ).pack(side="right")
 
         ctk.CTkCheckBox(
             self,
@@ -47,18 +54,24 @@ class ProjectsListView(ctk.CTkScrollableFrame):
             return
 
         for project in projects:
-            row = ctk.CTkFrame(self.list_frame, corner_radius=10)
-            row.pack(fill="x", pady=4)
+            row = ctk.CTkFrame(
+                self.list_frame, corner_radius=14, fg_color=theme.CARD_BG,
+                border_width=1, border_color=theme.CARD_BORDER,
+            )
+            row.pack(fill="x", pady=5)
 
             top = ctk.CTkFrame(row, fg_color="transparent")
-            top.pack(fill="x", padx=16, pady=(12, 4))
-            ctk.CTkLabel(top, text="●", text_color=project.color, width=16).pack(side="left")
+            top.pack(fill="x", padx=16, pady=(14, 4))
+            ctk.CTkLabel(
+                top, text="●", text_color=project.color, width=16, font=ctk.CTkFont(size=14)
+            ).pack(side="left")
             name_btn = ctk.CTkButton(
                 top,
                 text=project.name,
                 fg_color="transparent",
-                text_color=("gray10", "gray90"),
-                hover_color=("gray85", "gray25"),
+                text_color=theme.TEXT_PRIMARY,
+                hover_color=("#eef2ff", "#312e81"),
+                font=ctk.CTkFont(size=14, weight="bold"),
                 anchor="w",
                 command=lambda pid=project.id: self.app.navigate("project", project_id=pid),
             )
@@ -87,12 +100,12 @@ class ProjectsListView(ctk.CTkScrollableFrame):
             ).pack(side="right")
 
             if project.description:
-                ctk.CTkLabel(row, text=project.description, text_color="gray", anchor="w").pack(
-                    fill="x", padx=16
-                )
+                ctk.CTkLabel(
+                    row, text=project.description, text_color=theme.TEXT_MUTED, anchor="w"
+                ).pack(fill="x", padx=16)
             ctk.CTkLabel(
-                row, text=f"タスク {project.task_count} 件", text_color="gray", anchor="w"
-            ).pack(fill="x", padx=16, pady=(0, 12))
+                row, text=f"タスク {project.task_count} 件", text_color=theme.TEXT_MUTED, anchor="w"
+            ).pack(fill="x", padx=16, pady=(0, 14))
 
     def _create(self) -> None:
         result = ask_project_form(self.app)

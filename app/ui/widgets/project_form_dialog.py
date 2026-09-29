@@ -2,6 +2,8 @@
 
 import customtkinter as ctk
 
+from app.ui import theme
+
 PALETTE = ["#6366f1", "#22c55e", "#ef4444", "#f59e0b", "#0ea5e9", "#a855f7", "#ec4899"]
 
 
@@ -56,7 +58,11 @@ class ProjectFormDialog(ctk.CTkToplevel):
             command=self.destroy,
         ).pack(side="left", padx=6)
         ctk.CTkButton(
-            button_row, text="保存" if initial else "作成", command=self._submit
+            button_row,
+            text="保存" if initial else "作成",
+            fg_color=theme.ACCENT,
+            hover_color=theme.ACCENT_HOVER,
+            command=self._submit,
         ).pack(side="left", padx=6)
 
         self.transient(parent)

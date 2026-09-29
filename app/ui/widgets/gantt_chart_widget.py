@@ -24,11 +24,12 @@ SUBHEADER_H = 20
 
 
 class GanttChartWidget(ctk.CTkFrame):
-    def __init__(self, master, app, project_id: str, on_change=None):
+    def __init__(self, master, app, project_id: str, on_change=None, filters: dict | None = None):
         super().__init__(master, fg_color="transparent")
         self.app = app
         self.project_id = project_id
         self.on_change = on_change or (lambda: None)
+        self.filters = filters or {}
 
         self.canvas = tk.Canvas(self, highlightthickness=0, background="#ffffff")
         h_scroll = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
@@ -43,9 +44,13 @@ class GanttChartWidget(ctk.CTkFrame):
 
         self.refresh()
 
+    def set_filters(self, filters: dict) -> None:
+        self.filters = filters
+        self.refresh()
+
     def refresh(self) -> None:
         self.canvas.delete("all")
-        tasks = list_tasks(self.app.conn, project_id=self.project_id)
+        tasks = list_tasks(self.app.conn, project_id=self.project_id, **self.filters)
         statuses = {s.id: s for s in list_statuses(self.app.conn)}
         rows = flatten_nodes(build_task_tree(tasks))
 

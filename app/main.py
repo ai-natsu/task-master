@@ -9,6 +9,7 @@ from app.ui.app_window import AppWindow
 def main() -> None:
     ctk.set_appearance_mode("system")
     ctk.set_default_color_theme("blue")
+    ctk.set_widget_scaling(1.2)
 
     conn = connect()
     ensure_default_statuses(conn)

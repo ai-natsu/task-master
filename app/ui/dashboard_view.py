@@ -8,7 +8,9 @@ from app.db.projects import list_projects
 from app.db.stats import get_stats
 from app.db.statuses import list_statuses
 from app.db.tasks import list_tasks
+from app.ui import theme
 from app.ui.widgets.badges import priority_badge
+from app.ui.widgets.stats_cards import render_breakdown_panels
 
 
 def _now_iso() -> str:
@@ -58,6 +60,8 @@ class DashboardView(ctk.CTkScrollableFrame):
             row=0, column=1, sticky="nsew", padx=(12, 0)
         )
 
+        render_breakdown_panels(self, stats, statuses).pack(fill="x", pady=(0, 16))
+
         ctk.CTkLabel(self, text="プロジェクト", font=ctk.CTkFont(size=16, weight="bold")).pack(
             anchor="w", pady=(8, 8)
         )
@@ -67,40 +71,59 @@ class DashboardView(ctk.CTkScrollableFrame):
             ctk.CTkButton(
                 self,
                 text=f"●  {project.name}    {project.task_count} 件",
-                fg_color=("gray90", "gray20"),
-                text_color=("gray10", "gray90"),
-                hover_color=("gray80", "gray30"),
+                fg_color=theme.CARD_BG,
+                text_color=theme.TEXT_PRIMARY,
+                hover_color=("#eef2ff", "#312e81"),
+                border_width=1,
+                border_color=theme.CARD_BORDER,
+                corner_radius=10,
                 anchor="w",
                 height=48,
+                font=ctk.CTkFont(size=13, weight="bold"),
                 command=lambda pid=project.id: self.app.navigate("project", project_id=pid),
             ).pack(fill="x", pady=4)
 
     def _stat_card(self, parent, label, value, accent=None):
-        card = ctk.CTkFrame(parent, corner_radius=12)
+        card = ctk.CTkFrame(
+            parent, corner_radius=14, fg_color=theme.CARD_BG,
+            border_width=1, border_color=theme.CARD_BORDER,
+        )
         card.pack(side="left", fill="both", expand=True, padx=6)
-        ctk.CTkLabel(card, text=label, text_color="gray").pack(anchor="w", padx=16, pady=(12, 0))
         ctk.CTkLabel(
-            card, text=value, font=ctk.CTkFont(size=22, weight="bold"), text_color=accent
-        ).pack(anchor="w", padx=16, pady=(0, 12))
+            card, text=label, text_color=theme.TEXT_MUTED, font=ctk.CTkFont(size=12, weight="bold")
+        ).pack(anchor="w", padx=16, pady=(14, 0))
+        ctk.CTkLabel(
+            card,
+            text=value,
+            font=ctk.CTkFont(size=24, weight="bold"),
+            text_color=accent or theme.TEXT_PRIMARY,
+        ).pack(anchor="w", padx=16, pady=(2, 14))
         return card
 
     def _task_list(self, parent, title, tasks, projects):
         project_names = {p.id: p.name for p in projects}
-        frame = ctk.CTkFrame(parent, corner_radius=12)
-        ctk.CTkLabel(frame, text=title, font=ctk.CTkFont(weight="bold")).pack(
-            anchor="w", padx=16, pady=(12, 8)
+        frame = ctk.CTkFrame(
+            parent, corner_radius=14, fg_color=theme.CARD_BG,
+            border_width=1, border_color=theme.CARD_BORDER,
+        )
+        ctk.CTkLabel(frame, text=title, font=ctk.CTkFont(size=14, weight="bold")).pack(
+            anchor="w", padx=16, pady=(14, 8)
         )
         if not tasks:
-            ctk.CTkLabel(frame, text="該当するタスクはありません", text_color="gray").pack(
-                anchor="w", padx=16, pady=(0, 12)
-            )
+            ctk.CTkLabel(
+                frame, text="該当するタスクはありません", text_color=theme.TEXT_MUTED
+            ).pack(anchor="w", padx=16, pady=(0, 14))
         for t in tasks:
             row = ctk.CTkFrame(frame, fg_color="transparent")
-            row.pack(fill="x", padx=16, pady=2)
+            row.pack(fill="x", padx=16, pady=4)
             priority_badge(row, t.priority).pack(side="left", padx=(0, 8))
-            ctk.CTkLabel(row, text=t.title, anchor="w").pack(side="left", fill="x", expand=True)
+            ctk.CTkLabel(
+                row, text=t.title, anchor="w", text_color=theme.TEXT_PRIMARY,
+                font=ctk.CTkFont(weight="bold"),
+            ).pack(side="left", fill="x", expand=True)
             due = t.due_date[:10] if t.due_date else ""
             ctk.CTkLabel(
-                row, text=f"{project_names.get(t.project_id, '')}  {due}", text_color="gray"
+                row, text=f"{project_names.get(t.project_id, '')}  {due}",
+                text_color=theme.TEXT_MUTED,
             ).pack(side="right")
         return frame

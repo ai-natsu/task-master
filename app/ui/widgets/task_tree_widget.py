@@ -16,6 +16,7 @@ from app.db.statuses import list_statuses
 from app.db.tasks import create_task, delete_task, list_tasks, move_task, reorder_tasks, update_task
 from app.logic.dnd import plan_tree_drag
 from app.logic.tree import build_task_tree, flatten_nodes
+from app.ui import theme
 from app.ui.widgets.confirm_dialog import ask_confirm
 from app.ui.widgets.task_form_dialog import PRIORITY_LABELS, ask_task_form
 
@@ -27,17 +28,38 @@ def _now_iso() -> str:
 
 
 class TaskTreeWidget(ctk.CTkFrame):
-    def __init__(self, master, app, project_id: str, on_change=None):
+    def __init__(self, master, app, project_id: str, on_change=None, filters: dict | None = None):
         super().__init__(master, fg_color="transparent")
         self.app = app
         self.project_id = project_id
         self.on_change = on_change or (lambda: None)
+        self.filters = filters or {}
         self._tasks_by_id: dict = {}
         self._status_labels: dict[str, str] = {}
         self._drag_id: str | None = None
 
         style = ttk.Style()
-        style.configure("TaskTree.Treeview", rowheight=28)
+        style.configure(
+            "TaskTree.Treeview",
+            rowheight=34,
+            background=theme.CARD_BG[0],
+            fieldbackground=theme.CARD_BG[0],
+            foreground=theme.TEXT_PRIMARY[0],
+            borderwidth=0,
+            font=("Segoe UI", 11),
+        )
+        style.configure(
+            "TaskTree.Treeview.Heading",
+            background=("#f1f5f9"),
+            foreground=theme.TEXT_MUTED[0],
+            relief="flat",
+            font=("Segoe UI", 10, "bold"),
+        )
+        style.map(
+            "TaskTree.Treeview",
+            background=[("selected", theme.ACCENT)],
+            foreground=[("selected", "#ffffff")],
+        )
 
         self.tree = ttk.Treeview(
             self,
@@ -72,10 +94,14 @@ class TaskTreeWidget(ctk.CTkFrame):
 
         self.refresh()
 
+    def set_filters(self, filters: dict) -> None:
+        self.filters = filters
+        self.refresh()
+
     def refresh(self) -> None:
         self.tree.delete(*self.tree.get_children())
 
-        tasks = list_tasks(self.app.conn, project_id=self.project_id)
+        tasks = list_tasks(self.app.conn, project_id=self.project_id, **self.filters)
         self._tasks_by_id = {t.id: t for t in tasks}
         statuses = {s.id: s for s in list_statuses(self.app.conn)}
         self._status_labels = {sid: s.label for sid, s in statuses.items()}
