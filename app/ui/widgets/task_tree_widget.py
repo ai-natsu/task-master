@@ -46,14 +46,14 @@ class TaskTreeWidget(ctk.CTkFrame):
             fieldbackground=theme.CARD_BG[0],
             foreground=theme.TEXT_PRIMARY[0],
             borderwidth=0,
-            font=("Segoe UI", 11),
+            font=(theme.FONT_FAMILY, 11),
         )
         style.configure(
             "TaskTree.Treeview.Heading",
             background=("#f1f5f9"),
             foreground=theme.TEXT_MUTED[0],
             relief="flat",
-            font=("Segoe UI", 10, "bold"),
+            font=(theme.FONT_FAMILY, 10, "bold"),
         )
         style.map(
             "TaskTree.Treeview",

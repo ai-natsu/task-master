@@ -149,7 +149,9 @@ class TaskFormDialog(ctk.CTkToplevel):
         row = ctk.CTkFrame(parent, fg_color="transparent")
         row.pack(fill="x", pady=(0, 12))
 
-        entry = DateEntry(row, date_pattern="yyyy-mm-dd", width=12)
+        entry = DateEntry(
+            row, date_pattern="yyyy-mm-dd", width=12, font=(theme.FONT_FAMILY, 11)
+        )
         if initial:
             try:
                 entry.set_date(datetime.date.fromisoformat(initial[:10]))
