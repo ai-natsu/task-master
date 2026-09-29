@@ -16,6 +16,13 @@ from pathlib import Path
 SCHEMA_VERSION = 1
 DB_FILENAME = "taskmaster.db"
 
+DEFAULT_STATUSES = [
+    ("TODO", "未着手", "#64748b", 0, 0),
+    ("IN_PROGRESS", "進行中", "#6366f1", 1, 0),
+    ("DONE", "完了", "#10b981", 2, 1),
+    ("WITHDRAWN", "取下げ", "#94a3b8", 3, 1),
+]
+
 
 def get_app_dir() -> Path:
     onefile_parent = os.environ.get("NUITKA_ONEFILE_PARENT")
@@ -58,3 +65,20 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
     with conn:
         conn.executescript(schema_sql)
         conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+
+def ensure_default_statuses(conn: sqlite3.Connection) -> None:
+    """ステータスが1件も無い場合のみデフォルト値を投入する（非破壊的）。
+
+    アプリ起動時(app/main.py)からのみ呼び出す。データ層のテストや seed.py は
+    「素のスキーマだけ適用された状態」を前提にするため、connect()/_ensure_schema
+    には含めない。
+    """
+    count = conn.execute('SELECT COUNT(*) FROM "Status"').fetchone()[0]
+    if count > 0:
+        return
+    with conn:
+        conn.executemany(
+            'INSERT INTO "Status" (id, label, color, "order", isDone) VALUES (?, ?, ?, ?, ?)',
+            DEFAULT_STATUSES,
+        )

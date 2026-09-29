@@ -5,17 +5,10 @@
 
 import datetime
 
-from app.db.connection import connect
+from app.db.connection import DEFAULT_STATUSES, connect
 from app.db.projects import create_project
 from app.db.tags import create_tag
 from app.db.tasks import create_task
-
-DEFAULT_STATUSES = [
-    ("TODO", "未着手", "#64748b", 0, 0),
-    ("IN_PROGRESS", "進行中", "#6366f1", 1, 0),
-    ("DONE", "完了", "#10b981", 2, 1),
-    ("WITHDRAWN", "取下げ", "#94a3b8", 3, 1),
-]
 
 
 def _days_from_now(days: int) -> str:
