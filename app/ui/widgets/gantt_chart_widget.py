@@ -14,6 +14,7 @@ from app.db.statuses import list_statuses
 from app.db.tasks import create_task, list_tasks, update_task
 from app.logic.gantt import compute_bar, compute_months, compute_range
 from app.logic.tree import build_task_tree, flatten_nodes
+from app.ui import theme
 from app.ui.widgets.task_form_dialog import ask_task_form
 
 DAY_W = 28
@@ -56,7 +57,8 @@ class GanttChartWidget(ctk.CTkFrame):
 
         if not rows:
             self.canvas.create_text(
-                20, 20, anchor="nw", text="タスクがありません。", fill="#94a3b8"
+                20, 20, anchor="nw", text="タスクがありません。", fill="#94a3b8",
+                font=(theme.FONT_FAMILY, 11),
             )
             self.canvas.configure(scrollregion=(0, 0, 400, 60))
             return
@@ -77,14 +79,18 @@ class GanttChartWidget(ctk.CTkFrame):
         self.canvas.configure(scrollregion=(0, 0, total_width, total_height))
 
     def _draw_month_header(self, months) -> None:
+        heading_font = (theme.FONT_FAMILY, 10, "bold")
         self.canvas.create_rectangle(0, 0, LABEL_W, HEADER_H, fill="#ffffff", outline="#e2e8f0")
-        self.canvas.create_text(8, HEADER_H / 2, anchor="w", text="タスク", fill="#64748b")
+        self.canvas.create_text(
+            8, HEADER_H / 2, anchor="w", text="タスク", fill="#64748b", font=heading_font
+        )
         x = LABEL_W
         for month in months:
             w = month.count * DAY_W
             self.canvas.create_rectangle(x, 0, x + w, HEADER_H, outline="#e2e8f0")
             self.canvas.create_text(
-                x + 4, HEADER_H / 2, anchor="w", text=month.label, fill="#64748b"
+                x + 4, HEADER_H / 2, anchor="w", text=month.label, fill="#64748b",
+                font=heading_font,
             )
             x += w
 
@@ -108,7 +114,8 @@ class GanttChartWidget(ctk.CTkFrame):
                     dx, y0, dx + DAY_W, y0 + SUBHEADER_H, fill=bg, outline=""
                 )
             self.canvas.create_text(
-                dx + DAY_W / 2, y0 + SUBHEADER_H / 2, text=str(d.day), fill=fg, font=("", 8)
+                dx + DAY_W / 2, y0 + SUBHEADER_H / 2, text=str(d.day), fill=fg,
+                font=(theme.FONT_FAMILY, 8),
             )
 
     def _draw_rows(self, rows, statuses, days, range_start, today_offset, total_width) -> None:
@@ -131,6 +138,7 @@ class GanttChartWidget(ctk.CTkFrame):
             label_text = self.canvas.create_text(
                 dot_x + 12, row_y + ROW_H / 2, anchor="w", text=task.title,
                 fill="#94a3b8" if is_done else "#0f172a", width=LABEL_W - dot_x - 16,
+                font=(theme.FONT_FAMILY, 11),
             )
 
             for i, d in enumerate(days):
