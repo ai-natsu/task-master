@@ -142,8 +142,10 @@ class TaskFormDialog(ctk.CTkToplevel):
 
         DateEntryはカレンダーアイコンをクリックしてのピッカー選択に加えて、
         テキスト欄に直接 "YYYY-MM-DD" 形式で入力(上書き)することもできる
-        （末尾のEnter/フォーカス移動で確定）。日付は必須項目ではないため、
-        右の「設定する」チェックを外すと入力欄が無効化され、その項目はNoneになる。
+        （末尾のEnter/フォーカス移動で確定）。入力欄は常に操作可能で、
+        カレンダーで選択または入力を確定すると「設定する」に自動でチェックが
+        入る。日付は必須項目ではないため、チェックを外すとその項目はNoneになる
+        （入力欄の見た目上の値は変更できるが、送信時は無視される）。
         """
         ctk.CTkLabel(parent, text=label_text).pack(anchor="w")
         row = ctk.CTkFrame(parent, fg_color="transparent")
@@ -160,14 +162,18 @@ class TaskFormDialog(ctk.CTkToplevel):
         entry.pack(side="left", padx=(0, 10), ipady=2)
 
         enabled_var = ctk.BooleanVar(value=initial is not None)
+        # カレンダーから選択した場合は<<DateEntrySelected>>が発火するが、
+        # テキスト欄に直接入力して確定した場合はこのイベントが発火しない
+        # (tkcalendar側の実装上、検証は内部のvalidatecommand止まりのため)。
+        # そのため確定操作(Enter/フォーカス移動)側も併せて拾う。
+        def _mark_enabled(_event=None) -> None:
+            enabled_var.set(True)
 
-        def _toggle() -> None:
-            entry.configure(state="normal" if enabled_var.get() else "disabled")
+        entry.bind("<<DateEntrySelected>>", _mark_enabled)
+        entry.bind("<Return>", _mark_enabled)
+        entry.bind("<FocusOut>", _mark_enabled)
 
-        ctk.CTkCheckBox(row, text="設定する", variable=enabled_var, command=_toggle).pack(
-            side="left"
-        )
-        _toggle()
+        ctk.CTkCheckBox(row, text="設定する", variable=enabled_var).pack(side="left")
         return entry, enabled_var
 
     def _add_tag_checkbox(self, tag_id: str, name: str, checked: bool) -> None:

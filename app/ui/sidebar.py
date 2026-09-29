@@ -26,12 +26,18 @@ class Sidebar(ctk.CTkFrame):
         self.app = app
         self.grid_propagate(False)
 
+        logo_row = ctk.CTkFrame(self, fg_color="transparent")
+        logo_row.pack(anchor="w", padx=20, pady=(24, 16))
+        # "✓"はYu Gothic UIに無い/薄いグリフのため、太字が確実に効く
+        # Segoe UI Symbolで別ラベルにしてタイトルとの見た目のズレを防ぐ。
         ctk.CTkLabel(
-            self,
-            text="✓ TaskMaster",
-            font=ctk.CTkFont(size=22, weight="bold"),
+            logo_row, text="✓", font=ctk.CTkFont(family="Segoe UI Symbol", size=20, weight="bold"),
             text_color=theme.ACCENT,
-        ).pack(anchor="w", padx=20, pady=(24, 16))
+        ).pack(side="left", padx=(0, 6))
+        ctk.CTkLabel(
+            logo_row, text="TaskMaster", font=ctk.CTkFont(size=22, weight="bold"),
+            text_color=theme.ACCENT,
+        ).pack(side="left")
 
         self.nav_buttons: dict[str, ctk.CTkButton] = {}
         self._add_nav_button("dashboard", "📊  ダッシュボード")
@@ -106,22 +112,22 @@ class Sidebar(ctk.CTkFrame):
             ctk.CTkButton(
                 row,
                 text="✎",
-                width=32,
-                height=32,
+                width=36,
+                height=36,
                 corner_radius=8,
-                font=ctk.CTkFont(size=14),
+                font=ctk.CTkFont(size=20, weight="bold"),
                 fg_color="transparent",
-                text_color=("gray40", "gray60"),
+                text_color=("gray30", "gray70"),
                 hover_color=("gray85", "gray25"),
                 command=lambda p=project: self._edit(p),
             ).pack(side="left")
             ctk.CTkButton(
                 row,
-                text="×",
-                width=32,
-                height=32,
+                text="✕",
+                width=36,
+                height=36,
                 corner_radius=8,
-                font=ctk.CTkFont(size=16),
+                font=ctk.CTkFont(size=20, weight="bold"),
                 fg_color="transparent",
                 text_color="#dc2626",
                 hover_color=("#fee2e2", "#450a0a"),

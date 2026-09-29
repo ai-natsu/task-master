@@ -101,7 +101,7 @@ class DashboardView(ctk.CTkScrollableFrame):
         return card
 
     def _task_list(self, parent, title, tasks, projects):
-        project_names = {p.id: p.name for p in projects}
+        projects_by_id = {p.id: p for p in projects}
         frame = ctk.CTkFrame(
             parent, corner_radius=14, fg_color=theme.CARD_BG,
             border_width=1, border_color=theme.CARD_BORDER,
@@ -113,17 +113,27 @@ class DashboardView(ctk.CTkScrollableFrame):
             ctk.CTkLabel(
                 frame, text="該当するタスクはありません", text_color=theme.TEXT_MUTED
             ).pack(anchor="w", padx=16, pady=(0, 14))
+        # ソート済みの tasks を、プロジェクト・タスクの列がそろった表形式で表示する
         for t in tasks:
+            project = projects_by_id.get(t.project_id)
             row = ctk.CTkFrame(frame, fg_color="transparent")
             row.pack(fill="x", padx=16, pady=4)
             priority_badge(row, t.priority).pack(side="left", padx=(0, 8))
+
+            project_box = ctk.CTkFrame(row, fg_color="transparent", width=140)
+            project_box.pack(side="left", padx=(0, 10))
+            project_box.pack_propagate(False)
+            if project is not None:
+                ctk.CTkLabel(
+                    project_box, text=f"●  {project.name}", anchor="w",
+                    text_color=project.color, font=ctk.CTkFont(size=12, weight="bold"),
+                ).pack(anchor="w")
+
             ctk.CTkLabel(
                 row, text=t.title, anchor="w", text_color=theme.TEXT_PRIMARY,
                 font=ctk.CTkFont(weight="bold"),
             ).pack(side="left", fill="x", expand=True)
+
             due = t.due_date[:10] if t.due_date else ""
-            ctk.CTkLabel(
-                row, text=f"{project_names.get(t.project_id, '')}  {due}",
-                text_color=theme.TEXT_MUTED,
-            ).pack(side="right")
+            ctk.CTkLabel(row, text=due, text_color=theme.TEXT_MUTED).pack(side="right")
         return frame

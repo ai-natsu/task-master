@@ -166,11 +166,12 @@ class TaskTreeWidget(ctk.CTkFrame):
             return
         self.tree.selection_set(row_id)
 
-        menu = tk.Menu(self, tearoff=0)
+        menu_font = (theme.FONT_FAMILY, 12)
+        menu = tk.Menu(self, tearoff=0, font=menu_font)
         menu.add_command(label="+ サブタスクを追加", command=lambda: self._add_subtask(row_id))
         menu.add_command(label="編集", command=lambda: self._edit(task))
         if self._status_labels:
-            status_menu = tk.Menu(menu, tearoff=0)
+            status_menu = tk.Menu(menu, tearoff=0, font=menu_font)
             for sid, label in self._status_labels.items():
                 status_menu.add_command(
                     label=label, command=lambda s=sid, t=task: self._change_status(t.id, s)
