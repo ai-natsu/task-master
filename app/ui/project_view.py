@@ -1,15 +1,13 @@
-"""プロジェクト詳細画面（旧 client/src/pages/ProjectView.tsx の移植）。
-
-ガント表示はフェーズ7で追加する。
-"""
+"""プロジェクト詳細画面（旧 client/src/pages/ProjectView.tsx の移植）。"""
 
 import customtkinter as ctk
 
 from app.db.projects import get_project
+from app.ui.widgets.gantt_chart_widget import GanttChartWidget
 from app.ui.widgets.kanban_board_widget import KanbanBoardWidget
 from app.ui.widgets.task_tree_widget import TaskTreeWidget
 
-_VIEW_MODES = [("tree", "ツリー"), ("kanban", "カンバン")]
+_VIEW_MODES = [("tree", "ツリー"), ("kanban", "カンバン"), ("gantt", "ガント")]
 
 
 class ProjectView(ctk.CTkFrame):
@@ -65,14 +63,14 @@ class ProjectView(ctk.CTkFrame):
         self.view_mode = mode
 
         on_change = self.app.sidebar.refresh_projects
-        if mode == "kanban":
-            self._body = KanbanBoardWidget(
-                self, app=self.app, project_id=self.project_id, on_change=on_change
-            )
-        else:
-            self._body = TaskTreeWidget(
-                self, app=self.app, project_id=self.project_id, on_change=on_change
-            )
+        widget_cls = {
+            "tree": TaskTreeWidget,
+            "kanban": KanbanBoardWidget,
+            "gantt": GanttChartWidget,
+        }[mode]
+        self._body = widget_cls(
+            self, app=self.app, project_id=self.project_id, on_change=on_change
+        )
         self._body.grid(row=1, column=0, sticky="nsew")
 
     def _add_root_task(self) -> None:
