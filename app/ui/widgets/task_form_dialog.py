@@ -1,12 +1,16 @@
 """タスク作成/編集モーダル（旧 client/src/components/TaskFormModal.tsx の移植）。"""
 
+import datetime
+
 import customtkinter as ctk
+from tkcalendar import DateEntry
 
 from app.constants import PRIORITIES
 from app.db.statuses import list_statuses
 from app.db.tags import create_tag, list_tags
 from app.db.tasks import list_tasks
 from app.logic.tree import build_task_tree, flatten_with_depth
+from app.ui import theme
 
 PRIORITY_LABELS = {"LOW": "低", "MEDIUM": "中", "HIGH": "高", "URGENT": "緊急"}
 
@@ -72,17 +76,12 @@ class TaskFormDialog(ctk.CTkToplevel):
         self.priority_menu.set(PRIORITY_LABELS[self.priority_var.get()])
         self.priority_menu.pack(fill="x", pady=(0, 12))
 
-        ctk.CTkLabel(scroll, text="開始日 (YYYY-MM-DD)").pack(anchor="w")
-        self.start_date_entry = ctk.CTkEntry(scroll)
-        self.start_date_entry.pack(fill="x", pady=(0, 12))
-        if task and task.start_date:
-            self.start_date_entry.insert(0, task.start_date[:10])
-
-        ctk.CTkLabel(scroll, text="期限 (YYYY-MM-DD)").pack(anchor="w")
-        self.due_date_entry = ctk.CTkEntry(scroll)
-        self.due_date_entry.pack(fill="x", pady=(0, 12))
-        if task and task.due_date:
-            self.due_date_entry.insert(0, task.due_date[:10])
+        self.start_date_entry, self.start_date_enabled = self._build_date_field(
+            scroll, "開始日", task.start_date if task else None
+        )
+        self.due_date_entry, self.due_date_enabled = self._build_date_field(
+            scroll, "期限", task.due_date if task else None
+        )
 
         ctk.CTkLabel(scroll, text="親タスク").pack(anchor="w")
         self.parent_options: list[tuple[str | None, str]] = [(None, "(なし・最上位)")] + [
@@ -123,12 +122,51 @@ class TaskFormDialog(ctk.CTkToplevel):
             hover_color=("gray85", "gray25"),
             command=self.destroy,
         ).pack(side="left", padx=6)
-        ctk.CTkButton(button_row, text="保存" if task else "作成", command=self._submit).pack(
+        ctk.CTkButton(
+            button_row,
+            text="保存" if task else "作成",
+            fg_color=theme.ACCENT,
+            hover_color=theme.ACCENT_HOVER,
+            command=self._submit,
+        ).pack(
             side="left", padx=6
         )
 
         self.transient(parent)
         self.grab_set()
+
+    def _build_date_field(
+        self, parent, label_text: str, initial: str | None
+    ) -> tuple[DateEntry, ctk.BooleanVar]:
+        """日付ピッカー(tkcalendar.DateEntry)を1つ構築する。
+
+        DateEntryはカレンダーアイコンをクリックしてのピッカー選択に加えて、
+        テキスト欄に直接 "YYYY-MM-DD" 形式で入力(上書き)することもできる
+        （末尾のEnter/フォーカス移動で確定）。日付は必須項目ではないため、
+        右の「設定する」チェックを外すと入力欄が無効化され、その項目はNoneになる。
+        """
+        ctk.CTkLabel(parent, text=label_text).pack(anchor="w")
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill="x", pady=(0, 12))
+
+        entry = DateEntry(row, date_pattern="yyyy-mm-dd", width=12)
+        if initial:
+            try:
+                entry.set_date(datetime.date.fromisoformat(initial[:10]))
+            except ValueError:
+                pass
+        entry.pack(side="left", padx=(0, 10), ipady=2)
+
+        enabled_var = ctk.BooleanVar(value=initial is not None)
+
+        def _toggle() -> None:
+            entry.configure(state="normal" if enabled_var.get() else "disabled")
+
+        ctk.CTkCheckBox(row, text="設定する", variable=enabled_var, command=_toggle).pack(
+            side="left"
+        )
+        _toggle()
+        return entry, enabled_var
 
     def _add_tag_checkbox(self, tag_id: str, name: str, checked: bool) -> None:
         var = ctk.BooleanVar(value=checked)
@@ -156,8 +194,16 @@ class TaskFormDialog(ctk.CTkToplevel):
             "description": self.description_text.get("1.0", "end").strip() or None,
             "status": self.status_var.get() or None,
             "priority": self.priority_var.get(),
-            "start_date": self.start_date_entry.get().strip() or None,
-            "due_date": self.due_date_entry.get().strip() or None,
+            "start_date": (
+                self.start_date_entry.get_date().isoformat()
+                if self.start_date_enabled.get()
+                else None
+            ),
+            "due_date": (
+                self.due_date_entry.get_date().isoformat()
+                if self.due_date_enabled.get()
+                else None
+            ),
             "tag_ids": [tid for tid, var in self._tag_vars.items() if var.get()],
             "parent_id": parent_id,
         }

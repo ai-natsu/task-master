@@ -4,42 +4,60 @@ import customtkinter as ctk
 
 from app.db.projects import delete_project, list_projects, update_project
 from app.db.tasks import list_tasks
+from app.ui import theme
 from app.ui.widgets.confirm_dialog import ask_confirm
 from app.ui.widgets.project_form_dialog import ask_project_form
+
+_NAV_FONT_SIZE = 15
+_NAV_HEIGHT = 44
+_NAV_CORNER = 10
 
 
 class Sidebar(ctk.CTkFrame):
     def __init__(self, master, app):
-        super().__init__(master, width=240, corner_radius=0)
+        super().__init__(
+            master,
+            width=272,
+            corner_radius=0,
+            fg_color=theme.SIDEBAR_BG,
+            border_width=1,
+            border_color=theme.CARD_BORDER,
+        )
         self.app = app
         self.grid_propagate(False)
 
-        ctk.CTkLabel(self, text="✓ TaskMaster", font=ctk.CTkFont(size=18, weight="bold")).pack(
-            anchor="w", padx=16, pady=(16, 12)
-        )
+        ctk.CTkLabel(
+            self,
+            text="✓ TaskMaster",
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color=theme.ACCENT,
+        ).pack(anchor="w", padx=20, pady=(24, 16))
 
         self.nav_buttons: dict[str, ctk.CTkButton] = {}
-        self._add_nav_button("dashboard", "📊 ダッシュボード")
-        self._add_nav_button("projects", "📁 プロジェクト一覧")
+        self._add_nav_button("dashboard", "📊  ダッシュボード")
+        self._add_nav_button("projects", "📁  プロジェクト一覧")
 
-        ctk.CTkLabel(self, text="プロジェクト", text_color="gray").pack(
-            anchor="w", padx=16, pady=(16, 4)
-        )
+        ctk.CTkLabel(
+            self, text="プロジェクト", text_color="gray", font=ctk.CTkFont(size=12)
+        ).pack(anchor="w", padx=20, pady=(20, 6))
         self.project_list_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.project_list_frame.pack(fill="x", padx=8)
+        self.project_list_frame.pack(fill="x", padx=10)
 
         ctk.CTkFrame(self, fg_color="transparent").pack(expand=True, fill="both")
 
         settings_btn = ctk.CTkButton(
             self,
-            text="⚙️ 設定",
+            text="⚙️  設定",
+            height=_NAV_HEIGHT,
+            corner_radius=_NAV_CORNER,
+            font=ctk.CTkFont(size=_NAV_FONT_SIZE),
             fg_color="transparent",
             text_color=("gray10", "gray90"),
             hover_color=("gray85", "gray25"),
             anchor="w",
             command=lambda: self.app.navigate("settings"),
         )
-        settings_btn.pack(fill="x", padx=8, pady=(0, 16), side="bottom")
+        settings_btn.pack(fill="x", padx=10, pady=(0, 20), side="bottom")
         self.nav_buttons["settings"] = settings_btn
 
         self.refresh_projects()
@@ -48,13 +66,16 @@ class Sidebar(ctk.CTkFrame):
         btn = ctk.CTkButton(
             self,
             text=label,
+            height=_NAV_HEIGHT,
+            corner_radius=_NAV_CORNER,
+            font=ctk.CTkFont(size=_NAV_FONT_SIZE),
             fg_color="transparent",
             text_color=("gray10", "gray90"),
             hover_color=("gray85", "gray25"),
             anchor="w",
             command=lambda: self.app.navigate(route),
         )
-        btn.pack(fill="x", padx=8, pady=2)
+        btn.pack(fill="x", padx=10, pady=3)
         self.nav_buttons[route] = btn
 
     def refresh_projects(self) -> None:
@@ -62,13 +83,18 @@ class Sidebar(ctk.CTkFrame):
             child.destroy()
         for project in list_projects(self.app.conn):
             row = ctk.CTkFrame(self.project_list_frame, fg_color="transparent")
-            row.pack(fill="x", pady=1)
+            row.pack(fill="x", pady=2)
 
-            ctk.CTkLabel(row, text="●", text_color=project.color, width=16).pack(side="left")
+            ctk.CTkLabel(
+                row, text="●", text_color=project.color, width=20, font=ctk.CTkFont(size=16)
+            ).pack(side="left")
 
             label = ctk.CTkButton(
                 row,
                 text=f"{project.name} ({project.task_count})",
+                height=36,
+                corner_radius=8,
+                font=ctk.CTkFont(size=13),
                 fg_color="transparent",
                 text_color=("gray10", "gray90"),
                 hover_color=("gray85", "gray25"),
@@ -80,7 +106,10 @@ class Sidebar(ctk.CTkFrame):
             ctk.CTkButton(
                 row,
                 text="✎",
-                width=24,
+                width=32,
+                height=32,
+                corner_radius=8,
+                font=ctk.CTkFont(size=14),
                 fg_color="transparent",
                 text_color=("gray40", "gray60"),
                 hover_color=("gray85", "gray25"),
@@ -89,7 +118,10 @@ class Sidebar(ctk.CTkFrame):
             ctk.CTkButton(
                 row,
                 text="×",
-                width=24,
+                width=32,
+                height=32,
+                corner_radius=8,
+                font=ctk.CTkFont(size=16),
                 fg_color="transparent",
                 text_color="#dc2626",
                 hover_color=("#fee2e2", "#450a0a"),
@@ -119,4 +151,7 @@ class Sidebar(ctk.CTkFrame):
     def set_active(self, route: str) -> None:
         for r, btn in self.nav_buttons.items():
             is_active = r == route
-            btn.configure(fg_color=("gray75", "gray30") if is_active else "transparent")
+            btn.configure(
+                fg_color=("#eef2ff", "#312e81") if is_active else "transparent",
+                text_color=theme.ACCENT if is_active else ("gray10", "gray90"),
+            )
