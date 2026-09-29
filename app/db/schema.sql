@@ -54,3 +54,11 @@ CREATE TABLE IF NOT EXISTS "TaskTag" (
     tagId  TEXT NOT NULL REFERENCES "Tag"(id) ON DELETE CASCADE,
     PRIMARY KEY (taskId, tagId)
 );
+
+-- 祝日（ガントチャートでの色分け・設定画面での管理用）。日付は "YYYY-MM-DD"。
+-- CSV一括登録は日付が一致する既存行を更新する仕様のため、date を一意制約にする。
+CREATE TABLE IF NOT EXISTS "Holiday" (
+    id   TEXT PRIMARY KEY,
+    date TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL
+);

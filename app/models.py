@@ -50,3 +50,10 @@ class Project:
     created_at: str = ""
     updated_at: str = ""
     task_count: int = 0
+
+
+@dataclass
+class Holiday:
+    id: str
+    date: str  # "YYYY-MM-DD"
+    name: str
