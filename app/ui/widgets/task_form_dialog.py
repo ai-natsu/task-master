@@ -10,11 +10,14 @@ from app.db.holidays import list_holidays
 from app.db.statuses import list_statuses
 from app.db.tags import create_tag, list_tags
 from app.db.tasks import list_tasks
-from app.i18n import t
+from app.i18n import calendar_locale, t
 from app.logic.tree import build_task_tree, flatten_with_depth
 from app.ui import theme
 from app.ui.widgets.badges import priority_label
-from app.ui.widgets.calendar_style import apply_weekend_holiday_styles
+from app.ui.widgets.calendar_style import (
+    apply_calendar_dropdown_icon,
+    apply_weekend_holiday_styles,
+)
 
 
 class TaskFormDialog(ctk.CTkToplevel):
@@ -157,7 +160,8 @@ class TaskFormDialog(ctk.CTkToplevel):
         row.pack(fill="x", pady=(0, 12))
 
         entry = DateEntry(
-            row, date_pattern="yyyy-mm-dd", width=12, font=(theme.FONT_FAMILY, 11)
+            row, date_pattern="yyyy-mm-dd", width=12, font=(theme.FONT_FAMILY, 11),
+            locale=calendar_locale(),
         )
         if initial:
             try:
@@ -165,6 +169,7 @@ class TaskFormDialog(ctk.CTkToplevel):
             except ValueError:
                 pass
         entry.pack(side="left", padx=(0, 10), ipady=2)
+        apply_calendar_dropdown_icon(entry)
         apply_weekend_holiday_styles(
             entry, lambda: {h.date for h in list_holidays(self.conn)}
         )
