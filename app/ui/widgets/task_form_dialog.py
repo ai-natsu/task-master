@@ -16,6 +16,7 @@ from app.ui import theme
 from app.ui.widgets.badges import priority_label
 from app.ui.widgets.calendar_style import (
     apply_calendar_dropdown_icon,
+    apply_locale_header_format,
     apply_weekend_holiday_styles,
 )
 
@@ -105,12 +106,17 @@ class TaskFormDialog(ctk.CTkToplevel):
         self.parent_menu.pack(fill="x", pady=(0, 12))
 
         ctk.CTkLabel(scroll, text=t("タグ")).pack(anchor="w")
-        self.tag_row = ctk.CTkFrame(scroll, fg_color="transparent")
+        self.tag_row = ctk.CTkFrame(scroll, fg_color="transparent", height=1)
         self.tag_row.pack(fill="x", pady=(0, 4))
         selected_tag_ids = {t.id for t in (task.tags if task else [])}
+        self._tag_items: list[tuple[str, str]] = []
         self._tag_vars: dict[str, ctk.BooleanVar] = {}
         for tag in all_tags:
-            self._add_tag_checkbox(tag.id, tag.name, tag.id in selected_tag_ids)
+            self._tag_vars[tag.id] = ctk.BooleanVar(value=tag.id in selected_tag_ids)
+            self._tag_items.append((tag.id, tag.name))
+        # ダイアログの描画が完了する前だとtag_rowの幅がまだ確定しておらず
+        # 折り返し計算を誤るため、アイドル状態(レイアウト確定後)まで遅延させる。
+        self.after_idle(self._rebuild_tag_checkboxes)
 
         new_tag_row = ctk.CTkFrame(scroll, fg_color="transparent")
         new_tag_row.pack(fill="x", pady=(0, 12))
@@ -159,9 +165,10 @@ class TaskFormDialog(ctk.CTkToplevel):
         row = ctk.CTkFrame(parent, fg_color="transparent")
         row.pack(fill="x", pady=(0, 12))
 
+        locale = calendar_locale()
         entry = DateEntry(
             row, date_pattern="yyyy-mm-dd", width=12, font=(theme.FONT_FAMILY, 11),
-            locale=calendar_locale(),
+            locale=locale,
         )
         if initial:
             try:
@@ -170,6 +177,7 @@ class TaskFormDialog(ctk.CTkToplevel):
                 pass
         entry.pack(side="left", padx=(0, 10), ipady=2)
         apply_calendar_dropdown_icon(entry)
+        apply_locale_header_format(entry, locale)
         apply_weekend_holiday_styles(
             entry, lambda: {h.date for h in list_holidays(self.conn)}
         )
@@ -190,9 +198,58 @@ class TaskFormDialog(ctk.CTkToplevel):
         return entry, enabled_var
 
     def _add_tag_checkbox(self, tag_id: str, name: str, checked: bool) -> None:
-        var = ctk.BooleanVar(value=checked)
-        self._tag_vars[tag_id] = var
-        ctk.CTkCheckBox(self.tag_row, text=name, variable=var).pack(side="left", padx=(0, 8))
+        self._tag_vars[tag_id] = ctk.BooleanVar(value=checked)
+        self._tag_items.append((tag_id, name))
+        self._rebuild_tag_checkboxes()
+
+    _TAG_CHECKBOX_MIN_WIDTH = 90
+
+    def _rebuild_tag_checkboxes(self) -> None:
+        """タグのチェックボックスを、幅に収まるよう複数行に折り返して並べ直す。
+
+        CTkCheckBoxを単一行にpack(side="left")するだけだと、タグ数が増えた
+        時に画面幅からはみ出して見切れてしまうため、行の残り幅を超えたら
+        新しい行フレームを作って続きを詰めていく(CSSのflex-wrapに相当する
+        簡易実装)。
+
+        幅の決定は2段階に分ける: (1)まず使い捨てのチェックボックスを作って
+        実際の幅を測り、(2)その結果をもとに行を確定してから本物のチェック
+        ボックスをその行の下に直接作る。1回で「作る→測る→はみ出たら別の行に
+        移す」とやろうとすると、Tkのウィジェットは生成後に親(master)を変更
+        できないため、pack_forget()して別フレームへpack()し直しても実際には
+        元の親に戻ってしまい、正しく移動しない。
+        """
+        for child in self.tag_row.winfo_children():
+            child.destroy()
+
+        self.tag_row.update_idletasks()
+        available_width = self.tag_row.winfo_width()
+        if available_width <= 1:
+            available_width = 400
+
+        widths = []
+        for _tag_id, name in self._tag_items:
+            probe = ctk.CTkCheckBox(
+                self.tag_row, text=name, width=self._TAG_CHECKBOX_MIN_WIDTH
+            )
+            probe.update_idletasks()
+            widths.append(probe.winfo_reqwidth() + 8)
+            probe.destroy()
+
+        row = ctk.CTkFrame(self.tag_row, fg_color="transparent")
+        row.pack(fill="x", anchor="w")
+        used_width = 0
+        for (tag_id, name), checkbox_width in zip(self._tag_items, widths):
+            if used_width + checkbox_width > available_width and used_width > 0:
+                row = ctk.CTkFrame(self.tag_row, fg_color="transparent")
+                row.pack(fill="x", anchor="w")
+                used_width = 0
+            checkbox = ctk.CTkCheckBox(
+                row, text=name, variable=self._tag_vars[tag_id],
+                width=self._TAG_CHECKBOX_MIN_WIDTH,
+            )
+            checkbox.pack(side="left", padx=(0, 8), pady=(0, 4))
+            used_width += checkbox_width
 
     def _add_tag(self) -> None:
         name = self.new_tag_entry.get().strip()
