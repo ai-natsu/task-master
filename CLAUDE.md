@@ -62,6 +62,5 @@ Single process, no HTTP layer — the UI calls the data/logic layers directly as
 
 ## Known gaps carried over from the old app (not fixed in the rewrite; rewrite scope only)
 
-- No tag management screen (tags are create-only, from the task form)
 - No error message shown on save failure in the task form
 - These match the pre-rewrite app's documented gaps — see `git log` on the pre-rewrite commit for `docs/` if more detail is needed before it was removed

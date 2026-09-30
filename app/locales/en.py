@@ -125,4 +125,16 @@ TRANSLATIONS: dict[str, str] = {
     "CSVの文字コードを判定できませんでした": (
         "Could not determine the CSV file's character encoding."
     ),
+    # --- 設定画面：タグ -------------------------------------------------------
+    "タグを管理します。プロジェクトを問わず全体で共有されます。"
+    "新しいタグの作成もここから行えます。": (
+        "Manage tags here. They are shared across all projects. "
+        "You can also create new tags from here."
+    ),
+    "新しいタグ名": "New tag name",
+    "タグを削除": "Delete Tag",
+    "「{name}」タグを削除しますか？{count}件のタスクからこのタグが外れます。": (
+        'Delete the tag "{name}"? It will be removed from {count} task(s).'
+    ),
+    "タグが既に存在します": "This tag already exists.",
 }

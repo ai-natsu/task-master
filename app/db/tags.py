@@ -30,9 +30,41 @@ def create_tag(conn: sqlite3.Connection, name: str, color: str | None = None) ->
     return _row_to_tag(row)
 
 
+def update_tag(
+    conn: sqlite3.Connection, tag_id: str, name: str | None = None, color: str | None = None
+) -> Tag:
+    row = conn.execute('SELECT * FROM "Tag" WHERE id = ?', (tag_id,)).fetchone()
+    if row is None:
+        raise NotFoundError("タグが見つかりません")
+    fields: list[str] = []
+    values: list[object] = []
+    if name is not None:
+        fields.append("name = ?")
+        values.append(name)
+    if color is not None:
+        fields.append("color = ?")
+        values.append(color)
+    if fields:
+        values.append(tag_id)
+        try:
+            with conn:
+                conn.execute(f'UPDATE "Tag" SET {", ".join(fields)} WHERE id = ?', values)
+        except sqlite3.IntegrityError as exc:
+            raise ConflictError("タグが既に存在します") from exc
+    row = conn.execute('SELECT * FROM "Tag" WHERE id = ?', (tag_id,)).fetchone()
+    return _row_to_tag(row)
+
+
 def delete_tag(conn: sqlite3.Connection, tag_id: str) -> None:
     row = conn.execute('SELECT id FROM "Tag" WHERE id = ?', (tag_id,)).fetchone()
     if row is None:
         raise NotFoundError("タグが見つかりません")
     with conn:
         conn.execute('DELETE FROM "Tag" WHERE id = ?', (tag_id,))
+
+
+def count_tagged_tasks(conn: sqlite3.Connection, tag_id: str) -> int:
+    """このタグが付いているタスク数（削除確認ダイアログでの影響件数表示用）。"""
+    return conn.execute(
+        'SELECT COUNT(*) FROM "TaskTag" WHERE tagId = ?', (tag_id,)
+    ).fetchone()[0]
