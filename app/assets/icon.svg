@@ -2,10 +2,10 @@
   <!-- TaskMaster app icon — master (H2 / A / left+8) -->
   <rect width="512" height="512" rx="117" fill="#071A33"/>
   <!-- T bar -->
-  <rect x="91" y="132" width="285" height="37" rx="18.5" fill="#ffffff"/>
+  <rect x="45" y="58.6" width="363.4" height="68" rx="34" fill="#ffffff"/>
   <!-- T stem -->
-  <rect x="165" y="198" width="37" height="190" rx="18.5" fill="#3B9DFF"/>
+  <rect x="133.9" y="163.5" width="58" height="283.5" rx="29" fill="#3B9DFF"/>
   <!-- M outline -->
-  <path d="M272 240 L306 240 L347 348 L388 240 L422 240 L422 388 L400 388 L400 250 L347 380 L294 250 L294 388 L272 388 Z"
-        fill="none" stroke="#3B9DFF" stroke-width="5.5" stroke-linejoin="round"/>
+  <path d="M275.8 226.1 L319.1 226.1 L371.4 387.3 L423.7 226.1 L467.0 226.1 L467.0 447.0 L439.0 447.0 L439.0 241.1 L371.4 435.0 L303.8 241.1 L303.8 447.0 L275.8 447.0 Z"
+        fill="none" stroke="#3B9DFF" stroke-width="10" stroke-linejoin="round"/>
 </svg>
