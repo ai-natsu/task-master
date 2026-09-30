@@ -67,7 +67,7 @@ class SettingsView(ctk.CTkScrollableFrame):
             wraplength=640,
         ).pack(anchor="w", pady=(0, 12))
 
-        self.rows_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.rows_frame = ctk.CTkFrame(self, fg_color="transparent", height=1)
         self.rows_frame.pack(fill="x")
         self.rows_frame.grid_columnconfigure(0, weight=1)
 
@@ -113,7 +113,7 @@ class SettingsView(ctk.CTkScrollableFrame):
             holiday_header, text=t("名称"), text_color=theme.TEXT_MUTED, anchor="w",
         ).pack(side="left", fill="x", expand=True)
 
-        self.holiday_rows_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.holiday_rows_frame = ctk.CTkFrame(self, fg_color="transparent", height=1)
         self.holiday_rows_frame.pack(fill="x")
         self.holiday_rows_frame.grid_columnconfigure(0, weight=1)
 
