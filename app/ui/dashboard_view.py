@@ -8,6 +8,7 @@ from app.db.projects import list_projects
 from app.db.stats import get_stats
 from app.db.statuses import list_statuses
 from app.db.tasks import list_tasks
+from app.i18n import t
 from app.ui import theme
 from app.ui.widgets.badges import priority_badge
 from app.ui.widgets.stats_cards import render_breakdown_panels
@@ -33,44 +34,54 @@ class DashboardView(ctk.CTkScrollableFrame):
 
         cards_row = ctk.CTkFrame(self, fg_color="transparent")
         cards_row.pack(fill="x", pady=(0, 16))
-        self._stat_card(cards_row, "プロジェクト数", str(len(projects)))
-        self._stat_card(cards_row, "直近7日の完了数", str(stats["completedLast7Days"]))
-        self._stat_card(cards_row, "タスク総数", str(stats["total"]))
-        self._stat_card(cards_row, "完了率", f"{stats['completionRate']}%")
-        self._stat_card(cards_row, "期限超過", str(stats["overdue"]), accent="#dc2626")
-        self._stat_card(cards_row, "7日以内に期限", str(stats["dueSoon"]), accent="#d97706")
+        self._stat_card(cards_row, t("プロジェクト数"), str(len(projects)))
+        self._stat_card(cards_row, t("直近7日の完了数"), str(stats["completedLast7Days"]))
+        self._stat_card(cards_row, t("タスク総数"), str(stats["total"]))
+        self._stat_card(cards_row, t("完了率"), f"{stats['completionRate']}%")
+        self._stat_card(cards_row, t("期限超過"), str(stats["overdue"]), accent="#dc2626")
+        self._stat_card(cards_row, t("7日以内に期限"), str(stats["dueSoon"]), accent="#d97706")
 
         now = _now_iso()
         overdue = sorted(
-            (t for t in tasks if t.status not in done_ids and t.due_date and t.due_date < now),
-            key=lambda t: t.due_date,
+            (
+                task for task in tasks
+                if task.status not in done_ids and task.due_date and task.due_date < now
+            ),
+            key=lambda task: task.due_date,
         )[:8]
         upcoming = sorted(
-            (t for t in tasks if t.status not in done_ids and t.due_date and t.due_date >= now),
-            key=lambda t: t.due_date,
+            (
+                task for task in tasks
+                if task.status not in done_ids and task.due_date and task.due_date >= now
+            ),
+            key=lambda task: task.due_date,
         )[:8]
 
         lists_row = ctk.CTkFrame(self, fg_color="transparent")
         lists_row.pack(fill="x", pady=(0, 16))
         lists_row.grid_columnconfigure((0, 1), weight=1)
-        self._task_list(lists_row, "期限超過のタスク", overdue, projects).grid(
+        self._task_list(lists_row, t("期限超過のタスク"), overdue, projects).grid(
             row=0, column=0, sticky="nsew", padx=(0, 12)
         )
-        self._task_list(lists_row, "期限が近いタスク", upcoming, projects).grid(
+        self._task_list(lists_row, t("期限が近いタスク"), upcoming, projects).grid(
             row=0, column=1, sticky="nsew", padx=(12, 0)
         )
 
         render_breakdown_panels(self, stats, statuses).pack(fill="x", pady=(0, 16))
 
-        ctk.CTkLabel(self, text="プロジェクト", font=ctk.CTkFont(size=16, weight="bold")).pack(
+        ctk.CTkLabel(self, text=t("プロジェクト"), font=ctk.CTkFont(size=16, weight="bold")).pack(
             anchor="w", pady=(8, 8)
         )
         if not projects:
-            ctk.CTkLabel(self, text="プロジェクトがありません", text_color="gray").pack(anchor="w")
+            ctk.CTkLabel(self, text=t("プロジェクトがありません"), text_color="gray").pack(
+                anchor="w"
+            )
         for project in projects:
             ctk.CTkButton(
                 self,
-                text=f"●  {project.name}    {project.task_count} 件",
+                text=t("●  {name}    {count} 件").format(
+                    name=project.name, count=project.task_count
+                ),
                 fg_color=theme.CARD_BG,
                 text_color=theme.TEXT_PRIMARY,
                 hover_color=("#eef2ff", "#312e81"),
@@ -111,14 +122,14 @@ class DashboardView(ctk.CTkScrollableFrame):
         )
         if not tasks:
             ctk.CTkLabel(
-                frame, text="該当するタスクはありません", text_color=theme.TEXT_MUTED
+                frame, text=t("該当するタスクはありません"), text_color=theme.TEXT_MUTED
             ).pack(anchor="w", padx=16, pady=(0, 14))
         # ソート済みの tasks を、プロジェクト・タスクの列がそろった表形式で表示する
-        for t in tasks:
-            project = projects_by_id.get(t.project_id)
+        for task in tasks:
+            project = projects_by_id.get(task.project_id)
             row = ctk.CTkFrame(frame, fg_color="transparent")
             row.pack(fill="x", padx=16, pady=4)
-            priority_badge(row, t.priority).pack(side="left", padx=(0, 8))
+            priority_badge(row, task.priority).pack(side="left", padx=(0, 8))
 
             project_box = ctk.CTkFrame(row, fg_color="transparent", width=140)
             project_box.pack(side="left", padx=(0, 10))
@@ -130,10 +141,10 @@ class DashboardView(ctk.CTkScrollableFrame):
                 ).pack(anchor="w")
 
             ctk.CTkLabel(
-                row, text=t.title, anchor="w", text_color=theme.TEXT_PRIMARY,
+                row, text=task.title, anchor="w", text_color=theme.TEXT_PRIMARY,
                 font=ctk.CTkFont(weight="bold"),
             ).pack(side="left", fill="x", expand=True)
 
-            due = t.due_date[:10] if t.due_date else ""
+            due = task.due_date[:10] if task.due_date else ""
             ctk.CTkLabel(row, text=due, text_color=theme.TEXT_MUTED).pack(side="right")
         return frame

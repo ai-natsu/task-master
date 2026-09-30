@@ -62,3 +62,9 @@ CREATE TABLE IF NOT EXISTS "Holiday" (
     date TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL
 );
+
+-- アプリ全体の設定（言語選択等）を保持する汎用キーバリューテーブル。
+CREATE TABLE IF NOT EXISTS "AppSetting" (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);

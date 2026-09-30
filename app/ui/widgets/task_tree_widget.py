@@ -14,11 +14,13 @@ import customtkinter as ctk
 from app.db.errors import CycleError
 from app.db.statuses import list_statuses
 from app.db.tasks import create_task, delete_task, list_tasks, move_task, reorder_tasks, update_task
+from app.i18n import t
 from app.logic.dnd import plan_tree_drag
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
+from app.ui.widgets.badges import priority_label
 from app.ui.widgets.confirm_dialog import ask_confirm
-from app.ui.widgets.task_form_dialog import PRIORITY_LABELS, ask_task_form
+from app.ui.widgets.task_form_dialog import ask_task_form
 
 _EMPTY_IID = "__empty__"
 
@@ -68,11 +70,11 @@ class TaskTreeWidget(ctk.CTkFrame):
             show="tree headings",
             selectmode="browse",
         )
-        self.tree.heading("#0", text="タスク")
-        self.tree.heading("status", text="ステータス")
-        self.tree.heading("priority", text="優先度")
-        self.tree.heading("tags", text="タグ")
-        self.tree.heading("due", text="期限")
+        self.tree.heading("#0", text=t("タスク"))
+        self.tree.heading("status", text=t("ステータス"))
+        self.tree.heading("priority", text=t("優先度"))
+        self.tree.heading("tags", text=t("タグ"))
+        self.tree.heading("due", text=t("期限"))
         self.tree.column("#0", width=320, stretch=True)
         self.tree.column("status", width=100, anchor="center")
         self.tree.column("priority", width=70, anchor="center")
@@ -102,7 +104,7 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.tree.delete(*self.tree.get_children())
 
         tasks = list_tasks(self.app.conn, project_id=self.project_id, **self.filters)
-        self._tasks_by_id = {t.id: t for t in tasks}
+        self._tasks_by_id = {task.id: task for task in tasks}
         statuses = {s.id: s for s in list_statuses(self.app.conn)}
         self._status_labels = {sid: s.label for sid, s in statuses.items()}
 
@@ -110,7 +112,7 @@ class TaskTreeWidget(ctk.CTkFrame):
         if not tree_nodes:
             self.tree.insert(
                 "", "end", iid=_EMPTY_IID,
-                text="タスクがありません。「+ 新しいタスク」から追加してください。",
+                text=t("タスクがありません。「+ 新しいタスク」から追加してください。"),
             )
             return
 
@@ -132,8 +134,8 @@ class TaskTreeWidget(ctk.CTkFrame):
                 parent_iid, "end", iid=task.id, text=task.title, open=True,
                 values=(
                     status.label if status else task.status,
-                    PRIORITY_LABELS.get(task.priority, task.priority),
-                    ", ".join(t.name for t in task.tags),
+                    priority_label(task.priority),
+                    ", ".join(tag.name for tag in task.tags),
                     task.due_date[:10] if task.due_date else "",
                 ),
                 tags=tuple(tags),
@@ -168,17 +170,17 @@ class TaskTreeWidget(ctk.CTkFrame):
 
         menu_font = (theme.FONT_FAMILY, 12)
         menu = tk.Menu(self, tearoff=0, font=menu_font)
-        menu.add_command(label="+ サブタスクを追加", command=lambda: self._add_subtask(row_id))
-        menu.add_command(label="編集", command=lambda: self._edit(task))
+        menu.add_command(label=t("+ サブタスクを追加"), command=lambda: self._add_subtask(row_id))
+        menu.add_command(label=t("編集"), command=lambda: self._edit(task))
         if self._status_labels:
             status_menu = tk.Menu(menu, tearoff=0, font=menu_font)
             for sid, label in self._status_labels.items():
                 status_menu.add_command(
-                    label=label, command=lambda s=sid, t=task: self._change_status(t.id, s)
+                    label=label, command=lambda s=sid, tk_=task: self._change_status(tk_.id, s)
                 )
-            menu.add_cascade(label="ステータス変更", menu=status_menu)
+            menu.add_cascade(label=t("ステータス変更"), menu=status_menu)
         menu.add_separator()
-        menu.add_command(label="削除", command=lambda: self._delete(task))
+        menu.add_command(label=t("削除"), command=lambda: self._delete(task))
         menu.tk_popup(event.x_root, event.y_root)
 
     def _on_double_click(self, event) -> None:
@@ -215,14 +217,18 @@ class TaskTreeWidget(ctk.CTkFrame):
                 move_task(self.app.conn, task.id, parent_id=new_parent_id)
             except CycleError:
                 messagebox.showerror(
-                    "エラー", "タスクを自分自身またはその配下には移動できません。", parent=self
+                    t("エラー"),
+                    t("タスクを自分自身またはその配下には移動できません。"),
+                    parent=self,
                 )
         self.refresh()
         self.on_change()
 
     def _delete(self, task) -> None:
-        message = f"「{task.title}」を削除しますか？配下のサブタスクも削除されます。"
-        if ask_confirm(self.app, "タスクを削除", message):
+        message = t("「{title}」を削除しますか？配下のサブタスクも削除されます。").format(
+            title=task.title
+        )
+        if ask_confirm(self.app, t("タスクを削除"), message):
             delete_task(self.app.conn, task.id)
             self.refresh()
             self.on_change()

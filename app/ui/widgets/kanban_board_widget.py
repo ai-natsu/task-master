@@ -14,6 +14,7 @@ import customtkinter as ctk
 
 from app.db.statuses import list_statuses
 from app.db.tasks import create_task, list_tasks, reorder_tasks, update_task
+from app.i18n import t
 from app.logic.dnd import plan_kanban_drag
 from app.ui import theme
 from app.ui.widgets.badges import color_pill, priority_badge
@@ -57,10 +58,10 @@ class KanbanBoardWidget(ctk.CTkFrame):
         statuses = list_statuses(self.app.conn)
         tasks = list_tasks(self.app.conn, project_id=self.project_id, **self.filters)
         columns: dict[str, list] = {s.id: [] for s in statuses}
-        for t in tasks:
-            columns.setdefault(t.status, []).append(t)
+        for task in tasks:
+            columns.setdefault(task.status, []).append(task)
         for col in columns.values():
-            col.sort(key=lambda t: t.order)
+            col.sort(key=lambda task: task.order)
 
         for status in statuses:
             col_frame = ctk.CTkFrame(
@@ -94,9 +95,9 @@ class KanbanBoardWidget(ctk.CTkFrame):
 
             col_tasks = columns.get(status.id, [])
             if not col_tasks:
-                ctk.CTkLabel(cards_area, text="ここにドロップ", text_color=theme.TEXT_MUTED).pack(
-                    pady=20
-                )
+                ctk.CTkLabel(
+                    cards_area, text=t("ここにドロップ"), text_color=theme.TEXT_MUTED
+                ).pack(pady=20)
             for task in col_tasks:
                 self._build_card(cards_area, task, status.is_done)
 
@@ -132,10 +133,10 @@ class KanbanBoardWidget(ctk.CTkFrame):
             ).pack(side="right")
 
         for widget in (card, title_label, meta_row):
-            widget.bind("<ButtonPress-1>", lambda e, t=task: self._start_drag(e, t))
+            widget.bind("<ButtonPress-1>", lambda e, tk_=task: self._start_drag(e, tk_))
             widget.bind("<B1-Motion>", self._on_drag_motion)
             widget.bind("<ButtonRelease-1>", self._end_drag)
-            widget.bind("<Double-Button-1>", lambda _e, t=task: self._edit(t))
+            widget.bind("<Double-Button-1>", lambda _e, tk_=task: self._edit(tk_))
 
     def _start_drag(self, event, task) -> None:
         self._drag_task_id = task.id

@@ -5,11 +5,8 @@ import customtkinter as ctk
 from app.constants import PRIORITIES
 from app.db.statuses import list_statuses
 from app.db.tags import list_tags
-from app.ui.widgets.badges import PRIORITY_LABELS
-
-_ALL_STATUSES = "すべてのステータス"
-_ALL_PRIORITIES = "すべての優先度"
-_ALL_TAGS = "すべてのタグ"
+from app.i18n import t
+from app.ui.widgets.badges import priority_label
 
 
 class FilterBar(ctk.CTkFrame):
@@ -20,17 +17,19 @@ class FilterBar(ctk.CTkFrame):
 
         statuses = list_statuses(self.app.conn)
         tags = list_tags(self.app.conn)
-        self._status_options: list[tuple[str | None, str]] = [(None, _ALL_STATUSES)] + [
+        self._status_options: list[tuple[str | None, str]] = [(None, t("すべてのステータス"))] + [
             (s.id, s.label) for s in statuses
         ]
-        self._priority_options: list[tuple[str | None, str]] = [(None, _ALL_PRIORITIES)] + [
-            (p, PRIORITY_LABELS[p]) for p in PRIORITIES
+        self._priority_options: list[tuple[str | None, str]] = [(None, t("すべての優先度"))] + [
+            (p, priority_label(p)) for p in PRIORITIES
         ]
-        self._tag_options: list[tuple[str | None, str]] = [(None, _ALL_TAGS)] + [
-            (t.id, f"#{t.name}") for t in tags
+        self._tag_options: list[tuple[str | None, str]] = [(None, t("すべてのタグ"))] + [
+            (tag.id, f"#{tag.name}") for tag in tags
         ]
 
-        self.search_entry = ctk.CTkEntry(self, placeholder_text="タスクを検索...", width=200)
+        self.search_entry = ctk.CTkEntry(
+            self, placeholder_text=t("タスクを検索..."), width=200
+        )
         self.search_entry.pack(side="left", padx=(0, 8))
         self.search_entry.bind("<KeyRelease>", lambda _e: self._notify())
 
@@ -40,7 +39,7 @@ class FilterBar(ctk.CTkFrame):
 
         ctk.CTkButton(
             self,
-            text="クリア",
+            text=t("クリア"),
             width=50,
             fg_color="transparent",
             text_color=("gray40", "gray60"),

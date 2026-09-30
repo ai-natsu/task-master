@@ -4,6 +4,7 @@ import customtkinter as ctk
 
 from app.db.projects import delete_project, list_projects, update_project
 from app.db.tasks import list_tasks
+from app.i18n import t
 from app.ui import theme
 from app.ui.widgets.confirm_dialog import ask_confirm
 from app.ui.widgets.project_form_dialog import ask_project_form
@@ -40,11 +41,11 @@ class Sidebar(ctk.CTkFrame):
         ).pack(side="left")
 
         self.nav_buttons: dict[str, ctk.CTkButton] = {}
-        self._add_nav_button("dashboard", "📊  ダッシュボード")
-        self._add_nav_button("projects", "📁  プロジェクト一覧")
+        self._add_nav_button("dashboard", "📊  " + t("ダッシュボード"))
+        self._add_nav_button("projects", "📁  " + t("プロジェクト一覧"))
 
         ctk.CTkLabel(
-            self, text="プロジェクト", text_color="gray", font=ctk.CTkFont(size=12)
+            self, text=t("プロジェクト"), text_color="gray", font=ctk.CTkFont(size=12)
         ).pack(anchor="w", padx=20, pady=(20, 6))
         self.project_list_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.project_list_frame.pack(fill="x", padx=10)
@@ -53,7 +54,7 @@ class Sidebar(ctk.CTkFrame):
 
         settings_btn = ctk.CTkButton(
             self,
-            text="⚙️  設定",
+            text="⚙️  " + t("設定"),
             height=_NAV_HEIGHT,
             corner_radius=_NAV_CORNER,
             font=ctk.CTkFont(size=_NAV_FONT_SIZE),
@@ -149,8 +150,10 @@ class Sidebar(ctk.CTkFrame):
 
     def _delete(self, project) -> None:
         task_count = len(list_tasks(self.app.conn, project_id=project.id))
-        message = f"「{project.name}」を削除しますか？配下の{task_count}件のタスクも削除されます。"
-        if ask_confirm(self.app, "プロジェクトを削除", message):
+        message = t("「{name}」を削除しますか？配下の{count}件のタスクも削除されます。").format(
+            name=project.name, count=task_count
+        )
+        if ask_confirm(self.app, t("プロジェクトを削除"), message):
             delete_project(self.app.conn, project.id)
             self.app.refresh_current_view()
 

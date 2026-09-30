@@ -12,6 +12,7 @@ import customtkinter as ctk
 
 from app.db.statuses import list_statuses
 from app.db.tasks import create_task, list_tasks, update_task
+from app.i18n import t
 from app.logic.gantt import compute_bar, compute_months, compute_range
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
@@ -60,7 +61,7 @@ class GanttChartWidget(ctk.CTkFrame):
 
         if not rows:
             self.canvas.create_text(
-                20, 20, anchor="nw", text="タスクがありません。", fill="#94a3b8",
+                20, 20, anchor="nw", text=t("タスクがありません。"), fill="#94a3b8",
                 font=(theme.FONT_FAMILY, 11),
             )
             self.canvas.configure(scrollregion=(0, 0, 400, 60))
@@ -86,7 +87,7 @@ class GanttChartWidget(ctk.CTkFrame):
         heading_font = (theme.FONT_FAMILY, 10, "bold")
         self.canvas.create_rectangle(0, 0, LABEL_W, HEADER_H, fill="#ffffff", outline="#e2e8f0")
         self.canvas.create_text(
-            8, HEADER_H / 2, anchor="w", text="タスク", fill="#64748b", font=heading_font
+            8, HEADER_H / 2, anchor="w", text=t("タスク"), fill="#64748b", font=heading_font
         )
         x = LABEL_W
         for month in months:
@@ -170,7 +171,7 @@ class GanttChartWidget(ctk.CTkFrame):
                 )
                 self.canvas.tag_bind(
                     bar_item, "<ButtonPress-1>",
-                    lambda e, t=task, bi=bar_item: self._on_bar_press(e, t, bi),
+                    lambda e, tk_=task, bi=bar_item: self._on_bar_press(e, tk_, bi),
                 )
                 self.canvas.tag_bind(bar_item, "<B1-Motion>", self._on_bar_motion)
                 self.canvas.tag_bind(bar_item, "<ButtonRelease-1>", self._on_bar_release)
@@ -179,8 +180,8 @@ class GanttChartWidget(ctk.CTkFrame):
                     bar_item, "<Leave>", lambda _e: self.canvas.configure(cursor="")
                 )
 
-            self.canvas.tag_bind(label_bg, "<Button-1>", lambda _e, t=task: self._edit(t))
-            self.canvas.tag_bind(label_text, "<Button-1>", lambda _e, t=task: self._edit(t))
+            self.canvas.tag_bind(label_bg, "<Button-1>", lambda _e, tk_=task: self._edit(tk_))
+            self.canvas.tag_bind(label_text, "<Button-1>", lambda _e, tk_=task: self._edit(tk_))
 
     # --- ガントバーのドラッグ（平行移動・端のリサイズ） -------------------
     def _bar_mode_at(self, event_x: float, x0: float, x1: float) -> str:

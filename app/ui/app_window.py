@@ -72,3 +72,10 @@ class AppWindow(ctk.CTk):
     def refresh_current_view(self) -> None:
         self.sidebar.refresh_projects()
         self.navigate(self._current_route, **self._current_kwargs)
+
+    def rebuild(self) -> None:
+        """言語切替後などに、サイドバーを含めて画面全体を作り直す。"""
+        self.sidebar.destroy()
+        self.sidebar = Sidebar(self, app=self)
+        self.sidebar.grid(row=0, column=0, sticky="nsw")
+        self.navigate(self._current_route, **self._current_kwargs)

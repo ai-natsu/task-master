@@ -5,8 +5,9 @@ import customtkinter as ctk
 from app.constants import PRIORITIES
 from app.db.stats import get_stats
 from app.db.statuses import list_statuses
+from app.i18n import t
 from app.ui import theme
-from app.ui.widgets.badges import PRIORITY_COLORS, PRIORITY_LABELS
+from app.ui.widgets.badges import PRIORITY_COLORS, priority_label
 
 
 def build_stat_card(parent, label: str, value, accent: str | None = None) -> ctk.CTkFrame:
@@ -29,16 +30,16 @@ def build_stat_card(parent, label: str, value, accent: str | None = None) -> ctk
 def render_stat_cards_row(parent, stats: dict) -> ctk.CTkFrame:
     row = ctk.CTkFrame(parent, fg_color="transparent")
     row.pack(fill="x", pady=(0, 12))
-    build_stat_card(row, "タスク総数", stats["total"]).pack(
+    build_stat_card(row, t("タスク総数"), stats["total"]).pack(
         side="left", fill="both", expand=True, padx=(0, 6)
     )
-    build_stat_card(row, "完了率", f"{stats['completionRate']}%", accent="#059669").pack(
+    build_stat_card(row, t("完了率"), f"{stats['completionRate']}%", accent="#059669").pack(
         side="left", fill="both", expand=True, padx=6
     )
     build_stat_card(
-        row, "期限超過", stats["overdue"], accent="#dc2626" if stats["overdue"] > 0 else None
+        row, t("期限超過"), stats["overdue"], accent="#dc2626" if stats["overdue"] > 0 else None
     ).pack(side="left", fill="both", expand=True, padx=6)
-    build_stat_card(row, "7日以内に期限", stats["dueSoon"], accent="#d97706").pack(
+    build_stat_card(row, t("7日以内に期限"), stats["dueSoon"], accent="#d97706").pack(
         side="left", fill="both", expand=True, padx=(6, 0)
     )
     return row
@@ -70,9 +71,9 @@ def render_breakdown_panels(parent, stats: dict, statuses: list) -> ctk.CTkFrame
         border_width=1, border_color=theme.CARD_BORDER,
     )
     status_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
-    ctk.CTkLabel(status_panel, text="ステータス別", font=ctk.CTkFont(size=14, weight="bold")).pack(
-        anchor="w", padx=16, pady=(14, 6)
-    )
+    ctk.CTkLabel(
+        status_panel, text=t("ステータス別"), font=ctk.CTkFont(size=14, weight="bold")
+    ).pack(anchor="w", padx=16, pady=(14, 6))
     for status in statuses:
         _bar_row(
             status_panel, status.label, status.color,
@@ -85,12 +86,12 @@ def render_breakdown_panels(parent, stats: dict, statuses: list) -> ctk.CTkFrame
         border_width=1, border_color=theme.CARD_BORDER,
     )
     priority_panel.grid(row=0, column=1, sticky="nsew", padx=(6, 0))
-    ctk.CTkLabel(priority_panel, text="優先度別", font=ctk.CTkFont(size=14, weight="bold")).pack(
-        anchor="w", padx=16, pady=(14, 6)
-    )
+    ctk.CTkLabel(
+        priority_panel, text=t("優先度別"), font=ctk.CTkFont(size=14, weight="bold")
+    ).pack(anchor="w", padx=16, pady=(14, 6))
     for priority in reversed(PRIORITIES):
         _bar_row(
-            priority_panel, PRIORITY_LABELS[priority], PRIORITY_COLORS[priority][1],
+            priority_panel, priority_label(priority), PRIORITY_COLORS[priority][1],
             stats["byPriority"].get(priority, 0), stats["total"],
         )
     ctk.CTkFrame(priority_panel, fg_color="transparent", height=8).pack()

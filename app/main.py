@@ -3,7 +3,9 @@
 import customtkinter as ctk
 from customtkinter.windows.widgets.theme import ThemeManager
 
+from app import i18n
 from app.db.connection import connect, ensure_default_statuses
+from app.db.settings import get_setting
 from app.ui import theme
 from app.ui.app_window import AppWindow
 
@@ -19,6 +21,7 @@ def main() -> None:
 
     conn = connect()
     ensure_default_statuses(conn)
+    i18n.set_language(get_setting(conn, "language", "ja"))
     app = AppWindow(conn)
     try:
         app.mainloop()

@@ -3,6 +3,7 @@
 import customtkinter as ctk
 
 from app.db.projects import get_project
+from app.i18n import t
 from app.ui import theme
 from app.ui.widgets.filter_bar import FilterBar
 from app.ui.widgets.gantt_chart_widget import GanttChartWidget
@@ -10,7 +11,10 @@ from app.ui.widgets.kanban_board_widget import KanbanBoardWidget
 from app.ui.widgets.stats_cards import StatsCardsPanel
 from app.ui.widgets.task_tree_widget import TaskTreeWidget
 
-_VIEW_MODES = [("tree", "ツリー"), ("kanban", "カンバン"), ("gantt", "ガント")]
+
+def _view_modes() -> list[tuple[str, str]]:
+    # モジュール読み込み時ではなく呼び出し時に評価し、現在の言語を反映する。
+    return [("tree", t("ツリー")), ("kanban", t("カンバン")), ("gantt", t("ガント"))]
 
 
 class ProjectView(ctk.CTkFrame):
@@ -29,7 +33,7 @@ class ProjectView(ctk.CTkFrame):
     def _build(self) -> None:
         project = get_project(self.app.conn, self.project_id)
         if project is None:
-            label = ctk.CTkLabel(self, text="プロジェクトが見つかりません")
+            label = ctk.CTkLabel(self, text=t("プロジェクトが見つかりません"))
             label.grid(row=0, column=0, sticky="w")
             return
 
@@ -51,23 +55,24 @@ class ProjectView(ctk.CTkFrame):
 
         ctk.CTkButton(
             header,
-            text="+ 新しいタスク",
+            text=t("+ 新しいタスク"),
             fg_color=theme.ACCENT,
             hover_color=theme.ACCENT_HOVER,
             command=self._add_root_task,
         ).pack(side="right")
 
+        view_modes = _view_modes()
         self.view_switch = ctk.CTkSegmentedButton(
             header,
-            values=[label for _, label in _VIEW_MODES],
+            values=[label for _, label in view_modes],
             command=self._on_view_switch,
         )
-        self.view_switch.set(dict(_VIEW_MODES)[self.view_mode])
+        self.view_switch.set(dict(view_modes)[self.view_mode])
         self.view_switch.pack(side="right", padx=12)
 
         self.stats_toggle_btn = ctk.CTkButton(
             header,
-            text="統計を表示",
+            text=t("統計を表示"),
             fg_color="transparent",
             text_color=("gray10", "gray90"),
             hover_color=("gray85", "gray25"),
@@ -86,13 +91,13 @@ class ProjectView(ctk.CTkFrame):
     def _toggle_stats(self) -> None:
         self._stats_visible = not self._stats_visible
         if self._stats_visible:
-            self.stats_toggle_btn.configure(text="統計を隠す")
+            self.stats_toggle_btn.configure(text=t("統計を隠す"))
             self._stats_panel = StatsCardsPanel(
                 self.stats_row, app=self.app, project_id=self.project_id
             )
             self._stats_panel.pack(fill="x", pady=(0, 12))
         else:
-            self.stats_toggle_btn.configure(text="統計を表示")
+            self.stats_toggle_btn.configure(text=t("統計を表示"))
             if self._stats_panel is not None:
                 self._stats_panel.destroy()
                 self._stats_panel = None
@@ -102,7 +107,7 @@ class ProjectView(ctk.CTkFrame):
             self._body.set_filters(filters)
 
     def _on_view_switch(self, label: str) -> None:
-        mode = next(m for m, lbl in _VIEW_MODES if lbl == label)
+        mode = next(m for m, lbl in _view_modes() if lbl == label)
         self._show_view(mode)
 
     def _show_view(self, mode: str) -> None:
