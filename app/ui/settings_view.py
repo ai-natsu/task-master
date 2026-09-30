@@ -26,6 +26,7 @@ from app.i18n import LANGUAGES, calendar_locale, get_language, set_language, t
 from app.ui import theme
 from app.ui.widgets.calendar_style import (
     apply_calendar_dropdown_icon,
+    apply_locale_header_format,
     apply_weekend_holiday_styles,
 )
 
@@ -125,11 +126,13 @@ class SettingsView(ctk.CTkScrollableFrame):
 
         holiday_add_row = ctk.CTkFrame(self, fg_color="transparent")
         holiday_add_row.pack(fill="x", pady=(12, 0))
+        holiday_date_locale = calendar_locale()
         self.new_holiday_date = DateEntry(
             holiday_add_row, date_pattern="yyyy-mm-dd", width=10,
-            font=(theme.FONT_FAMILY, 11), locale=calendar_locale(),
+            font=(theme.FONT_FAMILY, 11), locale=holiday_date_locale,
         )
         apply_calendar_dropdown_icon(self.new_holiday_date)
+        apply_locale_header_format(self.new_holiday_date, holiday_date_locale)
         apply_weekend_holiday_styles(
             self.new_holiday_date, lambda: {h.date for h in list_holidays(self.app.conn)}
         )

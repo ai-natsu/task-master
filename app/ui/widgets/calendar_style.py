@@ -6,7 +6,7 @@
 
 tkcalendarの`weekenddays`/`weekendbackground`は土日をまとめて1色にしか
 塗れないため、`calevent_create`+`tag_config`で日付ごとに個別の色を付ける。
-月を移動する度に`<<CalendarMonthChanged>>`で表示中の月だけ塗り直す
+表示が更新される度に、その時点で表示中の月だけ塗り直す
 （全期間を事前に塗ると量が膨大になるため）。
 """
 
@@ -25,6 +25,25 @@ _DROPDOWN_ELEMENT = "Calendar.rightdownarrow"
 _dropdown_icon_ref: ImageTk.PhotoImage | None = None  # GC対策で参照を保持
 
 
+def _hook_display_calendar(cal, callback: Callable[[], None]) -> None:
+    """`cal`が表示を更新する度に`callback`を呼ぶようにする。
+
+    月表示が変わった時に発火する`<<CalendarMonthChanged>>`は、矢印ボタンでの
+    月/年送りでは発火するが、`DateEntry.drop_down()`が内部で呼ぶ
+    `selection_set()`経由の表示更新では発火しない。そのため実際に表示を
+    書き換える`_display_calendar()`自体をラップし、呼び出し経路によらず
+    必ず反映されるようにする。複数箇所から呼んでも、直前にラップされた
+    バージョンを包む形で正しく連鎖する。
+    """
+    original = cal._display_calendar
+
+    def _patched():
+        original()
+        callback()
+
+    cal._display_calendar = _patched
+
+
 def apply_weekend_holiday_styles(
     entry: DateEntry, get_holiday_dates: Callable[[], set[str]]
 ) -> None:
@@ -36,7 +55,7 @@ def apply_weekend_holiday_styles(
     cal.tag_config(_SATURDAY_TAG, background="#eff6ff", foreground="#2563eb")
     cal.tag_config(_HOLIDAY_TAG, background="#fef2f2", foreground="#dc2626")
 
-    def _retag(_event=None) -> None:
+    def _retag() -> None:
         month, year = cal.get_displayed_month()
         holiday_dates = get_holiday_dates()
         cal.calevent_remove("all")
@@ -48,8 +67,35 @@ def apply_weekend_holiday_styles(
             elif d.weekday() == 5:
                 cal.calevent_create(d, "", _SATURDAY_TAG)
 
-    cal.bind("<<CalendarMonthChanged>>", _retag)
+    _hook_display_calendar(cal, _retag)
     _retag()
+
+
+def apply_locale_header_format(entry: DateEntry, locale: str) -> None:
+    """カレンダーヘッダーの月・年表示を、日本語の慣習(年→月の順、年に「年」を
+    付ける)に合わせる。
+
+    tkcalendarは月名にはbabelのロケール名をそのまま使う(日本語なら既に
+    「10月」のように出るため月側は変更不要)が、年は言語に関わらず常に
+    プレーンな数字で、ヘッダーの並びも常に「月 年」の英語式固定のため、
+    日本語ロケールの時だけ「年 月」に並べ替え、年に「年」を付ける。
+    """
+    if not locale.startswith("ja"):
+        return
+    cal = entry._calendar
+    f_month = cal._header_month.master
+    f_year = cal._header_year.master
+    f_month.pack_forget()
+    f_year.pack_forget()
+    f_year.pack(side="left")
+    f_month.pack(side="left", fill="x")
+
+    def _update_year_suffix() -> None:
+        _, year = cal.get_displayed_month()
+        cal._header_year.configure(text=f"{year}年")
+
+    _hook_display_calendar(cal, _update_year_suffix)
+    _update_year_suffix()
 
 
 def _make_calendar_icon(size: int, color: str) -> Image.Image:
