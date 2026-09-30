@@ -2,9 +2,11 @@
 
 import customtkinter as ctk
 
+from app.i18n import t
+
 
 class ConfirmDialog(ctk.CTkToplevel):
-    def __init__(self, parent, title: str, message: str, confirm_label: str = "削除する"):
+    def __init__(self, parent, title: str, message: str, confirm_label: str | None = None):
         super().__init__(parent)
         self.title(title)
         self.geometry("380x180")
@@ -19,7 +21,7 @@ class ConfirmDialog(ctk.CTkToplevel):
         button_row.pack(pady=(0, 20))
         ctk.CTkButton(
             button_row,
-            text="キャンセル",
+            text=t("キャンセル"),
             fg_color="transparent",
             text_color=("gray10", "gray90"),
             hover_color=("gray85", "gray25"),
@@ -27,7 +29,7 @@ class ConfirmDialog(ctk.CTkToplevel):
         ).pack(side="left", padx=6)
         ctk.CTkButton(
             button_row,
-            text=confirm_label,
+            text=confirm_label if confirm_label is not None else t("削除する"),
             fg_color="#dc2626",
             hover_color="#b91c1c",
             command=self._on_confirm,
@@ -45,7 +47,7 @@ class ConfirmDialog(ctk.CTkToplevel):
         self.destroy()
 
 
-def ask_confirm(parent, title: str, message: str, confirm_label: str = "削除する") -> bool:
+def ask_confirm(parent, title: str, message: str, confirm_label: str | None = None) -> bool:
     dialog = ConfirmDialog(parent, title, message, confirm_label)
     parent.wait_window(dialog)
     return dialog.confirmed

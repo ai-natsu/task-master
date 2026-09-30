@@ -9,10 +9,10 @@ from app.constants import PRIORITIES
 from app.db.statuses import list_statuses
 from app.db.tags import create_tag, list_tags
 from app.db.tasks import list_tasks
+from app.i18n import t
 from app.logic.tree import build_task_tree, flatten_with_depth
 from app.ui import theme
-
-PRIORITY_LABELS = {"LOW": "低", "MEDIUM": "中", "HIGH": "高", "URGENT": "緊急"}
+from app.ui.widgets.badges import priority_label
 
 
 class TaskFormDialog(ctk.CTkToplevel):
@@ -23,7 +23,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         self.task = task
         self.result: dict | None = None
 
-        self.title("タスクを編集" if task else "新しいタスク")
+        self.title(t("タスクを編集") if task else t("新しいタスク"))
         self.geometry("480x680")
 
         statuses = list_statuses(conn)
@@ -37,25 +37,25 @@ class TaskFormDialog(ctk.CTkToplevel):
         scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
         scroll.pack(fill="both", expand=True, padx=20, pady=20)
 
-        ctk.CTkLabel(scroll, text="タイトル").pack(anchor="w")
+        ctk.CTkLabel(scroll, text=t("タイトル")).pack(anchor="w")
         self.title_entry = ctk.CTkEntry(scroll)
         self.title_entry.pack(fill="x", pady=(0, 12))
         self.title_entry.insert(0, task.title if task else "")
         self.title_entry.focus_set()
 
-        ctk.CTkLabel(scroll, text="説明").pack(anchor="w")
+        ctk.CTkLabel(scroll, text=t("説明")).pack(anchor="w")
         self.description_text = ctk.CTkTextbox(scroll, height=70)
         self.description_text.pack(fill="x", pady=(0, 12))
         if task and task.description:
             self.description_text.insert("1.0", task.description)
 
-        ctk.CTkLabel(scroll, text="ステータス").pack(anchor="w")
+        ctk.CTkLabel(scroll, text=t("ステータス")).pack(anchor="w")
         status_labels = {s.id: s.label for s in statuses}
         default_status = task.status if task else (statuses[0].id if statuses else "")
         self.status_var = ctk.StringVar(value=default_status)
         self.status_menu = ctk.CTkOptionMenu(
             scroll,
-            values=[s.label for s in statuses] or ["(ステータス未設定)"],
+            values=[s.label for s in statuses] or [t("(ステータス未設定)")],
             command=lambda label: self.status_var.set(
                 next((sid for sid, lbl in status_labels.items() if lbl == label), "")
             ),
@@ -64,33 +64,34 @@ class TaskFormDialog(ctk.CTkToplevel):
             self.status_menu.set(status_labels[default_status])
         self.status_menu.pack(fill="x", pady=(0, 12))
 
-        ctk.CTkLabel(scroll, text="優先度").pack(anchor="w")
+        ctk.CTkLabel(scroll, text=t("優先度")).pack(anchor="w")
         self.priority_var = ctk.StringVar(value=task.priority if task else "MEDIUM")
         self.priority_menu = ctk.CTkOptionMenu(
             scroll,
-            values=[PRIORITY_LABELS[p] for p in PRIORITIES],
+            values=[priority_label(p) for p in PRIORITIES],
             command=lambda label: self.priority_var.set(
-                next(p for p in PRIORITIES if PRIORITY_LABELS[p] == label)
+                next(p for p in PRIORITIES if priority_label(p) == label)
             ),
         )
-        self.priority_menu.set(PRIORITY_LABELS[self.priority_var.get()])
+        self.priority_menu.set(priority_label(self.priority_var.get()))
         self.priority_menu.pack(fill="x", pady=(0, 12))
 
         self.start_date_entry, self.start_date_enabled = self._build_date_field(
-            scroll, "開始日", task.start_date if task else None
+            scroll, t("開始日"), task.start_date if task else None
         )
         self.due_date_entry, self.due_date_enabled = self._build_date_field(
-            scroll, "期限", task.due_date if task else None
+            scroll, t("期限"), task.due_date if task else None
         )
 
-        ctk.CTkLabel(scroll, text="親タスク").pack(anchor="w")
-        self.parent_options: list[tuple[str | None, str]] = [(None, "(なし・最上位)")] + [
+        ctk.CTkLabel(scroll, text=t("親タスク")).pack(anchor="w")
+        no_parent_label = t("(なし・最上位)")
+        self.parent_options: list[tuple[str | None, str]] = [(None, no_parent_label)] + [
             (o.id, "　" * o.depth + o.title) for o in options
         ]
         current_parent_id = task.parent_id if task else parent_id
         current_label = next(
             (label for pid, label in self.parent_options if pid == current_parent_id),
-            "(なし・最上位)",
+            no_parent_label,
         )
         self.parent_menu = ctk.CTkOptionMenu(
             scroll, values=[label for _, label in self.parent_options]
@@ -98,7 +99,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         self.parent_menu.set(current_label)
         self.parent_menu.pack(fill="x", pady=(0, 12))
 
-        ctk.CTkLabel(scroll, text="タグ").pack(anchor="w")
+        ctk.CTkLabel(scroll, text=t("タグ")).pack(anchor="w")
         self.tag_row = ctk.CTkFrame(scroll, fg_color="transparent")
         self.tag_row.pack(fill="x", pady=(0, 4))
         selected_tag_ids = {t.id for t in (task.tags if task else [])}
@@ -108,15 +109,17 @@ class TaskFormDialog(ctk.CTkToplevel):
 
         new_tag_row = ctk.CTkFrame(scroll, fg_color="transparent")
         new_tag_row.pack(fill="x", pady=(0, 12))
-        self.new_tag_entry = ctk.CTkEntry(new_tag_row, placeholder_text="新しいタグ")
+        self.new_tag_entry = ctk.CTkEntry(new_tag_row, placeholder_text=t("新しいタグ"))
         self.new_tag_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
-        ctk.CTkButton(new_tag_row, text="追加", width=60, command=self._add_tag).pack(side="left")
+        ctk.CTkButton(new_tag_row, text=t("追加"), width=60, command=self._add_tag).pack(
+            side="left"
+        )
 
         button_row = ctk.CTkFrame(self, fg_color="transparent")
         button_row.pack(pady=(0, 20))
         ctk.CTkButton(
             button_row,
-            text="キャンセル",
+            text=t("キャンセル"),
             fg_color="transparent",
             text_color=("gray10", "gray90"),
             hover_color=("gray85", "gray25"),
@@ -124,7 +127,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         ).pack(side="left", padx=6)
         ctk.CTkButton(
             button_row,
-            text="保存" if task else "作成",
+            text=t("保存") if task else t("作成"),
             fg_color=theme.ACCENT,
             hover_color=theme.ACCENT_HOVER,
             command=self._submit,
@@ -173,7 +176,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         entry.bind("<Return>", _mark_enabled)
         entry.bind("<FocusOut>", _mark_enabled)
 
-        ctk.CTkCheckBox(row, text="設定する", variable=enabled_var).pack(side="left")
+        ctk.CTkCheckBox(row, text=t("設定する"), variable=enabled_var).pack(side="left")
         return entry, enabled_var
 
     def _add_tag_checkbox(self, tag_id: str, name: str, checked: bool) -> None:

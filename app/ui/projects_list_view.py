@@ -4,6 +4,7 @@ import customtkinter as ctk
 
 from app.db.projects import create_project, delete_project, list_projects, update_project
 from app.db.tasks import list_tasks
+from app.i18n import t
 from app.ui import theme
 from app.ui.widgets.confirm_dialog import ask_confirm
 from app.ui.widgets.project_form_dialog import ask_project_form
@@ -20,12 +21,12 @@ class ProjectsListView(ctk.CTkScrollableFrame):
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", pady=(0, 16))
         title = ctk.CTkLabel(
-            header, text="プロジェクト一覧", font=ctk.CTkFont(size=18, weight="bold")
+            header, text=t("プロジェクト一覧"), font=ctk.CTkFont(size=18, weight="bold")
         )
         title.pack(side="left")
         ctk.CTkButton(
             header,
-            text="+ 新しいプロジェクト",
+            text=t("+ 新しいプロジェクト"),
             fg_color=theme.ACCENT,
             hover_color=theme.ACCENT_HOVER,
             command=self._create,
@@ -33,7 +34,7 @@ class ProjectsListView(ctk.CTkScrollableFrame):
 
         ctk.CTkCheckBox(
             self,
-            text="アーカイブ済みも表示",
+            text=t("アーカイブ済みも表示"),
             variable=self._show_archived,
             command=self._refresh_list,
         ).pack(anchor="w", pady=(0, 12))
@@ -48,9 +49,9 @@ class ProjectsListView(ctk.CTkScrollableFrame):
 
         projects = list_projects(self.app.conn, include_archived=self._show_archived.get())
         if not projects:
-            ctk.CTkLabel(self.list_frame, text="プロジェクトがありません", text_color="gray").pack(
-                anchor="w"
-            )
+            ctk.CTkLabel(
+                self.list_frame, text=t("プロジェクトがありません"), text_color="gray"
+            ).pack(anchor="w")
             return
 
         for project in projects:
@@ -78,23 +79,23 @@ class ProjectsListView(ctk.CTkScrollableFrame):
             name_btn.pack(side="left")
             if project.archived:
                 ctk.CTkLabel(
-                    top, text="アーカイブ済み", fg_color="#e2e8f0", text_color="#475569",
+                    top, text=t("アーカイブ済み"), fg_color="#e2e8f0", text_color="#475569",
                     corner_radius=8, padx=8,
                 ).pack(side="left", padx=8)
 
             ctk.CTkButton(
-                top, text="編集", width=60, fg_color="transparent",
+                top, text=t("編集"), width=60, fg_color="transparent",
                 text_color=("gray10", "gray90"), hover_color=("gray85", "gray25"),
                 command=lambda p=project: self._edit(p),
             ).pack(side="right")
-            archive_label = "復元" if project.archived else "アーカイブ"
+            archive_label = t("復元") if project.archived else t("アーカイブ")
             ctk.CTkButton(
                 top, text=archive_label, width=70, fg_color="transparent",
                 text_color="#d97706", hover_color=("#fef3c7", "#451a03"),
                 command=lambda p=project: self._toggle_archive(p),
             ).pack(side="right")
             ctk.CTkButton(
-                top, text="削除", width=60, fg_color="transparent",
+                top, text=t("削除"), width=60, fg_color="transparent",
                 text_color="#dc2626", hover_color=("#fee2e2", "#450a0a"),
                 command=lambda p=project: self._delete(p),
             ).pack(side="right")
@@ -104,7 +105,10 @@ class ProjectsListView(ctk.CTkScrollableFrame):
                     row, text=project.description, text_color=theme.TEXT_MUTED, anchor="w"
                 ).pack(fill="x", padx=16)
             ctk.CTkLabel(
-                row, text=f"タスク {project.task_count} 件", text_color=theme.TEXT_MUTED, anchor="w"
+                row,
+                text=t("タスク {count} 件").format(count=project.task_count),
+                text_color=theme.TEXT_MUTED,
+                anchor="w",
             ).pack(fill="x", padx=16, pady=(0, 14))
 
     def _create(self) -> None:
@@ -135,8 +139,10 @@ class ProjectsListView(ctk.CTkScrollableFrame):
 
     def _delete(self, project) -> None:
         task_count = len(list_tasks(self.app.conn, project_id=project.id))
-        message = f"「{project.name}」を削除しますか？配下の{task_count}件のタスクも削除されます。"
-        if ask_confirm(self.app, "プロジェクトを削除", message):
+        message = t("「{name}」を削除しますか？配下の{count}件のタスクも削除されます。").format(
+            name=project.name, count=task_count
+        )
+        if ask_confirm(self.app, t("プロジェクトを削除"), message):
             delete_project(self.app.conn, project.id)
             self._refresh_list()
             self.app.sidebar.refresh_projects()

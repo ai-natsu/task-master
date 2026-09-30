@@ -2,6 +2,7 @@
 
 import customtkinter as ctk
 
+from app.i18n import t
 from app.ui import theme
 
 PALETTE = ["#6366f1", "#22c55e", "#ef4444", "#f59e0b", "#0ea5e9", "#a855f7", "#ec4899"]
@@ -10,24 +11,24 @@ PALETTE = ["#6366f1", "#22c55e", "#ef4444", "#f59e0b", "#0ea5e9", "#a855f7", "#e
 class ProjectFormDialog(ctk.CTkToplevel):
     def __init__(self, parent, initial: dict | None = None):
         super().__init__(parent)
-        self.title("プロジェクトを編集" if initial else "新しいプロジェクト")
+        self.title(t("プロジェクトを編集") if initial else t("新しいプロジェクト"))
         self.geometry("420x440")
         self.resizable(False, False)
         self.result: dict | None = None
         self._selected_color = (initial or {}).get("color", PALETTE[0])
 
-        ctk.CTkLabel(self, text="名前").pack(anchor="w", padx=20, pady=(20, 4))
+        ctk.CTkLabel(self, text=t("名前")).pack(anchor="w", padx=20, pady=(20, 4))
         self.name_entry = ctk.CTkEntry(self)
         self.name_entry.pack(fill="x", padx=20)
         self.name_entry.insert(0, (initial or {}).get("name", ""))
         self.name_entry.focus_set()
 
-        ctk.CTkLabel(self, text="説明").pack(anchor="w", padx=20, pady=(16, 4))
+        ctk.CTkLabel(self, text=t("説明")).pack(anchor="w", padx=20, pady=(16, 4))
         self.description_text = ctk.CTkTextbox(self, height=80)
         self.description_text.pack(fill="x", padx=20)
         self.description_text.insert("1.0", (initial or {}).get("description") or "")
 
-        ctk.CTkLabel(self, text="色").pack(anchor="w", padx=20, pady=(16, 4))
+        ctk.CTkLabel(self, text=t("色")).pack(anchor="w", padx=20, pady=(16, 4))
         swatch_row = ctk.CTkFrame(self, fg_color="transparent")
         swatch_row.pack(padx=20, anchor="w")
         self._swatch_buttons: dict[str, ctk.CTkButton] = {}
@@ -51,7 +52,7 @@ class ProjectFormDialog(ctk.CTkToplevel):
         button_row.pack(side="bottom", pady=20)
         ctk.CTkButton(
             button_row,
-            text="キャンセル",
+            text=t("キャンセル"),
             fg_color="transparent",
             text_color=("gray10", "gray90"),
             hover_color=("gray85", "gray25"),
@@ -59,7 +60,7 @@ class ProjectFormDialog(ctk.CTkToplevel):
         ).pack(side="left", padx=6)
         ctk.CTkButton(
             button_row,
-            text="保存" if initial else "作成",
+            text=t("保存") if initial else t("作成"),
             fg_color=theme.ACCENT,
             hover_color=theme.ACCENT_HOVER,
             command=self._submit,
