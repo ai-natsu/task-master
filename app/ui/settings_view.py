@@ -22,6 +22,7 @@ from app.db.statuses import (
     reorder_statuses,
     update_status,
 )
+from app.db.tags import count_tagged_tasks, create_tag, delete_tag, list_tags, update_tag
 from app.i18n import LANGUAGES, calendar_locale, get_language, set_language, t
 from app.ui import theme
 from app.ui.widgets.calendar_style import (
@@ -29,6 +30,7 @@ from app.ui.widgets.calendar_style import (
     apply_locale_header_format,
     apply_weekend_holiday_styles,
 )
+from app.ui.widgets.confirm_dialog import ask_confirm
 
 
 class SettingsView(ctk.CTkScrollableFrame):
@@ -36,8 +38,10 @@ class SettingsView(ctk.CTkScrollableFrame):
         super().__init__(master, fg_color="transparent")
         self.app = app
         self._new_color = "#f59e0b"
+        self._new_tag_color = "#94a3b8"
         self._status_rows: dict[str, ctk.CTkFrame] = {}
         self._holiday_rows: dict[str, ctk.CTkFrame] = {}
+        self._tag_rows: dict[str, ctk.CTkFrame] = {}
         self._build()
 
     def _build(self) -> None:
@@ -155,8 +159,46 @@ class SettingsView(ctk.CTkScrollableFrame):
         self.holiday_csv_result_label = ctk.CTkLabel(csv_row, text="", text_color=theme.TEXT_MUTED)
         self.holiday_csv_result_label.pack(side="left", padx=(12, 0))
 
+        # --- タグ -----------------------------------------------------------
+        ctk.CTkLabel(
+            self, text=t("タグ"), font=ctk.CTkFont(size=14, weight="bold")
+        ).pack(anchor="w", pady=(28, 4))
+        ctk.CTkLabel(
+            self,
+            text=t(
+                "タグを管理します。プロジェクトを問わず全体で共有されます。"
+                "新しいタグの作成もここから行えます。"
+            ),
+            text_color=theme.TEXT_MUTED,
+            anchor="w",
+            justify="left",
+            wraplength=640,
+        ).pack(anchor="w", pady=(0, 12))
+
+        self.tag_rows_frame = ctk.CTkFrame(self, fg_color="transparent", height=1)
+        self.tag_rows_frame.pack(fill="x")
+        self.tag_rows_frame.grid_columnconfigure(0, weight=1)
+
+        self.tag_error_label = ctk.CTkLabel(self, text="", text_color="#dc2626")
+        self.tag_error_label.pack(anchor="w", pady=(4, 0))
+
+        tag_add_row = ctk.CTkFrame(self, fg_color="transparent")
+        tag_add_row.pack(fill="x", pady=(16, 0))
+        self.new_tag_color_btn = ctk.CTkButton(
+            tag_add_row, text="", width=28, height=28, fg_color=self._new_tag_color,
+            hover_color=self._new_tag_color, corner_radius=14, command=self._pick_new_tag_color,
+        )
+        self.new_tag_color_btn.pack(side="left", padx=(0, 8))
+        self.new_tag_entry = ctk.CTkEntry(tag_add_row, placeholder_text=t("新しいタグ名"))
+        self.new_tag_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self.new_tag_entry.bind("<Return>", lambda _e: self._add_tag())
+        ctk.CTkButton(tag_add_row, text=t("追加"), width=60, command=self._add_tag).pack(
+            side="left"
+        )
+
         self._refresh()
         self._refresh_holidays()
+        self._refresh_tags()
 
     def _on_language_change(self, label: str) -> None:
         code = next(c for c, lbl in LANGUAGES.items() if lbl == label)
@@ -379,3 +421,104 @@ class SettingsView(ctk.CTkScrollableFrame):
         )
         self._refresh_holidays()
         self._refresh()
+
+    # --- タグ -----------------------------------------------------------------
+    def _refresh_tags(self) -> None:
+        self.tag_error_label.configure(text="")
+        tags = list_tags(self.app.conn)
+        current_ids = {tag.id for tag in tags}
+
+        for tag_id in list(self._tag_rows.keys()):
+            if tag_id not in current_ids:
+                self._tag_rows.pop(tag_id).destroy()
+
+        for index, tag in enumerate(tags):
+            row = self._tag_rows.get(tag.id)
+            if row is None:
+                row = self._build_tag_row(tag.id)
+                self._tag_rows[tag.id] = row
+            self._update_tag_row(row, tag, index)
+
+    def _build_tag_row(self, tag_id: str) -> ctk.CTkFrame:
+        row = ctk.CTkFrame(self.tag_rows_frame, fg_color="transparent")
+
+        row.color_btn = ctk.CTkButton(
+            row, text="", width=28, height=28, corner_radius=14,
+            command=lambda: self._pick_tag_color(tag_id),
+        )
+        row.color_btn.pack(side="left", padx=(0, 8))
+
+        row.entry = ctk.CTkEntry(row)
+        row.entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        row.entry.bind("<Return>", lambda _e: self._rename_tag(tag_id, row.entry))
+        row.entry.bind("<FocusOut>", lambda _e: self._rename_tag(tag_id, row.entry))
+
+        row.delete_btn = ctk.CTkButton(
+            row, text=t("削除"), width=50, fg_color="transparent",
+            text_color="#dc2626", hover_color=("#fee2e2", "#450a0a"),
+            command=lambda: self._delete_tag(tag_id),
+        )
+        row.delete_btn.pack(side="left")
+        return row
+
+    def _update_tag_row(self, row: ctk.CTkFrame, tag, index: int) -> None:
+        row.grid(row=index, column=0, sticky="ew", pady=2)
+        row.color_btn.configure(fg_color=tag.color, hover_color=tag.color)
+        if self.focus_get() is not row.entry and row.entry.get() != tag.name:
+            row.entry.delete(0, "end")
+            row.entry.insert(0, tag.name)
+
+    def _rename_tag(self, tag_id: str, entry: ctk.CTkEntry) -> None:
+        new_name = entry.get().strip()
+        current = next((tag for tag in list_tags(self.app.conn) if tag.id == tag_id), None)
+        if current is None:
+            return
+        if not new_name or new_name == current.name:
+            entry.delete(0, "end")
+            entry.insert(0, current.name)
+            return
+        try:
+            update_tag(self.app.conn, tag_id, name=new_name)
+        except ConflictError as exc:
+            self.tag_error_label.configure(text=t(str(exc)))
+            entry.delete(0, "end")
+            entry.insert(0, current.name)
+
+    def _pick_tag_color(self, tag_id: str) -> None:
+        current = next((tag for tag in list_tags(self.app.conn) if tag.id == tag_id), None)
+        if current is None:
+            return
+        _, hex_color = colorchooser.askcolor(color=current.color, parent=self.app)
+        if hex_color:
+            update_tag(self.app.conn, tag_id, color=hex_color)
+            self._refresh_tags()
+
+    def _pick_new_tag_color(self) -> None:
+        _, hex_color = colorchooser.askcolor(color=self._new_tag_color, parent=self.app)
+        if hex_color:
+            self._new_tag_color = hex_color
+            self.new_tag_color_btn.configure(fg_color=hex_color, hover_color=hex_color)
+
+    def _add_tag(self) -> None:
+        name = self.new_tag_entry.get().strip()
+        if not name:
+            return
+        try:
+            create_tag(self.app.conn, name, color=self._new_tag_color)
+        except ConflictError as exc:
+            self.tag_error_label.configure(text=t(str(exc)))
+            return
+        self.new_tag_entry.delete(0, "end")
+        self._refresh_tags()
+
+    def _delete_tag(self, tag_id: str) -> None:
+        current = next((tag for tag in list_tags(self.app.conn) if tag.id == tag_id), None)
+        if current is None:
+            return
+        count = count_tagged_tasks(self.app.conn, tag_id)
+        message = t(
+            "「{name}」タグを削除しますか？{count}件のタスクからこのタグが外れます。"
+        ).format(name=current.name, count=count)
+        if ask_confirm(self.app, t("タグを削除"), message):
+            delete_tag(self.app.conn, tag_id)
+            self._refresh_tags()
