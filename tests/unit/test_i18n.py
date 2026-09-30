@@ -31,3 +31,9 @@ def test_translates_known_key_when_language_is_english(monkeypatch):
 def test_set_language_rejects_unknown_code():
     with pytest.raises(ValueError):
         i18n.set_language("fr")
+
+
+def test_calendar_locale_follows_current_language():
+    assert i18n.calendar_locale() == "ja_JP"
+    i18n.set_language("en")
+    assert i18n.calendar_locale() == "en_US"

@@ -22,9 +22,12 @@ from app.db.statuses import (
     reorder_statuses,
     update_status,
 )
-from app.i18n import LANGUAGES, get_language, set_language, t
+from app.i18n import LANGUAGES, calendar_locale, get_language, set_language, t
 from app.ui import theme
-from app.ui.widgets.calendar_style import apply_weekend_holiday_styles
+from app.ui.widgets.calendar_style import (
+    apply_calendar_dropdown_icon,
+    apply_weekend_holiday_styles,
+)
 
 
 class SettingsView(ctk.CTkScrollableFrame):
@@ -124,8 +127,9 @@ class SettingsView(ctk.CTkScrollableFrame):
         holiday_add_row.pack(fill="x", pady=(12, 0))
         self.new_holiday_date = DateEntry(
             holiday_add_row, date_pattern="yyyy-mm-dd", width=10,
-            font=(theme.FONT_FAMILY, 11),
+            font=(theme.FONT_FAMILY, 11), locale=calendar_locale(),
         )
+        apply_calendar_dropdown_icon(self.new_holiday_date)
         apply_weekend_holiday_styles(
             self.new_holiday_date, lambda: {h.date for h in list_holidays(self.app.conn)}
         )
