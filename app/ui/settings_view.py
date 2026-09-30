@@ -1,10 +1,19 @@
-"""設定画面：ステータス遷移管理（旧 client/src/pages/Settings.tsx の移植）。"""
+"""設定画面：ステータス遷移・祝日管理（旧 client/src/pages/Settings.tsx の移植）。"""
 
 import tkinter.colorchooser as colorchooser
+import tkinter.filedialog as filedialog
 
 import customtkinter as ctk
+from tkcalendar import DateEntry
 
-from app.db.errors import ConflictError
+from app.db.errors import ConflictError, ValidationError
+from app.db.holidays import (
+    bulk_upsert_holidays,
+    delete_holiday,
+    list_holidays,
+    parse_holiday_csv,
+    upsert_holiday,
+)
 from app.db.statuses import (
     create_status,
     delete_status,
@@ -21,6 +30,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         self.app = app
         self._new_color = "#f59e0b"
         self._status_rows: dict[str, ctk.CTkFrame] = {}
+        self._holiday_rows: dict[str, ctk.CTkFrame] = {}
         self._build()
 
     def _build(self) -> None:
@@ -61,7 +71,65 @@ class SettingsView(ctk.CTkScrollableFrame):
         self.new_label_entry.bind("<Return>", lambda _e: self._add_status())
         ctk.CTkButton(add_row, text="追加", width=60, command=self._add_status).pack(side="left")
 
+        # --- 祝日 ---------------------------------------------------------
+        ctk.CTkLabel(
+            self, text="祝日", font=ctk.CTkFont(size=14, weight="bold")
+        ).pack(anchor="w", pady=(28, 4))
+        ctk.CTkLabel(
+            self,
+            text=(
+                "祝日を登録します。ガントチャート等での休日表示に使われます。"
+                "日付が同じ行はCSV取り込み時に更新されます。"
+            ),
+            text_color=theme.TEXT_MUTED,
+            anchor="w",
+            justify="left",
+            wraplength=640,
+        ).pack(anchor="w", pady=(0, 12))
+
+        holiday_header = ctk.CTkFrame(self, fg_color="transparent")
+        holiday_header.pack(fill="x", padx=(38, 0))
+        ctk.CTkLabel(
+            holiday_header, text="日付", text_color=theme.TEXT_MUTED, width=110, anchor="w",
+        ).pack(side="left")
+        ctk.CTkLabel(
+            holiday_header, text="名称", text_color=theme.TEXT_MUTED, anchor="w",
+        ).pack(side="left", fill="x", expand=True)
+
+        self.holiday_rows_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.holiday_rows_frame.pack(fill="x")
+        self.holiday_rows_frame.grid_columnconfigure(0, weight=1)
+
+        self.holiday_error_label = ctk.CTkLabel(self, text="", text_color="#dc2626")
+        self.holiday_error_label.pack(anchor="w", pady=(4, 0))
+
+        holiday_add_row = ctk.CTkFrame(self, fg_color="transparent")
+        holiday_add_row.pack(fill="x", pady=(12, 0))
+        self.new_holiday_date = DateEntry(
+            holiday_add_row, date_pattern="yyyy-mm-dd", width=10,
+            font=(theme.FONT_FAMILY, 11),
+        )
+        self.new_holiday_date.pack(side="left", padx=(0, 8))
+        self.new_holiday_name_entry = ctk.CTkEntry(
+            holiday_add_row, placeholder_text="新しい祝日名"
+        )
+        self.new_holiday_name_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self.new_holiday_name_entry.bind("<Return>", lambda _e: self._add_holiday())
+        ctk.CTkButton(
+            holiday_add_row, text="追加", width=60, command=self._add_holiday
+        ).pack(side="left")
+
+        csv_row = ctk.CTkFrame(self, fg_color="transparent")
+        csv_row.pack(fill="x", pady=(8, 0))
+        ctk.CTkButton(
+            csv_row, text="CSVから読み込む", fg_color=theme.ACCENT,
+            hover_color=theme.ACCENT_HOVER, command=self._import_holiday_csv,
+        ).pack(side="left")
+        self.holiday_csv_result_label = ctk.CTkLabel(csv_row, text="", text_color=theme.TEXT_MUTED)
+        self.holiday_csv_result_label.pack(side="left", padx=(12, 0))
+
         self._refresh()
+        self._refresh_holidays()
 
     def _refresh(self) -> None:
         self.error_label.configure(text="")
@@ -186,4 +254,94 @@ class SettingsView(ctk.CTkScrollableFrame):
         except ConflictError as exc:
             self.error_label.configure(text=str(exc))
             return
+        self._refresh()
+
+    # --- 祝日 ---------------------------------------------------------------
+    def _refresh_holidays(self) -> None:
+        self.holiday_error_label.configure(text="")
+        holidays = list_holidays(self.app.conn)
+        current_ids = {h.id for h in holidays}
+
+        for hid in list(self._holiday_rows.keys()):
+            if hid not in current_ids:
+                self._holiday_rows.pop(hid).destroy()
+
+        for index, holiday in enumerate(holidays):
+            row = self._holiday_rows.get(holiday.id)
+            if row is None:
+                row = self._build_holiday_row(holiday.id)
+                self._holiday_rows[holiday.id] = row
+            self._update_holiday_row(row, holiday, index)
+
+    def _build_holiday_row(self, holiday_id: str) -> ctk.CTkFrame:
+        row = ctk.CTkFrame(self.holiday_rows_frame, fg_color="transparent")
+
+        row.date_label = ctk.CTkLabel(row, width=110, anchor="w")
+        row.date_label.pack(side="left")
+
+        row.name_entry = ctk.CTkEntry(row)
+        row.name_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        row.name_entry.bind("<Return>", lambda _e: self._rename_holiday(holiday_id, row.name_entry))
+        row.name_entry.bind(
+            "<FocusOut>", lambda _e: self._rename_holiday(holiday_id, row.name_entry)
+        )
+
+        row.delete_btn = ctk.CTkButton(
+            row, text="削除", width=50, fg_color="transparent",
+            text_color="#dc2626", hover_color=("#fee2e2", "#450a0a"),
+            command=lambda: self._delete_holiday(holiday_id),
+        )
+        row.delete_btn.pack(side="left")
+        return row
+
+    def _update_holiday_row(self, row: ctk.CTkFrame, holiday, index: int) -> None:
+        row.grid(row=index, column=0, sticky="ew", pady=2)
+        row.date_label.configure(text=holiday.date)
+        if self.focus_get() is not row.name_entry and row.name_entry.get() != holiday.name:
+            row.name_entry.delete(0, "end")
+            row.name_entry.insert(0, holiday.name)
+
+    def _rename_holiday(self, holiday_id: str, entry: ctk.CTkEntry) -> None:
+        new_name = entry.get().strip()
+        current = next((h for h in list_holidays(self.app.conn) if h.id == holiday_id), None)
+        if current is None:
+            return
+        if not new_name or new_name == current.name:
+            entry.delete(0, "end")
+            entry.insert(0, current.name)
+            return
+        upsert_holiday(self.app.conn, current.date, new_name)
+
+    def _add_holiday(self) -> None:
+        name = self.new_holiday_name_entry.get().strip()
+        if not name:
+            return
+        date = self.new_holiday_date.get_date().isoformat()
+        upsert_holiday(self.app.conn, date, name)
+        self.new_holiday_name_entry.delete(0, "end")
+        self._refresh_holidays()
+
+    def _delete_holiday(self, holiday_id: str) -> None:
+        delete_holiday(self.app.conn, holiday_id)
+        self._refresh_holidays()
+
+    def _import_holiday_csv(self) -> None:
+        path = filedialog.askopenfilename(
+            title="祝日CSVを選択",
+            filetypes=[("CSVファイル", "*.csv"), ("すべてのファイル", "*.*")],
+        )
+        if not path:
+            return
+        with open(path, "rb") as f:
+            raw_bytes = f.read()
+        try:
+            rows = parse_holiday_csv(raw_bytes)
+        except ValidationError as exc:
+            self.holiday_csv_result_label.configure(text=str(exc), text_color="#dc2626")
+            return
+        count = bulk_upsert_holidays(self.app.conn, rows)
+        self.holiday_csv_result_label.configure(
+            text=f"{count} 件を登録・更新しました", text_color=theme.TEXT_MUTED
+        )
+        self._refresh_holidays()
         self._refresh()

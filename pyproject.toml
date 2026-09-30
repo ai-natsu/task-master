@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "customtkinter>=5.2",
     "tkcalendar>=1.6",
+    "charset-normalizer>=3.3",
 ]
 
 [project.optional-dependencies]
