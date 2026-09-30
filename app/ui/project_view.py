@@ -83,7 +83,7 @@ class ProjectView(ctk.CTkFrame):
         self.filter_bar = FilterBar(self, app=self.app, on_change=self._on_filters_changed)
         self.filter_bar.grid(row=1, column=0, sticky="ew", pady=(0, 12))
 
-        self.stats_row = ctk.CTkFrame(self, fg_color="transparent")
+        self.stats_row = ctk.CTkFrame(self, fg_color="transparent", height=1)
         self.stats_row.grid(row=2, column=0, sticky="ew")
 
         self._show_view(self.view_mode)
@@ -101,6 +101,9 @@ class ProjectView(ctk.CTkFrame):
             if self._stats_panel is not None:
                 self._stats_panel.destroy()
                 self._stats_panel = None
+            # destroy後もgridの伝播だけでは高さが縮まないため、明示的に
+            # 最小化して隠す前の余白(パネル表示時の高さ)が残らないようにする。
+            self.stats_row.configure(height=1)
 
     def _on_filters_changed(self, filters: dict) -> None:
         if self._body is not None:
