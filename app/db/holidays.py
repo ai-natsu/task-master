@@ -9,6 +9,8 @@ import datetime
 import io
 import sqlite3
 
+from charset_normalizer import from_bytes as detect_charset
+
 from app.db.connection import generate_id
 from app.db.errors import NotFoundError, ValidationError
 from app.models import Holiday
@@ -62,20 +64,20 @@ def parse_holiday_csv(raw_bytes: bytes) -> list[tuple[str, str]]:
     """CSVバイト列を (date, name) のリストへ変換する。
 
     列順は「日付, 名称」固定。日付が解釈できない先頭行はヘッダーとして
-    読み飛ばす。文字コードはUTF-8(BOM可)を優先し、失敗時はShift-JIS
-    (内閣府の祝日CSV等で使われる)を試す。
+    読み飛ばす。文字コードはcharset-normalizerの判定結果をそのまま使う
+    （UTF-8/Shift-JISの決め打ち判定はしない）。ごく短いファイルでは
+    誤判定の可能性がある（実機検証済み、詳細はコミットメッセージ参照）。
     """
-    for encoding in ("utf-8-sig", "cp932"):
-        try:
-            text = raw_bytes.decode(encoding)
-            break
-        except UnicodeDecodeError:
-            continue
-    else:
+    detected = detect_charset(raw_bytes).best()
+    if detected is None:
         raise ValidationError("CSVの文字コードを判定できませんでした")
+    text = str(detected)
 
     rows: list[tuple[str, str]] = []
-    for cells in csv.reader(io.StringIO(text)):
+    # newline='' が無いと、旧Mac式の"\r"のみの改行を含むファイルで
+    # 「new-line character seen in unquoted field」エラーになる（実機検証済み）。
+    # \n・\r\n は newline 指定の有無に関わらずcsvモジュールが正しく解釈する。
+    for cells in csv.reader(io.StringIO(text, newline="")):
         if len(cells) < 2:
             continue
         date = _parse_date(cells[0])
