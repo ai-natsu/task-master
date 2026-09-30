@@ -12,8 +12,9 @@ import customtkinter as ctk
 
 from app.db.holidays import list_holidays
 from app.db.statuses import list_statuses
-from app.db.tasks import create_task, list_tasks, update_task
+from app.db.tasks import create_task, list_tasks, reorder_tasks, update_task
 from app.i18n import t
+from app.logic.dnd import plan_tree_drag
 from app.logic.gantt import compute_bar, compute_months, compute_range
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
@@ -36,6 +37,8 @@ class GanttChartWidget(ctk.CTkFrame):
         self.filters = filters or {}
         self._range_start: datetime.date | None = None
         self._drag: dict | None = None
+        self._rows_cache: list = []
+        self._row_drag_id: str | None = None
 
         self.canvas = tk.Canvas(self, highlightthickness=0, background="#ffffff")
         h_scroll = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
@@ -132,6 +135,7 @@ class GanttChartWidget(ctk.CTkFrame):
         self, rows, statuses, days, range_start, today_offset, total_width,
         holiday_dates: set[str],
     ) -> None:
+        self._rows_cache = rows
         row_top = HEADER_H + SUBHEADER_H
         for index, flat in enumerate(rows):
             task = flat.node.task
@@ -189,8 +193,38 @@ class GanttChartWidget(ctk.CTkFrame):
                     bar_item, "<Leave>", lambda _e: self.canvas.configure(cursor="")
                 )
 
-            self.canvas.tag_bind(label_bg, "<Button-1>", lambda _e, tk_=task: self._edit(tk_))
-            self.canvas.tag_bind(label_text, "<Button-1>", lambda _e, tk_=task: self._edit(tk_))
+            for label_item in (label_bg, label_text):
+                self.canvas.tag_bind(
+                    label_item, "<ButtonPress-1>",
+                    lambda _e, tk_=task: self._on_row_press(tk_),
+                )
+                self.canvas.tag_bind(label_item, "<ButtonRelease-1>", self._on_row_release)
+                self.canvas.tag_bind(
+                    label_item, "<Double-Button-1>", lambda _e, tk_=task: self._edit(tk_)
+                )
+
+    # --- 行ラベルのドラッグ（上下の並べ替え、同じ親配下のみ） -------------------
+    def _on_row_press(self, task) -> None:
+        self._row_drag_id = task.id
+
+    def _on_row_release(self, event) -> None:
+        if not self._row_drag_id:
+            return
+        active_id, self._row_drag_id = self._row_drag_id, None
+        row_top = HEADER_H + SUBHEADER_H
+        index = int((event.y - row_top) // ROW_H)
+        if not (0 <= index < len(self._rows_cache)):
+            return
+        target_task = self._rows_cache[index].node.task
+        if target_task.id == active_id:
+            return
+
+        tasks = list_tasks(self.app.conn, project_id=self.project_id)
+        plan = plan_tree_drag(tasks, active_id, target_task.id)
+        if plan.get("reorder"):
+            reorder_tasks(self.app.conn, plan["reorder"])
+            self.refresh()
+            self.on_change()
 
     # --- ガントバーのドラッグ（平行移動・端のリサイズ） -------------------
     def _bar_mode_at(self, event_x: float, x0: float, x1: float) -> str:
