@@ -24,6 +24,7 @@ from app.db.statuses import (
 )
 from app.i18n import LANGUAGES, get_language, set_language, t
 from app.ui import theme
+from app.ui.widgets.calendar_style import apply_weekend_holiday_styles
 
 
 class SettingsView(ctk.CTkScrollableFrame):
@@ -124,6 +125,9 @@ class SettingsView(ctk.CTkScrollableFrame):
         self.new_holiday_date = DateEntry(
             holiday_add_row, date_pattern="yyyy-mm-dd", width=10,
             font=(theme.FONT_FAMILY, 11),
+        )
+        apply_weekend_holiday_styles(
+            self.new_holiday_date, lambda: {h.date for h in list_holidays(self.app.conn)}
         )
         self.new_holiday_date.pack(side="left", padx=(0, 8))
         self.new_holiday_name_entry = ctk.CTkEntry(

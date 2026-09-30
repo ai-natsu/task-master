@@ -10,6 +10,7 @@ import tkinter as tk
 
 import customtkinter as ctk
 
+from app.db.holidays import list_holidays
 from app.db.statuses import list_statuses
 from app.db.tasks import create_task, list_tasks, update_task
 from app.i18n import t
@@ -73,13 +74,17 @@ class GanttChartWidget(ctk.CTkFrame):
         months = compute_months(days)
         today_offset = (today - gantt_range.range_start).days
         self._range_start = gantt_range.range_start
+        holiday_dates = {h.date for h in list_holidays(self.app.conn)}
 
         total_width = LABEL_W + len(days) * DAY_W
         total_height = HEADER_H + SUBHEADER_H + len(rows) * ROW_H
 
         self._draw_month_header(months)
-        self._draw_day_header(days, today)
-        self._draw_rows(rows, statuses, days, gantt_range.range_start, today_offset, total_width)
+        self._draw_day_header(days, today, holiday_dates)
+        self._draw_rows(
+            rows, statuses, days, gantt_range.range_start, today_offset, total_width,
+            holiday_dates,
+        )
 
         self.canvas.configure(scrollregion=(0, 0, total_width, total_height))
 
@@ -99,7 +104,7 @@ class GanttChartWidget(ctk.CTkFrame):
             )
             x += w
 
-    def _draw_day_header(self, days, today) -> None:
+    def _draw_day_header(self, days, today, holiday_dates: set[str]) -> None:
         y0 = HEADER_H
         self.canvas.create_rectangle(
             0, y0, LABEL_W, y0 + SUBHEADER_H, fill="#ffffff", outline="#e2e8f0"
@@ -108,7 +113,7 @@ class GanttChartWidget(ctk.CTkFrame):
             dx = LABEL_W + i * DAY_W
             dow = d.weekday()
             bg, fg = None, "#94a3b8"
-            if dow == 6:
+            if dow == 6 or d.isoformat() in holiday_dates:
                 bg, fg = "#fef2f2", "#f87171"
             elif dow == 5:
                 bg, fg = "#eff6ff", "#60a5fa"
@@ -123,7 +128,10 @@ class GanttChartWidget(ctk.CTkFrame):
                 font=(theme.FONT_FAMILY, 8),
             )
 
-    def _draw_rows(self, rows, statuses, days, range_start, today_offset, total_width) -> None:
+    def _draw_rows(
+        self, rows, statuses, days, range_start, today_offset, total_width,
+        holiday_dates: set[str],
+    ) -> None:
         row_top = HEADER_H + SUBHEADER_H
         for index, flat in enumerate(rows):
             task = flat.node.task
@@ -148,11 +156,12 @@ class GanttChartWidget(ctk.CTkFrame):
 
             for i, d in enumerate(days):
                 dow = d.weekday()
-                if dow in (5, 6):
+                is_holiday = dow == 6 or d.isoformat() in holiday_dates
+                if is_holiday or dow == 5:
                     dx = LABEL_W + i * DAY_W
                     self.canvas.create_rectangle(
                         dx, row_y, dx + DAY_W, row_y + ROW_H,
-                        fill="#f8fafc" if dow == 5 else "#fef9f9", outline="",
+                        fill="#fef9f9" if is_holiday else "#f8fafc", outline="",
                     )
             self.canvas.create_line(0, row_y + ROW_H, total_width, row_y + ROW_H, fill="#f1f5f9")
 

@@ -6,6 +6,7 @@ import customtkinter as ctk
 from tkcalendar import DateEntry
 
 from app.constants import PRIORITIES
+from app.db.holidays import list_holidays
 from app.db.statuses import list_statuses
 from app.db.tags import create_tag, list_tags
 from app.db.tasks import list_tasks
@@ -13,6 +14,7 @@ from app.i18n import t
 from app.logic.tree import build_task_tree, flatten_with_depth
 from app.ui import theme
 from app.ui.widgets.badges import priority_label
+from app.ui.widgets.calendar_style import apply_weekend_holiday_styles
 
 
 class TaskFormDialog(ctk.CTkToplevel):
@@ -163,6 +165,9 @@ class TaskFormDialog(ctk.CTkToplevel):
             except ValueError:
                 pass
         entry.pack(side="left", padx=(0, 10), ipady=2)
+        apply_weekend_holiday_styles(
+            entry, lambda: {h.date for h in list_holidays(self.conn)}
+        )
 
         enabled_var = ctk.BooleanVar(value=initial is not None)
         # カレンダーから選択した場合は<<DateEntrySelected>>が発火するが、
