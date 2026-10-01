@@ -42,8 +42,10 @@ class FilterBar(ctk.CTkFrame):
             text=t("クリア"),
             width=50,
             fg_color="transparent",
-            text_color=("gray40", "gray60"),
-            hover_color=("gray85", "gray25"),
+            text_color="#dc2626",
+            hover_color=("#fee2e2", "#450a0a"),
+            border_width=1,
+            border_color="#dc2626",
             command=self.clear,
         ).pack(side="left", padx=(8, 0))
 
