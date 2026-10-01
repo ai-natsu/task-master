@@ -88,10 +88,15 @@ class TaskFormDialog(ctk.CTkToplevel):
 
         dates_row = ctk.CTkFrame(scroll, fg_color="transparent")
         dates_row.pack(fill="x")
+        # 単純にpack(side="left", expand=True)を2つ並べるだけだと、両者の
+        # 合計幅が収まりきらない時に後から詰んだ方(期限側)だけが極端に
+        # 狭くなり中身が見切れる。grid+uniformで強制的に等幅にする。
+        dates_row.grid_columnconfigure(0, weight=1, uniform="date_col")
+        dates_row.grid_columnconfigure(1, weight=1, uniform="date_col")
         start_col = ctk.CTkFrame(dates_row, fg_color="transparent")
-        start_col.pack(side="left", fill="both", expand=True, padx=(0, 8))
+        start_col.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
         due_col = ctk.CTkFrame(dates_row, fg_color="transparent")
-        due_col.pack(side="left", fill="both", expand=True)
+        due_col.grid(row=0, column=1, sticky="nsew")
 
         self.start_date_entry, self.start_date_enabled = self._build_date_field(
             start_col, t("開始日"), task.start_date if task else None
@@ -177,7 +182,7 @@ class TaskFormDialog(ctk.CTkToplevel):
 
         DateEntryはカレンダーアイコンをクリックしてのピッカー選択に加えて、
         テキスト欄に直接 "YYYY-MM-DD" 形式で入力(上書き)することもできる
-        （末尾のEnter/フォーカス移動で確定）。「設定する」が外れている間は
+        （末尾のEnter/フォーカス移動で確定）。「有効」が外れている間は
         入力欄を無効化(グレーアウト)し、操作できないようにする。日付は必須
         項目ではないため、チェックを外すとその項目はNoneになる。
         """
@@ -220,7 +225,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         entry.bind("<FocusOut>", _mark_enabled)
 
         ctk.CTkCheckBox(
-            row, text=t("設定する"), variable=enabled_var, command=_apply_entry_state
+            row, text=t("有効"), variable=enabled_var, command=_apply_entry_state
         ).pack(side="left")
         _apply_entry_state()
         return entry, enabled_var

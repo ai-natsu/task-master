@@ -31,7 +31,7 @@ class FilterBar(ctk.CTkFrame):
             self, placeholder_text=t("タスクを検索..."), width=200
         )
         self.search_entry.pack(side="left", padx=(0, 8))
-        self.search_entry.bind("<KeyRelease>", lambda _e: self._notify())
+        self.search_entry.bind("<Return>", lambda _e: self._notify())
 
         self.status_menu = self._build_menu(self._status_options)
         self.priority_menu = self._build_menu(self._priority_options)
@@ -42,7 +42,7 @@ class FilterBar(ctk.CTkFrame):
             text=t("クリア"),
             width=50,
             fg_color="transparent",
-            text_color=("gray40", "gray60"),
+            text_color=("gray10", "gray90"),
             hover_color=("gray85", "gray25"),
             command=self.clear,
         ).pack(side="left", padx=(8, 0))
