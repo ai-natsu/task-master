@@ -88,8 +88,16 @@ class GanttChartWidget(ctk.CTkFrame):
             rows, statuses, days, gantt_range.range_start, today_offset, total_width,
             holiday_dates,
         )
+        self._draw_vertical_gridlines(days, total_height)
 
         self.canvas.configure(scrollregion=(0, 0, total_width, total_height))
+
+    def _draw_vertical_gridlines(self, days, total_height) -> None:
+        grid_top = HEADER_H + SUBHEADER_H
+        self.canvas.create_line(LABEL_W, 0, LABEL_W, total_height, fill="#e2e8f0")
+        for i in range(len(days) + 1):
+            x = LABEL_W + i * DAY_W
+            self.canvas.create_line(x, grid_top, x, total_height, fill="#e2e8f0")
 
     def _draw_month_header(self, months) -> None:
         heading_font = (theme.FONT_FAMILY, 10, "bold")
@@ -167,7 +175,7 @@ class GanttChartWidget(ctk.CTkFrame):
                         dx, row_y, dx + DAY_W, row_y + ROW_H,
                         fill="#fef9f9" if is_holiday else "#f8fafc", outline="",
                     )
-            self.canvas.create_line(0, row_y + ROW_H, total_width, row_y + ROW_H, fill="#f1f5f9")
+            self.canvas.create_line(0, row_y + ROW_H, total_width, row_y + ROW_H, fill="#e2e8f0")
 
             if 0 <= today_offset < len(days):
                 tx = LABEL_W + today_offset * DAY_W + DAY_W / 2
