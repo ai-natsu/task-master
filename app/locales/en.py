@@ -63,6 +63,7 @@ TRANSLATIONS: dict[str, str] = {
     "統計を表示": "Show Stats",
     "統計を隠す": "Hide Stats",
     "ここにドロップ": "Drop here",
+    "期限: {date}": "Due: {date}",
     # --- 統計内訳 -----------------------------------------------------------
     "ステータス別": "By Status",
     "優先度別": "By Priority",
