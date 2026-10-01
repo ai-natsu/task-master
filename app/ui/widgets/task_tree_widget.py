@@ -200,7 +200,9 @@ class TaskTreeWidget(ctk.CTkFrame):
                 priority_overlay.configure(
                     text=priority_label(task.priority), fg=fg, bg=theme.CARD_BG[0]
                 )
-                priority_overlay.place(in_=self.tree, x=x, y=y, width=w, height=h)
+                # 行下端の罫線(_draw_grid_linesがy+h-1に描く1px線)を覆って
+                # 隠してしまわないよう、オーバーレイの高さを1px短くする。
+                priority_overlay.place(in_=self.tree, x=x, y=y, width=w, height=h - 1)
             else:
                 priority_overlay.place_forget()
 
@@ -211,7 +213,7 @@ class TaskTreeWidget(ctk.CTkFrame):
                 status_overlay.configure(
                     text=status.label, fg=status.color, bg=theme.CARD_BG[0]
                 )
-                status_overlay.place(in_=self.tree, x=x, y=y, width=w, height=h)
+                status_overlay.place(in_=self.tree, x=x, y=y, width=w, height=h - 1)
             else:
                 status_overlay.place_forget()
 
