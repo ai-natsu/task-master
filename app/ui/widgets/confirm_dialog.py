@@ -3,13 +3,18 @@
 import customtkinter as ctk
 
 from app.i18n import t
+from app.ui import theme
 
 
 class ConfirmDialog(ctk.CTkToplevel):
     def __init__(self, parent, title: str, message: str, confirm_label: str | None = None):
         super().__init__(parent)
         self.title(title)
-        self.geometry("380x180")
+        # 固定サイズ("380x180"等)にすると、メッセージが長い場合に折り返した
+        # 文章がウィンドウからはみ出して見切れてしまう(DPI拡大率によっては
+        # wraplengthとウィンドウ幅の対応がずれてさらに顕著になる)。ウィンドウ
+        # サイズを指定せず、折り返し済みラベルの実サイズに合わせて自動算出
+        # させることで、メッセージの長さによらず常に収まるようにする。
         self.resizable(False, False)
         self.confirmed = False
 
@@ -30,8 +35,8 @@ class ConfirmDialog(ctk.CTkToplevel):
         ctk.CTkButton(
             button_row,
             text=confirm_label if confirm_label is not None else t("削除する"),
-            fg_color="#dc2626",
-            hover_color="#b91c1c",
+            fg_color=theme.ACCENT,
+            hover_color=theme.ACCENT_HOVER,
             command=self._on_confirm,
         ).pack(side="left", padx=6)
 
