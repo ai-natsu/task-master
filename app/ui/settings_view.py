@@ -83,7 +83,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         self.error_label.pack(anchor="w", pady=(4, 0))
 
         add_row = ctk.CTkFrame(self, fg_color="transparent")
-        add_row.pack(fill="x", pady=(16, 0))
+        add_row.pack(fill="x", pady=(10, 0))
         self.new_color_btn = ctk.CTkButton(
             add_row, text="", width=28, height=28, fg_color=self._new_color,
             hover_color=self._new_color, corner_radius=14, command=self._pick_new_color,
@@ -129,7 +129,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         self.holiday_error_label.pack(anchor="w", pady=(4, 0))
 
         holiday_add_row = ctk.CTkFrame(self, fg_color="transparent")
-        holiday_add_row.pack(fill="x", pady=(12, 0))
+        holiday_add_row.pack(fill="x", pady=(10, 0))
         holiday_date_locale = calendar_locale()
         self.new_holiday_date = DateEntry(
             holiday_add_row, date_pattern="yyyy-mm-dd", width=10,
@@ -183,7 +183,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         self.tag_error_label.pack(anchor="w", pady=(4, 0))
 
         tag_add_row = ctk.CTkFrame(self, fg_color="transparent")
-        tag_add_row.pack(fill="x", pady=(16, 0))
+        tag_add_row.pack(fill="x", pady=(10, 0))
         self.new_tag_color_btn = ctk.CTkButton(
             tag_add_row, text="", width=28, height=28, fg_color=self._new_tag_color,
             hover_color=self._new_tag_color, corner_radius=14, command=self._pick_new_tag_color,
