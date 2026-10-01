@@ -176,7 +176,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
         shown = 0
         for index, tag in enumerate(task.tags[:_MAX_VISIBLE_TAGS]):
             label = _truncate(tag.name, _MAX_TAG_NAME_LEN)
-            probe = color_pill(tags_area, label, tag.color)
+            probe = color_pill(tags_area, label)
             probe.pack(side="left", padx=(4, 0))
             probe.update_idletasks()
             pill_width = probe.winfo_reqwidth() + 4
@@ -188,7 +188,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
             used_width += pill_width
             shown += 1
         if total_tags > shown:
-            color_pill(tags_area, "...", "#94a3b8").pack(side="left", padx=(4, 0))
+            color_pill(tags_area, "...").pack(side="left", padx=(4, 0))
 
         for widget in (card, title_label, meta_row):
             widget.bind("<ButtonPress-1>", lambda e, tk_=task: self._start_drag(e, tk_))
