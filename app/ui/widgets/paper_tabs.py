@@ -19,7 +19,7 @@ _PAD_X = 18
 _RADIUS = 10
 _GAP = 2
 
-_ACTIVE_FILL = "#ffffff"
+_ACTIVE_FILL = theme.PANEL_BG[0]
 _INACTIVE_FILL = "#cbd5e1"
 _BORDER = "#94a3b8"
 _ACTIVE_TEXT = "#0f172a"
