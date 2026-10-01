@@ -1,6 +1,7 @@
 """タスク作成/編集モーダル（旧 client/src/components/TaskFormModal.tsx の移植）。"""
 
 import datetime
+import tkinter as tk
 
 import customtkinter as ctk
 from tkcalendar import DateEntry
@@ -8,7 +9,7 @@ from tkcalendar import DateEntry
 from app.constants import PRIORITIES
 from app.db.holidays import list_holidays
 from app.db.statuses import list_statuses
-from app.db.tags import create_tag, list_tags
+from app.db.tags import count_tagged_tasks, create_tag, delete_tag, list_tags
 from app.db.tasks import create_task, list_tasks
 from app.i18n import calendar_locale, t
 from app.logic.tree import build_task_tree, flatten_with_depth
@@ -19,6 +20,7 @@ from app.ui.widgets.calendar_style import (
     apply_locale_header_format,
     apply_weekend_holiday_styles,
 )
+from app.ui.widgets.confirm_dialog import ask_confirm
 
 
 class TaskFormDialog(ctk.CTkToplevel):
@@ -275,7 +277,30 @@ class TaskFormDialog(ctk.CTkToplevel):
                 width=self._TAG_CHECKBOX_MIN_WIDTH,
             )
             checkbox.pack(side="left", padx=(0, 8), pady=(0, 4))
+            checkbox.bind(
+                "<Button-3>",
+                lambda e, tid=tag_id, nm=name: self._on_tag_right_click(e, tid, nm),
+            )
             used_width += checkbox_width
+
+    def _on_tag_right_click(self, event, tag_id: str, name: str) -> None:
+        menu = tk.Menu(self, tearoff=0, font=(theme.FONT_FAMILY, 12))
+        menu.add_command(
+            label=t("削除"), command=lambda: self._delete_tag_from_form(tag_id, name)
+        )
+        menu.tk_popup(event.x_root, event.y_root)
+
+    def _delete_tag_from_form(self, tag_id: str, name: str) -> None:
+        count = count_tagged_tasks(self.conn, tag_id)
+        message = t(
+            "「{name}」タグを削除しますか？{count}件のタスクからこのタグが外れます。"
+        ).format(name=name, count=count)
+        if not ask_confirm(self, t("タグを削除"), message):
+            return
+        delete_tag(self.conn, tag_id)
+        self._tag_vars.pop(tag_id, None)
+        self._tag_items = [(tid, nm) for tid, nm in self._tag_items if tid != tag_id]
+        self._rebuild_tag_checkboxes()
 
     def _add_tag(self) -> None:
         name = self.new_tag_entry.get().strip()
