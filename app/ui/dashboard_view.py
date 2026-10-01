@@ -131,7 +131,7 @@ class DashboardView(ctk.CTkScrollableFrame):
             row.pack(fill="x", padx=16, pady=4)
             priority_badge(row, task.priority).pack(side="left", padx=(0, 8))
 
-            project_box = ctk.CTkFrame(row, fg_color="transparent", width=140)
+            project_box = ctk.CTkFrame(row, fg_color="transparent", width=140, height=20)
             project_box.pack(side="left", padx=(0, 10))
             project_box.pack_propagate(False)
             if project is not None:
