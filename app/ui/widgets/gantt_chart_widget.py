@@ -89,7 +89,9 @@ class GanttChartWidget(ctk.CTkFrame):
             holiday_dates,
         )
         self._draw_vertical_gridlines(days, total_height)
-        # 縦の罫線がバーの上に重なって見えないよう、バーを最前面に上げる。
+        # 次の行の土日祝シェーディングが罫線を覆い隠さないよう、罫線を前面に上げる。
+        # バーはさらにその上(最前面)に来るようにする。
+        self.canvas.tag_raise("rowline")
         self.canvas.tag_raise("bar")
 
         self.canvas.configure(scrollregion=(0, 0, total_width, total_height))
@@ -177,7 +179,9 @@ class GanttChartWidget(ctk.CTkFrame):
                         dx, row_y, dx + DAY_W, row_y + ROW_H,
                         fill="#fef9f9" if is_holiday else "#f8fafc", outline="",
                     )
-            self.canvas.create_line(0, row_y + ROW_H, total_width, row_y + ROW_H, fill="#e2e8f0")
+            self.canvas.create_line(
+                0, row_y + ROW_H, total_width, row_y + ROW_H, fill="#e2e8f0", tags=("rowline",)
+            )
 
             if 0 <= today_offset < len(days):
                 tx = LABEL_W + today_offset * DAY_W + DAY_W / 2
