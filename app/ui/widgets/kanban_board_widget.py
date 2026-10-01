@@ -20,9 +20,24 @@ from app.ui import theme
 from app.ui.widgets.badges import color_pill, priority_badge
 from app.ui.widgets.task_form_dialog import ask_task_form
 
+_DRAG_THRESHOLD_PX = 4  # これ未満の移動は単なるクリックとみなしドラッグ扱いしない
+_MAX_VISIBLE_TAGS = 2
+_MAX_TAG_NAME_LEN = 4
+# meta_row(期限+タグ)の実質的な幅。列幅272px(固定)から、cards_areaの余白・
+# スクロールバー・カード自身の余白を差し引いた概算値。カード構築は
+# refresh()中に同期的に行われ、winfo_width()がまだ正しい値を返さない
+# ("要アイドル処理"問題)ため、実測ではなくこの概算値を基準に折り返しを
+# 判定する(列幅自体がwidth=272で固定されているため、概算値も安定する)。
+_META_ROW_WIDTH = 200
+_ELLIPSIS_RESERVE = 36
+
 
 def _now_iso() -> str:
     return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def _truncate(text: str, max_len: int) -> str:
+    return text if len(text) <= max_len else text[:max_len] + "..."
 
 
 class KanbanBoardWidget(ctk.CTkFrame):
@@ -33,7 +48,9 @@ class KanbanBoardWidget(ctk.CTkFrame):
         self.on_change = on_change or (lambda: None)
         self.filters = filters or {}
 
-        self._drag_task_id: str | None = None
+        self._drag_task = None
+        self._drag_start_xy: tuple[int, int] | None = None
+        self._drag_started = False
         self._drag_ghost: tk.Toplevel | None = None
         self._card_widgets: dict[str, ctk.CTkFrame] = {}
         self._column_containers: dict[int, str] = {}
@@ -50,6 +67,9 @@ class KanbanBoardWidget(ctk.CTkFrame):
         self.refresh()
 
     def refresh(self) -> None:
+        # 列・カードを毎回全部作り直すため、表示されたままだと一瞬空になる
+        # 瞬間が見えてちらつく。再構築が終わるまで画面から外しておく。
+        self.scroll.pack_forget()
         for child in self.scroll.winfo_children():
             child.destroy()
         self._card_widgets.clear()
@@ -101,6 +121,8 @@ class KanbanBoardWidget(ctk.CTkFrame):
             for task in col_tasks:
                 self._build_card(cards_area, task, status.is_done)
 
+        self.scroll.pack(fill="both", expand=True)
+
     def _build_card(self, parent, task, is_done: bool) -> None:
         card = ctk.CTkFrame(
             parent, corner_radius=10, border_width=1,
@@ -121,16 +143,52 @@ class KanbanBoardWidget(ctk.CTkFrame):
 
         meta_row = ctk.CTkFrame(card, fg_color="transparent")
         meta_row.pack(fill="x", padx=10, pady=(0, 10))
-        priority_badge(meta_row, task.priority).pack(side="left")
-        for tag in task.tags:
-            color_pill(meta_row, tag.name, tag.color).pack(side="left", padx=(4, 0))
+
+        # 期限を先にside="right"でpackして自分の幅を実測してから、タグ側に
+        # 残り幅にいくつのタグが収まるか判定して配置する。tags_areaを
+        # fill="x", expand=Trueにするだけでは中の子(バッジ・ピル)自身は
+        # 幅に合わせて縮んでくれず、期限側に重なって見切れてしまうため。
+        # なお、カード構築はrefresh()中に同期的に行われてwinfo_width()が
+        # まだ正しい値を返さないため、実測ではなく_META_ROW_WIDTH(列幅が
+        # width=272で固定のため安定する概算値)を基準に判定する。
+        due_width = 0
         if task.due_date:
             overdue = not is_done and task.due_date < _now_iso()
-            ctk.CTkLabel(
+            due_label = ctk.CTkLabel(
                 meta_row,
-                text=task.due_date[:10],
+                text=t("期限: {date}").format(date=task.due_date[:10]),
                 text_color="#dc2626" if overdue else theme.TEXT_MUTED,
-            ).pack(side="right")
+            )
+            due_label.pack(side="right")
+            due_label.update_idletasks()
+            due_width = due_label.winfo_reqwidth()
+
+        tags_area = ctk.CTkFrame(meta_row, fg_color="transparent")
+        tags_area.pack(side="left")
+        available_width = max(_META_ROW_WIDTH - due_width - 8, 0)
+
+        badge = priority_badge(tags_area, task.priority)
+        badge.pack(side="left")
+        badge.update_idletasks()
+        used_width = badge.winfo_reqwidth()
+
+        total_tags = len(task.tags)
+        shown = 0
+        for index, tag in enumerate(task.tags[:_MAX_VISIBLE_TAGS]):
+            label = _truncate(tag.name, _MAX_TAG_NAME_LEN)
+            probe = color_pill(tags_area, label, tag.color)
+            probe.pack(side="left", padx=(4, 0))
+            probe.update_idletasks()
+            pill_width = probe.winfo_reqwidth() + 4
+            has_more_after = (index + 1) < total_tags
+            reserve = _ELLIPSIS_RESERVE if has_more_after else 0
+            if used_width + pill_width + reserve > available_width:
+                probe.destroy()
+                break
+            used_width += pill_width
+            shown += 1
+        if total_tags > shown:
+            color_pill(tags_area, "...", "#94a3b8").pack(side="left", padx=(4, 0))
 
         for widget in (card, title_label, meta_row):
             widget.bind("<ButtonPress-1>", lambda e, tk_=task: self._start_drag(e, tk_))
@@ -139,7 +197,14 @@ class KanbanBoardWidget(ctk.CTkFrame):
             widget.bind("<Double-Button-1>", lambda _e, tk_=task: self._edit(tk_))
 
     def _start_drag(self, event, task) -> None:
-        self._drag_task_id = task.id
+        # ここではまだゴースト(浮動プレビュー)は出さない。単なるクリックで
+        # ドラッグ用のタイトル文字が一瞬表示されてしまっていたため、実際に
+        # _DRAG_THRESHOLD_PX以上動いてから初めてドラッグ開始とみなす。
+        self._drag_task = task
+        self._drag_start_xy = (event.x_root, event.y_root)
+        self._drag_started = False
+
+    def _begin_drag_visuals(self, task) -> None:
         card = self._card_widgets.get(task.id)
         if card:
             card.configure(border_color=theme.ACCENT, border_width=2)
@@ -155,10 +220,20 @@ class KanbanBoardWidget(ctk.CTkFrame):
             ghost, text=task.title, fg_color=theme.ACCENT, text_color="#ffffff",
             corner_radius=8, padx=12, pady=6, font=ctk.CTkFont(weight="bold"),
         ).pack()
-        ghost.geometry(f"+{event.x_root + 12}+{event.y_root + 12}")
         self._drag_ghost = ghost
 
     def _on_drag_motion(self, event) -> None:
+        if self._drag_task is None:
+            return
+        if not self._drag_started:
+            start_x, start_y = self._drag_start_xy
+            if (
+                abs(event.x_root - start_x) < _DRAG_THRESHOLD_PX
+                and abs(event.y_root - start_y) < _DRAG_THRESHOLD_PX
+            ):
+                return
+            self._drag_started = True
+            self._begin_drag_visuals(self._drag_task)
         if self._drag_ghost is not None:
             self._drag_ghost.geometry(f"+{event.x_root + 12}+{event.y_root + 12}")
 
@@ -170,12 +245,18 @@ class KanbanBoardWidget(ctk.CTkFrame):
             # ウィンドウの消去をウィンドウマネージャに確実に反映させる。
             self.update_idletasks()
 
-        if not self._drag_task_id:
+        task, self._drag_task = self._drag_task, None
+        started, self._drag_started = self._drag_started, False
+        self._drag_start_xy = None
+        if task is None:
             return
-        active_id, self._drag_task_id = self._drag_task_id, None
+        active_id = task.id
         card = self._card_widgets.get(active_id)
         if card:
             card.configure(border_width=1)
+        if not started:
+            # しきい値未満の移動(=実質ただのクリック)では何もしない
+            return
 
         target_widget = self.winfo_containing(event.x_root, event.y_root)
         over = self._resolve_drop_target(target_widget)
