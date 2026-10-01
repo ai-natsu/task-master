@@ -3,6 +3,7 @@
 import customtkinter as ctk
 
 from app.i18n import t
+from app.ui import theme
 
 # 日本語を正とする定義（他モジュールで重複定義しない）。表示時は必ず
 # priority_label() 経由で参照し、都度 t() で現在の言語に変換する
@@ -32,13 +33,13 @@ def priority_badge(parent, priority: str) -> ctk.CTkLabel:
     )
 
 
-def color_pill(parent, text: str, color: str) -> ctk.CTkLabel:
-    """ステータス/タグ用の色ピル。実データの色をそのまま使うため動的に算出する。"""
+def color_pill(parent, text: str) -> ctk.CTkLabel:
+    """タグ用のピル。タグごとの固有色ではなく、周囲と馴染む統一グレーで表示する。"""
     return ctk.CTkLabel(
         parent,
         text=text,
-        fg_color=color,
-        text_color="#ffffff",
+        fg_color=theme.SUBTLE_BG,
+        text_color=theme.TEXT_PRIMARY,
         corner_radius=8,
         padx=8,
     )
