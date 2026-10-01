@@ -18,7 +18,7 @@ from app.i18n import t
 from app.logic.dnd import plan_tree_drag
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
-from app.ui.widgets.badges import priority_label
+from app.ui.widgets.badges import PRIORITY_COLORS, priority_label
 from app.ui.widgets.confirm_dialog import ask_confirm
 from app.ui.widgets.task_form_dialog import ask_task_form
 
@@ -45,9 +45,12 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.on_change = on_change or (lambda: None)
         self.filters = filters or {}
         self._tasks_by_id: dict = {}
+        self._statuses_by_id: dict = {}
         self._status_labels: dict[str, str] = {}
         self._drag_id: str | None = None
         self._grid_lines: list[tk.Frame] = []
+        self._priority_overlays: list[tk.Label] = []
+        self._status_overlays: list[tk.Label] = []
 
         style = ttk.Style()
         style.configure(
@@ -108,27 +111,28 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.tree.bind("<ButtonRelease-1>", self._on_release)
         self.tree.bind("<Double-1>", self._on_double_click)
         self.tree.bind("<Button-3>", self._on_right_click)
-        self.tree.bind("<Configure>", lambda _e: self._draw_grid_lines())
-        self.tree.bind("<<TreeviewOpen>>", lambda _e: self.after_idle(self._draw_grid_lines))
-        self.tree.bind("<<TreeviewClose>>", lambda _e: self.after_idle(self._draw_grid_lines))
+        self.tree.bind("<Configure>", lambda _e: self._redraw_overlays())
+        self.tree.bind("<<TreeviewOpen>>", lambda _e: self.after_idle(self._redraw_overlays))
+        self.tree.bind("<<TreeviewClose>>", lambda _e: self.after_idle(self._redraw_overlays))
 
         self.refresh()
 
     def _on_tree_yscroll(self, scrollbar: ttk.Scrollbar):
-        """ttk.Treeviewは複数カラムの行に罫線を描く標準機能を持たないため、
-        各行の下端にぴったり重なる薄い(高さ1px)Frameを敷き詰めて罫線に見せる。
-        スクロール位置が変わるたびに行の画面上の位置がずれるため、
+        """ttk.Treeviewは複数カラムの行に罫線・セル単位の色付けを描く標準機能を
+        持たないため、行の下端に重なる薄いFrame(罫線)や、特定セルに重なる
+        Label(優先度の文字色・ステータスの背景色)を敷き詰めて表現している。
+        スクロール位置が変わるたびに画面上の位置がずれるため、
         yscrollcommand(スクロールバー操作・マウスホイール・キー操作など、
         表示範囲が変わるあらゆる経路で呼ばれる)に相乗りして引き直す。
         """
 
         def _handler(*args) -> None:
             scrollbar.set(*args)
-            self._draw_grid_lines()
+            self._redraw_overlays()
 
         return _handler
 
-    def _draw_grid_lines(self) -> None:
+    def _all_item_ids(self) -> list[str]:
         item_ids: list[str] = []
 
         def _collect(parent: str = "") -> None:
@@ -137,6 +141,14 @@ class TaskTreeWidget(ctk.CTkFrame):
                 _collect(iid)
 
         _collect()
+        return item_ids
+
+    def _redraw_overlays(self) -> None:
+        self._draw_grid_lines()
+        self._draw_cell_overlays()
+
+    def _draw_grid_lines(self) -> None:
+        item_ids = self._all_item_ids()
 
         while len(self._grid_lines) < len(item_ids):
             self._grid_lines.append(
@@ -154,6 +166,60 @@ class TaskTreeWidget(ctk.CTkFrame):
         for line in self._grid_lines[len(item_ids):]:
             line.place_forget()
 
+    def _draw_cell_overlays(self) -> None:
+        """優先度・ステータスのセル文字色を、カンバン/ダッシュボードと揃える。
+
+        ttk.Treeviewはセル単位の色指定に対応しないため、該当セルにぴったり
+        重なるtk.Labelを被せて表現する(罫線のFrameと同じ手法)。
+        """
+        item_ids = self._all_item_ids()
+        font = (theme.FONT_FAMILY, 11)
+
+        while len(self._priority_overlays) < len(item_ids):
+            self._priority_overlays.append(
+                tk.Label(self, bd=0, highlightthickness=0, font=font, anchor="center")
+            )
+        while len(self._status_overlays) < len(item_ids):
+            self._status_overlays.append(
+                tk.Label(self, bd=0, highlightthickness=0, font=font, anchor="center")
+            )
+
+        for index, iid in enumerate(item_ids):
+            priority_overlay = self._priority_overlays[index]
+            status_overlay = self._status_overlays[index]
+            task = self._tasks_by_id.get(iid)
+            if task is None:
+                priority_overlay.place_forget()
+                status_overlay.place_forget()
+                continue
+
+            priority_bbox = self.tree.bbox(iid, "priority")
+            if priority_bbox:
+                x, y, w, h = priority_bbox
+                _, fg = PRIORITY_COLORS.get(task.priority, PRIORITY_COLORS["MEDIUM"])
+                priority_overlay.configure(
+                    text=priority_label(task.priority), fg=fg, bg=theme.CARD_BG[0]
+                )
+                priority_overlay.place(in_=self.tree, x=x, y=y, width=w, height=h)
+            else:
+                priority_overlay.place_forget()
+
+            status = self._statuses_by_id.get(task.status)
+            status_bbox = self.tree.bbox(iid, "status")
+            if status_bbox and status is not None:
+                x, y, w, h = status_bbox
+                status_overlay.configure(
+                    text=status.label, fg=status.color, bg=theme.CARD_BG[0]
+                )
+                status_overlay.place(in_=self.tree, x=x, y=y, width=w, height=h)
+            else:
+                status_overlay.place_forget()
+
+        for extra in self._priority_overlays[len(item_ids):]:
+            extra.place_forget()
+        for extra in self._status_overlays[len(item_ids):]:
+            extra.place_forget()
+
     def set_filters(self, filters: dict) -> None:
         self.filters = filters
         self.refresh()
@@ -164,6 +230,7 @@ class TaskTreeWidget(ctk.CTkFrame):
         tasks = list_tasks(self.app.conn, project_id=self.project_id, **self.filters)
         self._tasks_by_id = {task.id: task for task in tasks}
         statuses = {s.id: s for s in list_statuses(self.app.conn)}
+        self._statuses_by_id = statuses
         self._status_labels = {sid: s.label for sid, s in statuses.items()}
 
         tree_nodes = build_task_tree(tasks)
@@ -172,7 +239,7 @@ class TaskTreeWidget(ctk.CTkFrame):
                 "", "end", iid=_EMPTY_IID,
                 text=t("タスクがありません。「+ 新しいタスク」から追加してください。"),
             )
-            self.after_idle(self._draw_grid_lines)
+            self.after_idle(self._redraw_overlays)
             return
 
         now = _now_iso()
@@ -201,7 +268,7 @@ class TaskTreeWidget(ctk.CTkFrame):
                 tags=tuple(tags),
             )
 
-        self.after_idle(self._draw_grid_lines)
+        self.after_idle(self._redraw_overlays)
 
     # --- ドラッグ&ドロップ（同じ親配下のみ並べ替え） ------------------------
     def _on_press(self, event) -> None:
