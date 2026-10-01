@@ -42,7 +42,7 @@ def _truncate(text: str, max_len: int) -> str:
 
 class KanbanBoardWidget(ctk.CTkFrame):
     def __init__(self, master, app, project_id: str, on_change=None, filters: dict | None = None):
-        super().__init__(master, fg_color="transparent")
+        super().__init__(master, fg_color=theme.PANEL_BG)
         self.app = app
         self.project_id = project_id
         self.on_change = on_change or (lambda: None)
