@@ -89,6 +89,8 @@ class GanttChartWidget(ctk.CTkFrame):
             holiday_dates,
         )
         self._draw_vertical_gridlines(days, total_height)
+        # 縦の罫線がバーの上に重なって見えないよう、バーを最前面に上げる。
+        self.canvas.tag_raise("bar")
 
         self.canvas.configure(scrollregion=(0, 0, total_width, total_height))
 
@@ -188,7 +190,7 @@ class GanttChartWidget(ctk.CTkFrame):
                 bar_item = self.canvas.create_rectangle(
                     bx, row_y + ROW_H / 2 - 8, bx + bw, row_y + ROW_H / 2 + 8,
                     fill=status.color if status else "#6366f1", outline="",
-                    stipple="gray50" if is_done else "",
+                    stipple="gray50" if is_done else "", tags=("bar",),
                 )
                 self.canvas.tag_bind(
                     bar_item, "<ButtonPress-1>",
