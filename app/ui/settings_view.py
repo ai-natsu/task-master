@@ -259,7 +259,7 @@ class SettingsView(ctk.CTkScrollableFrame):
 
         row.delete_btn = ctk.CTkButton(
             row, text=t("削除"), width=50, fg_color="transparent",
-            text_color="#dc2626", hover_color=("#fee2e2", "#450a0a"),
+            text_color="#9f6b6b", hover_color=("#f3e8e8", "#4a3636"),
             command=lambda: self._delete(status_id),
         )
         row.delete_btn.pack(side="left")
@@ -363,7 +363,7 @@ class SettingsView(ctk.CTkScrollableFrame):
 
         row.delete_btn = ctk.CTkButton(
             row, text=t("削除"), width=50, fg_color="transparent",
-            text_color="#dc2626", hover_color=("#fee2e2", "#450a0a"),
+            text_color="#9f6b6b", hover_color=("#f3e8e8", "#4a3636"),
             command=lambda: self._delete_holiday(holiday_id),
         )
         row.delete_btn.pack(side="left")
@@ -455,7 +455,7 @@ class SettingsView(ctk.CTkScrollableFrame):
 
         row.delete_btn = ctk.CTkButton(
             row, text=t("削除"), width=50, fg_color="transparent",
-            text_color="#dc2626", hover_color=("#fee2e2", "#450a0a"),
+            text_color="#9f6b6b", hover_color=("#f3e8e8", "#4a3636"),
             command=lambda: self._delete_tag(tag_id),
         )
         row.delete_btn.pack(side="left")
