@@ -9,7 +9,7 @@ from app.constants import PRIORITIES
 from app.db.holidays import list_holidays
 from app.db.statuses import list_statuses
 from app.db.tags import create_tag, list_tags
-from app.db.tasks import list_tasks
+from app.db.tasks import create_task, list_tasks
 from app.i18n import calendar_locale, t
 from app.logic.tree import build_task_tree, flatten_with_depth
 from app.ui import theme
@@ -56,7 +56,9 @@ class TaskFormDialog(ctk.CTkToplevel):
             self.description_text.insert("1.0", task.description)
 
         ctk.CTkLabel(scroll, text=t("ステータス")).pack(anchor="w")
+        self._statuses = statuses
         status_labels = {s.id: s.label for s in statuses}
+        self._status_labels = status_labels
         default_status = task.status if task else (statuses[0].id if statuses else "")
         self.status_var = ctk.StringVar(value=default_status)
         self.status_menu = ctk.CTkOptionMenu(
@@ -82,11 +84,18 @@ class TaskFormDialog(ctk.CTkToplevel):
         self.priority_menu.set(priority_label(self.priority_var.get()))
         self.priority_menu.pack(fill="x", pady=(0, 12))
 
+        dates_row = ctk.CTkFrame(scroll, fg_color="transparent")
+        dates_row.pack(fill="x")
+        start_col = ctk.CTkFrame(dates_row, fg_color="transparent")
+        start_col.pack(side="left", fill="both", expand=True, padx=(0, 8))
+        due_col = ctk.CTkFrame(dates_row, fg_color="transparent")
+        due_col.pack(side="left", fill="both", expand=True)
+
         self.start_date_entry, self.start_date_enabled = self._build_date_field(
-            scroll, t("開始日"), task.start_date if task else None
+            start_col, t("開始日"), task.start_date if task else None
         )
         self.due_date_entry, self.due_date_enabled = self._build_date_field(
-            scroll, t("期限"), task.due_date if task else None
+            due_col, t("期限"), task.due_date if task else None
         )
 
         ctk.CTkLabel(scroll, text=t("親タスク")).pack(anchor="w")
@@ -104,6 +113,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         )
         self.parent_menu.set(current_label)
         self.parent_menu.pack(fill="x", pady=(0, 12))
+        self._initial_parent_label = current_label
 
         ctk.CTkLabel(scroll, text=t("タグ")).pack(anchor="w")
         self.tag_row = ctk.CTkFrame(scroll, fg_color="transparent", height=1)
@@ -125,6 +135,15 @@ class TaskFormDialog(ctk.CTkToplevel):
         ctk.CTkButton(new_tag_row, text=t("追加"), width=60, command=self._add_tag).pack(
             side="left"
         )
+
+        self.continue_var: ctk.BooleanVar | None = None
+        if task is None:
+            continue_row = ctk.CTkFrame(self, fg_color="transparent")
+            continue_row.pack(pady=(0, 8))
+            self.continue_var = ctk.BooleanVar(value=False)
+            ctk.CTkCheckBox(
+                continue_row, text=t("続けて作成"), variable=self.continue_var
+            ).pack()
 
         button_row = ctk.CTkFrame(self, fg_color="transparent")
         button_row.pack(pady=(0, 20))
@@ -156,10 +175,9 @@ class TaskFormDialog(ctk.CTkToplevel):
 
         DateEntryはカレンダーアイコンをクリックしてのピッカー選択に加えて、
         テキスト欄に直接 "YYYY-MM-DD" 形式で入力(上書き)することもできる
-        （末尾のEnter/フォーカス移動で確定）。入力欄は常に操作可能で、
-        カレンダーで選択または入力を確定すると「設定する」に自動でチェックが
-        入る。日付は必須項目ではないため、チェックを外すとその項目はNoneになる
-        （入力欄の見た目上の値は変更できるが、送信時は無視される）。
+        （末尾のEnter/フォーカス移動で確定）。「設定する」が外れている間は
+        入力欄を無効化(グレーアウト)し、操作できないようにする。日付は必須
+        項目ではないため、チェックを外すとその項目はNoneになる。
         """
         ctk.CTkLabel(parent, text=label_text).pack(anchor="w")
         row = ctk.CTkFrame(parent, fg_color="transparent")
@@ -183,18 +201,26 @@ class TaskFormDialog(ctk.CTkToplevel):
         )
 
         enabled_var = ctk.BooleanVar(value=initial is not None)
+
+        def _apply_entry_state() -> None:
+            entry.configure(state="normal" if enabled_var.get() else "disabled")
+
         # カレンダーから選択した場合は<<DateEntrySelected>>が発火するが、
         # テキスト欄に直接入力して確定した場合はこのイベントが発火しない
         # (tkcalendar側の実装上、検証は内部のvalidatecommand止まりのため)。
         # そのため確定操作(Enter/フォーカス移動)側も併せて拾う。
         def _mark_enabled(_event=None) -> None:
             enabled_var.set(True)
+            _apply_entry_state()
 
         entry.bind("<<DateEntrySelected>>", _mark_enabled)
         entry.bind("<Return>", _mark_enabled)
         entry.bind("<FocusOut>", _mark_enabled)
 
-        ctk.CTkCheckBox(row, text=t("設定する"), variable=enabled_var).pack(side="left")
+        ctk.CTkCheckBox(
+            row, text=t("設定する"), variable=enabled_var, command=_apply_entry_state
+        ).pack(side="left")
+        _apply_entry_state()
         return entry, enabled_var
 
     def _add_tag_checkbox(self, tag_id: str, name: str, checked: bool) -> None:
@@ -267,7 +293,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         parent_id = next(
             (pid for pid, label in self.parent_options if label == parent_label), None
         )
-        self.result = {
+        result = {
             "title": title,
             "description": self.description_text.get("1.0", "end").strip() or None,
             "status": self.status_var.get() or None,
@@ -285,7 +311,43 @@ class TaskFormDialog(ctk.CTkToplevel):
             "tag_ids": [tid for tid, var in self._tag_vars.items() if var.get()],
             "parent_id": parent_id,
         }
+
+        if self.continue_var is not None and self.continue_var.get():
+            create_task(self.conn, project_id=self.project_id, **result)
+            self._reset_form()
+            return
+
+        self.result = result
         self.destroy()
+
+    def _reset_form(self) -> None:
+        """「続けて作成」用に、作成直後のフォームを新規作成時の初期状態へ戻す。"""
+        self.title_entry.delete(0, "end")
+        self.description_text.delete("1.0", "end")
+
+        default_status = self._statuses[0].id if self._statuses else ""
+        self.status_var.set(default_status)
+        if default_status in self._status_labels:
+            self.status_menu.set(self._status_labels[default_status])
+
+        self.priority_var.set("MEDIUM")
+        self.priority_menu.set(priority_label("MEDIUM"))
+
+        for entry, enabled_var in (
+            (self.start_date_entry, self.start_date_enabled),
+            (self.due_date_entry, self.due_date_enabled),
+        ):
+            entry.configure(state="normal")
+            entry.set_date(datetime.date.today())
+            entry.configure(state="disabled")
+            enabled_var.set(False)
+
+        self.parent_menu.set(self._initial_parent_label)
+
+        for var in self._tag_vars.values():
+            var.set(False)
+
+        self.title_entry.focus_set()
 
 
 def ask_task_form(

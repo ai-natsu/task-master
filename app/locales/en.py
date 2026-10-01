@@ -78,6 +78,7 @@ TRANSLATIONS: dict[str, str] = {
     "(なし・最上位)": "(None / top level)",
     "新しいタグ": "New tag",
     "設定する": "Enable",
+    "続けて作成": "Keep creating",
     # --- タスクツリー ---------------------------------------------------------
     "タスクがありません。「+ 新しいタスク」から追加してください。": (
         'No tasks yet. Add one with "+ New Task".'
