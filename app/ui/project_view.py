@@ -8,6 +8,7 @@ from app.ui import theme
 from app.ui.widgets.filter_bar import FilterBar
 from app.ui.widgets.gantt_chart_widget import GanttChartWidget
 from app.ui.widgets.kanban_board_widget import KanbanBoardWidget
+from app.ui.widgets.paper_tabs import PaperTabs
 from app.ui.widgets.stats_cards import StatsCardsPanel
 from app.ui.widgets.task_tree_widget import TaskTreeWidget
 
@@ -62,12 +63,9 @@ class ProjectView(ctk.CTkFrame):
         ).pack(side="right")
 
         view_modes = _view_modes()
-        self.view_switch = ctk.CTkSegmentedButton(
-            header,
-            values=[label for _, label in view_modes],
-            command=self._on_view_switch,
+        self.view_switch = PaperTabs(
+            header, values=view_modes, command=self._show_view,
         )
-        self.view_switch.set(dict(view_modes)[self.view_mode])
         self.view_switch.pack(side="right", padx=12)
 
         self.stats_toggle_btn = ctk.CTkButton(
@@ -108,10 +106,6 @@ class ProjectView(ctk.CTkFrame):
     def _on_filters_changed(self, filters: dict) -> None:
         if self._body is not None:
             self._body.set_filters(filters)
-
-    def _on_view_switch(self, label: str) -> None:
-        mode = next(m for m, lbl in _view_modes() if lbl == label)
-        self._show_view(mode)
 
     def _show_view(self, mode: str) -> None:
         if self._body is not None:
