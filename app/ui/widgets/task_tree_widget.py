@@ -66,20 +66,22 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.tree = ttk.Treeview(
             self,
             style="TaskTree.Treeview",
-            columns=("status", "priority", "tags", "due"),
+            columns=("status", "priority", "start", "due", "tags"),
             show="tree headings",
             selectmode="browse",
         )
         self.tree.heading("#0", text=t("タスク"))
         self.tree.heading("status", text=t("ステータス"))
         self.tree.heading("priority", text=t("優先度"))
-        self.tree.heading("tags", text=t("タグ"))
+        self.tree.heading("start", text=t("開始日"))
         self.tree.heading("due", text=t("期限"))
+        self.tree.heading("tags", text=t("タグ"))
         self.tree.column("#0", width=320, stretch=True)
         self.tree.column("status", width=100, anchor="center")
         self.tree.column("priority", width=70, anchor="center")
-        self.tree.column("tags", width=160)
+        self.tree.column("start", width=90, anchor="center")
         self.tree.column("due", width=90, anchor="center")
+        self.tree.column("tags", width=160)
 
         self.tree.tag_configure("overdue", foreground="#dc2626")
         self.tree.tag_configure("done", foreground="#94a3b8")
@@ -135,8 +137,9 @@ class TaskTreeWidget(ctk.CTkFrame):
                 values=(
                     status.label if status else task.status,
                     priority_label(task.priority),
-                    ", ".join(tag.name for tag in task.tags),
+                    task.start_date[:10] if task.start_date else "",
                     task.due_date[:10] if task.due_date else "",
+                    ", ".join(tag.name for tag in task.tags),
                 ),
                 tags=tuple(tags),
             )
