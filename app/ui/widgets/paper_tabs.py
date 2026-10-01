@@ -20,10 +20,10 @@ _RADIUS = 10
 _GAP = 2
 
 _ACTIVE_FILL = "#ffffff"
-_INACTIVE_FILL = "#eef1f6"
-_BORDER = "#e2e8f0"
+_INACTIVE_FILL = "#cbd5e1"
+_BORDER = "#94a3b8"
 _ACTIVE_TEXT = "#0f172a"
-_INACTIVE_TEXT = "#64748b"
+_INACTIVE_TEXT = "#475569"
 _BG = theme.BG[0]
 
 
