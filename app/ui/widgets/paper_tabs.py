@@ -24,7 +24,7 @@ _INACTIVE_FILL = "#cbd5e1"
 _BORDER = "#94a3b8"
 _ACTIVE_TEXT = "#0f172a"
 _INACTIVE_TEXT = "#475569"
-_BG = theme.BG[0]
+_BG = theme.PANEL_BG[0]
 
 
 def _rounded_top_image(
