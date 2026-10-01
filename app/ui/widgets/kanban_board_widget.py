@@ -89,7 +89,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
                 font=ctk.CTkFont(size=11, weight="bold"),
             ).pack(side="right")
 
-            cards_area = ctk.CTkFrame(col_frame, fg_color="transparent")
+            cards_area = ctk.CTkScrollableFrame(col_frame, fg_color="transparent")
             cards_area.pack(fill="both", expand=True, padx=10, pady=(0, 10))
             self._column_containers[id(cards_area)] = status.id
 
