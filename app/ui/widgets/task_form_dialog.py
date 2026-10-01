@@ -32,7 +32,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         self.result: dict | None = None
 
         self.title(t("タスクを編集") if task else t("新しいタスク"))
-        self.geometry("480x680")
+        self.geometry("560x680")
 
         statuses = list_statuses(conn)
         all_tags = list_tags(conn)
