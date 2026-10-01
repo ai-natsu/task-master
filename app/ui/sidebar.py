@@ -130,8 +130,8 @@ class Sidebar(ctk.CTkFrame):
                 corner_radius=8,
                 font=ctk.CTkFont(size=20, weight="bold"),
                 fg_color="transparent",
-                text_color="#dc2626",
-                hover_color=("#fee2e2", "#450a0a"),
+                text_color="#9f6b6b",
+                hover_color=("#f3e8e8", "#4a3636"),
                 command=lambda p=project: self._delete(p),
             ).pack(side="left")
 

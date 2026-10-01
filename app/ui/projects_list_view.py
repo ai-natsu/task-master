@@ -96,7 +96,7 @@ class ProjectsListView(ctk.CTkScrollableFrame):
             ).pack(side="right")
             ctk.CTkButton(
                 top, text=t("削除"), width=60, fg_color="transparent",
-                text_color="#dc2626", hover_color=("#fee2e2", "#450a0a"),
+                text_color="#9f6b6b", hover_color=("#f3e8e8", "#4a3636"),
                 command=lambda p=project: self._delete(p),
             ).pack(side="right")
 
