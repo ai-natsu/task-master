@@ -23,10 +23,18 @@ from app.ui.widgets.confirm_dialog import ask_confirm
 from app.ui.widgets.task_form_dialog import ask_task_form
 
 _EMPTY_IID = "__empty__"
+_TAGS_MAX_LEN = 14  # タグ列(幅160px)に収まる目安の文字数。超過分は"..."で省略する
 
 
 def _now_iso() -> str:
     return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def _format_tags(tags) -> str:
+    joined = ", ".join(tag.name for tag in tags)
+    if len(joined) <= _TAGS_MAX_LEN:
+        return joined
+    return joined[:_TAGS_MAX_LEN] + "..."
 
 
 class TaskTreeWidget(ctk.CTkFrame):
@@ -88,7 +96,11 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.tree.tag_configure("done", foreground="#94a3b8")
 
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=self._on_tree_yscroll(scrollbar))
+        hscrollbar = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(
+            yscrollcommand=self._on_tree_yscroll(scrollbar), xscrollcommand=hscrollbar.set
+        )
+        hscrollbar.pack(side="bottom", fill="x")
         self.tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
@@ -184,7 +196,7 @@ class TaskTreeWidget(ctk.CTkFrame):
                     priority_label(task.priority),
                     task.start_date[:10] if task.start_date else "",
                     task.due_date[:10] if task.due_date else "",
-                    ", ".join(tag.name for tag in task.tags),
+                    _format_tags(task.tags),
                 ),
                 tags=tuple(tags),
             )
