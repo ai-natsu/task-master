@@ -43,7 +43,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         )
 
         scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
-        scroll.pack(fill="both", expand=True, padx=20, pady=20)
+        scroll.pack(fill="both", expand=True, padx=14, pady=14)
 
         ctk.CTkLabel(scroll, text=t("タイトル")).pack(anchor="w")
         self.title_entry = ctk.CTkEntry(scroll)
@@ -143,19 +143,13 @@ class TaskFormDialog(ctk.CTkToplevel):
             side="left"
         )
 
-        self.continue_var: ctk.BooleanVar | None = None
-        if task is None:
-            continue_row = ctk.CTkFrame(self, fg_color="transparent")
-            continue_row.pack(pady=(0, 8))
-            self.continue_var = ctk.BooleanVar(value=False)
-            ctk.CTkCheckBox(
-                continue_row, text=t("続けて作成"), variable=self.continue_var
-            ).pack()
-
         button_row = ctk.CTkFrame(self, fg_color="transparent")
-        button_row.pack(pady=(0, 20))
+        button_row.pack(fill="x", padx=14, pady=(0, 14))
+
+        left_buttons = ctk.CTkFrame(button_row, fg_color="transparent")
+        left_buttons.pack(side="left")
         ctk.CTkButton(
-            button_row,
+            left_buttons,
             text=t("キャンセル"),
             fg_color="transparent",
             text_color=("gray10", "gray90"),
@@ -163,14 +157,19 @@ class TaskFormDialog(ctk.CTkToplevel):
             command=self.destroy,
         ).pack(side="left", padx=6)
         ctk.CTkButton(
-            button_row,
+            left_buttons,
             text=t("保存") if task else t("作成"),
             fg_color=theme.ACCENT,
             hover_color=theme.ACCENT_HOVER,
             command=self._submit,
-        ).pack(
-            side="left", padx=6
-        )
+        ).pack(side="left", padx=6)
+
+        self.continue_var: ctk.BooleanVar | None = None
+        if task is None:
+            self.continue_var = ctk.BooleanVar(value=False)
+            ctk.CTkCheckBox(
+                button_row, text=t("続けて作成"), variable=self.continue_var
+            ).pack(side="right", padx=6)
 
         self.transient(parent)
         self.grab_set()
