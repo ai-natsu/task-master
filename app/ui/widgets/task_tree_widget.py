@@ -39,6 +39,7 @@ class TaskTreeWidget(ctk.CTkFrame):
         self._tasks_by_id: dict = {}
         self._status_labels: dict[str, str] = {}
         self._drag_id: str | None = None
+        self._grid_lines: list[tk.Frame] = []
 
         style = ttk.Style()
         style.configure(
@@ -87,7 +88,7 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.tree.tag_configure("done", foreground="#94a3b8")
 
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
+        self.tree.configure(yscrollcommand=self._on_tree_yscroll(scrollbar))
         self.tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
@@ -95,8 +96,51 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.tree.bind("<ButtonRelease-1>", self._on_release)
         self.tree.bind("<Double-1>", self._on_double_click)
         self.tree.bind("<Button-3>", self._on_right_click)
+        self.tree.bind("<Configure>", lambda _e: self._draw_grid_lines())
+        self.tree.bind("<<TreeviewOpen>>", lambda _e: self.after_idle(self._draw_grid_lines))
+        self.tree.bind("<<TreeviewClose>>", lambda _e: self.after_idle(self._draw_grid_lines))
 
         self.refresh()
+
+    def _on_tree_yscroll(self, scrollbar: ttk.Scrollbar):
+        """ttk.Treeviewは複数カラムの行に罫線を描く標準機能を持たないため、
+        各行の下端にぴったり重なる薄い(高さ1px)Frameを敷き詰めて罫線に見せる。
+        スクロール位置が変わるたびに行の画面上の位置がずれるため、
+        yscrollcommand(スクロールバー操作・マウスホイール・キー操作など、
+        表示範囲が変わるあらゆる経路で呼ばれる)に相乗りして引き直す。
+        """
+
+        def _handler(*args) -> None:
+            scrollbar.set(*args)
+            self._draw_grid_lines()
+
+        return _handler
+
+    def _draw_grid_lines(self) -> None:
+        item_ids: list[str] = []
+
+        def _collect(parent: str = "") -> None:
+            for iid in self.tree.get_children(parent):
+                item_ids.append(iid)
+                _collect(iid)
+
+        _collect()
+
+        while len(self._grid_lines) < len(item_ids):
+            self._grid_lines.append(
+                tk.Frame(self, height=1, bg=theme.CARD_BORDER[0], bd=0, highlightthickness=0)
+            )
+
+        tree_width = self.tree.winfo_width()
+        for line, iid in zip(self._grid_lines, item_ids):
+            bbox = self.tree.bbox(iid)
+            if not bbox:
+                line.place_forget()
+                continue
+            _x, y, _w, h = bbox
+            line.place(in_=self.tree, x=0, y=y + h - 1, width=tree_width, height=1)
+        for line in self._grid_lines[len(item_ids):]:
+            line.place_forget()
 
     def set_filters(self, filters: dict) -> None:
         self.filters = filters
@@ -116,6 +160,7 @@ class TaskTreeWidget(ctk.CTkFrame):
                 "", "end", iid=_EMPTY_IID,
                 text=t("タスクがありません。「+ 新しいタスク」から追加してください。"),
             )
+            self.after_idle(self._draw_grid_lines)
             return
 
         now = _now_iso()
@@ -143,6 +188,8 @@ class TaskTreeWidget(ctk.CTkFrame):
                 ),
                 tags=tuple(tags),
             )
+
+        self.after_idle(self._draw_grid_lines)
 
     # --- ドラッグ&ドロップ（同じ親配下のみ並べ替え） ------------------------
     def _on_press(self, event) -> None:
