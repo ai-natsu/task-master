@@ -49,6 +49,7 @@ class TaskTreeWidget(ctk.CTkFrame):
         self._status_labels: dict[str, str] = {}
         self._drag_id: str | None = None
         self._grid_lines: list[tk.Frame] = []
+        self._column_lines: list[tk.Frame] = []
         self._priority_overlays: list[tk.Label] = []
         self._status_overlays: list[tk.Label] = []
 
@@ -101,7 +102,8 @@ class TaskTreeWidget(ctk.CTkFrame):
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         hscrollbar = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
         self.tree.configure(
-            yscrollcommand=self._on_tree_yscroll(scrollbar), xscrollcommand=hscrollbar.set
+            yscrollcommand=self._on_tree_yscroll(scrollbar),
+            xscrollcommand=self._on_tree_xscroll(hscrollbar),
         )
         hscrollbar.pack(side="bottom", fill="x")
         self.tree.pack(side="left", fill="both", expand=True)
@@ -132,6 +134,17 @@ class TaskTreeWidget(ctk.CTkFrame):
 
         return _handler
 
+    def _on_tree_xscroll(self, scrollbar: ttk.Scrollbar):
+        """縦の列境界線(_draw_column_lines)は横スクロール位置に応じて左右に
+        動くため、yscrollと同様にxscrollcommandに相乗りして引き直す。
+        """
+
+        def _handler(*args) -> None:
+            scrollbar.set(*args)
+            self._redraw_overlays()
+
+        return _handler
+
     def _all_item_ids(self) -> list[str]:
         item_ids: list[str] = []
 
@@ -146,6 +159,7 @@ class TaskTreeWidget(ctk.CTkFrame):
     def _redraw_overlays(self) -> None:
         self._draw_grid_lines()
         self._draw_cell_overlays()
+        self._draw_column_lines()
 
     def _draw_grid_lines(self) -> None:
         item_ids = self._all_item_ids()
@@ -164,6 +178,47 @@ class TaskTreeWidget(ctk.CTkFrame):
             _x, y, _w, h = bbox
             line.place(in_=self.tree, x=0, y=y + h - 1, width=tree_width, height=1)
         for line in self._grid_lines[len(item_ids):]:
+            line.place_forget()
+
+    def _draw_column_lines(self) -> None:
+        """列の境界線を、タスクが0件の時も含めて本体の下端まで表示する。
+
+        ネイティブの列境界線は実際に存在する行の高さ分しか描かれない
+        (タスクがない場合の案内行1行分で途切れる)ため、罫線のFrameと
+        同じ手法で、ヘッダー下端から本体下端まで届く縦線を別途重ねる。
+        """
+        item_ids = self._all_item_ids()
+        if not item_ids:
+            for line in self._column_lines:
+                line.place_forget()
+            return
+
+        first_bbox = self.tree.bbox(item_ids[0])
+        if not first_bbox:
+            for line in self._column_lines:
+                line.place_forget()
+            return
+        header_bottom = first_bbox[1]
+        tree_height = self.tree.winfo_height()
+
+        boundaries = []
+        # 最後の列(タグ)の右端には境界線を引かない(その先に列がないため)。
+        for col in ("#0", "status", "priority", "start", "due"):
+            bbox = self.tree.bbox(item_ids[0], col)
+            if bbox:
+                x, _y, w, _h = bbox
+                boundaries.append(x + w)
+
+        while len(self._column_lines) < len(boundaries):
+            self._column_lines.append(
+                tk.Frame(self, width=1, bg=theme.CARD_BORDER[0], bd=0, highlightthickness=0)
+            )
+
+        for line, x in zip(self._column_lines, boundaries):
+            line.place(
+                in_=self.tree, x=x, y=header_bottom, width=1, height=tree_height - header_bottom
+            )
+        for line in self._column_lines[len(boundaries):]:
             line.place_forget()
 
     def _draw_cell_overlays(self) -> None:
