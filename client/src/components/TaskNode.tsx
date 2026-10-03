@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { isOverdue } from "../utils/due";
 import type { TaskTreeNode } from "../utils/tree";
 import { useStatuses } from "../api/statuses";
-import { PriorityBadge, TagPill } from "./Badges";
+import { PriorityBadge, TagList } from "./Badges";
 import { useFormatDate, useT } from "../i18n";
 import { useTreeDrag } from "./treeDrag";
 
@@ -70,10 +70,18 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
           <span className="w-4" />
         )}
 
+        {/* V2 の表と同じ項目・並び順：タスク名 → ステータス → 優先度 → 開始日 → 期限 → タグ */}
+        <span
+          className={clsx("flex-1 truncate text-sm", isDone && "text-slate-400 line-through")}
+          title={node.title}
+        >
+          {node.title}
+        </span>
+
         <select
           value={node.status}
           onChange={(e) => onStatusChange(node.id, e.target.value)}
-          className="rounded-md border-none bg-transparent text-xs font-medium focus:ring-1 focus:ring-indigo-400"
+          className="w-24 shrink-0 rounded-md border-none bg-transparent text-xs font-medium focus:ring-1 focus:ring-indigo-400"
           style={statusDef ? { color: statusDef.color } : undefined}
         >
           {statuses.map((s) => (
@@ -83,26 +91,26 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
           ))}
         </select>
 
-        <span
-          className={clsx(
-            "flex-1 truncate text-sm",
-            isDone && "text-slate-400 line-through"
-          )}
-        >
-          {node.title}
+        <span className="flex w-12 shrink-0 justify-center">
+          <PriorityBadge priority={node.priority} />
         </span>
 
-        <PriorityBadge priority={node.priority} />
+        <span className="w-28 shrink-0 whitespace-nowrap text-center text-xs text-slate-400">
+          {node.startDate ? formatDate(node.startDate) : ""}
+        </span>
 
-        {node.tags.map((t) => (
-          <TagPill key={t.id} tag={t} />
-        ))}
+        <span
+          className={clsx(
+            "w-28 shrink-0 whitespace-nowrap text-center text-xs",
+            overdue ? "font-semibold text-red-600" : "text-slate-400"
+          )}
+        >
+          {node.dueDate ? formatDate(node.dueDate) : ""}
+        </span>
 
-        {node.dueDate && (
-          <span className={clsx("whitespace-nowrap text-xs", overdue ? "font-semibold text-red-600" : "text-slate-400")}>
-            {formatDate(node.dueDate)}
-          </span>
-        )}
+        <span className="flex w-40 shrink-0 items-center gap-1 overflow-hidden">
+          <TagList tags={node.tags} />
+        </span>
 
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
           <button

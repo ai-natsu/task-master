@@ -134,17 +134,22 @@ export function ProjectView() {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        {/* 長い名前・説明は右側のボタンを押しのけず、収まらない分を「...」で省略する */}
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: project.color }} />
-            <h1 className="text-xl font-bold">{project.name}</h1>
+            <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: project.color }} />
+            <h1 className="truncate text-xl font-bold" title={project.name}>
+              {project.name}
+            </h1>
           </div>
           {project.description && (
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{project.description}</p>
+            <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400" title={project.description}>
+              {project.description}
+            </p>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
           <button
             onClick={() => setShowStats((s) => !s)}
             className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-800"

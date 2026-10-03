@@ -50,8 +50,10 @@ export function Dashboard() {
               {overdue.map((t) => (
                 <li key={t.id} className="flex items-center gap-2 text-sm">
                   <PriorityBadge priority={t.priority} />
-                  <span className="flex-1 truncate">{t.title}</span>
-                  <span className="text-xs text-slate-400">
+                  <span className="flex-1 truncate" title={t.title}>
+                    {t.title}
+                  </span>
+                  <span className="max-w-[8rem] shrink-0 truncate text-xs text-slate-400" title={projectNameById.get(t.projectId)?.name}>
                     {projectNameById.get(t.projectId)?.name}
                   </span>
                   <span className="text-xs font-medium text-red-600">
@@ -72,8 +74,10 @@ export function Dashboard() {
               {upcoming.map((t) => (
                 <li key={t.id} className="flex items-center gap-2 text-sm">
                   <PriorityBadge priority={t.priority} />
-                  <span className="flex-1 truncate">{t.title}</span>
-                  <span className="text-xs text-slate-400">
+                  <span className="flex-1 truncate" title={t.title}>
+                    {t.title}
+                  </span>
+                  <span className="max-w-[8rem] shrink-0 truncate text-xs text-slate-400" title={projectNameById.get(t.projectId)?.name}>
                     {projectNameById.get(t.projectId)?.name}
                   </span>
                   <span className="text-xs text-slate-500">
@@ -93,11 +97,13 @@ export function Dashboard() {
             <Link
               key={p.id}
               to={`/projects/${p.id}`}
-              className="rounded-xl border border-slate-200 bg-white p-4 hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-700"
+              className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-700"
             >
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-                <span className="font-medium">{p.name}</span>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: p.color }} />
+                <span className="truncate font-medium" title={p.name}>
+                  {p.name}
+                </span>
               </div>
               <div className="mt-2 text-xs text-slate-400">{t("{count} 件のタスク", { count: p._count?.tasks ?? 0 })}</div>
             </Link>

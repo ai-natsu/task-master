@@ -135,6 +135,21 @@ export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
 
         {/* タスク行 */}
         <div ref={rowsRef} className="relative">
+          {/* 土日・祝日を本体の行も色分け（日付ヘッダーと同じ色。V2 と同じ） */}
+          <div className="pointer-events-none absolute inset-y-0" style={{ left: LABEL_W, width: days.length * DAY_W }}>
+            {days.map((d, i) => {
+              const dow = d.getDay();
+              const off = dow === 0 || holidayNames.has(format(d, "yyyy-MM-dd"));
+              if (!off && dow !== 6) return null;
+              return (
+                <div
+                  key={d.toISOString()}
+                  className={clsx("absolute inset-y-0", off ? "bg-red-50/70 dark:bg-red-950/20" : "bg-blue-50/70 dark:bg-blue-950/20")}
+                  style={{ left: i * DAY_W, width: DAY_W }}
+                />
+              );
+            })}
+          </div>
         {rows.map(({ node, depth }) => {
           const statusDef = statusById.get(node.status);
           const baseBar = computeBar(node, rangeStart);

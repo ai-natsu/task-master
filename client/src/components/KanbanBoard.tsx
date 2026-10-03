@@ -17,7 +17,7 @@ import { useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { isOverdue } from "../utils/due";
 import type { StatusDef, Task } from "../types";
-import { PriorityBadge, TagPill } from "./Badges";
+import { PriorityBadge, TagList } from "./Badges";
 import { useReorderTasks, useUpdateTask } from "../api/tasks";
 import { useStatuses } from "../api/statuses";
 import { planKanbanDrag } from "../utils/dnd";
@@ -39,14 +39,12 @@ function KanbanCard({ task, isDone, onEdit, dragging }: { task: Task; isDone: bo
         dragging && "rotate-2 shadow-lg ring-2 ring-indigo-400"
       )}
     >
-      <div className={clsx("text-sm font-medium", isDone && "text-slate-400 line-through")}>
+      <div className={clsx("truncate text-sm font-medium", isDone && "text-slate-400 line-through")} title={task.title}>
         {task.title}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <PriorityBadge priority={task.priority} />
-        {task.tags.map((t) => (
-          <TagPill key={t.id} tag={t} />
-        ))}
+        <TagList tags={task.tags} />
         {task.dueDate && (
           <span className={clsx("text-xs", overdue ? "font-semibold text-red-600" : "text-slate-400")}>
             {formatDate(task.dueDate)}

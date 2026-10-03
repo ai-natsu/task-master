@@ -8,6 +8,8 @@ html {
 
 body {
   @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  /* V2 と同じ日本語ゴシック体を優先する（Mac など無い環境では次の候補が使われる） */
+  font-family: "Yu Gothic UI", "Hiragino Sans", "Meiryo", system-ui, -apple-system, sans-serif;
 }
 
 * {

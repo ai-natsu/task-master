@@ -78,7 +78,8 @@ export function ProjectsList() {
               <div className="flex items-center gap-2">
                 <Link
                   to={`/projects/${p.id}`}
-                  className="truncate font-medium hover:text-indigo-600 dark:hover:text-indigo-400"
+                  className="min-w-0 truncate font-medium hover:text-indigo-600 dark:hover:text-indigo-400"
+                  title={p.name}
                 >
                   {p.name}
                 </Link>
@@ -89,7 +90,9 @@ export function ProjectsList() {
                 )}
               </div>
               {p.description && (
-                <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{p.description}</p>
+                <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400" title={p.description}>
+                  {p.description}
+                </p>
               )}
             </div>
             <span className="shrink-0 text-xs text-slate-400">{t("{count} 件のタスク", { count: p._count?.tasks ?? 0 })}</span>

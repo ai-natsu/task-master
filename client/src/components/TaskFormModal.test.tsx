@@ -102,7 +102,7 @@ describe("TaskFormModal", () => {
   it("V-4f: タグをクリックすると tagIds に含まれる", async () => {
     const { onSubmit } = setup();
     await userEvent.type(screen.getByPlaceholderText("タスク名を入力"), "t");
-    await userEvent.click(screen.getByText("#backend"));
+    await userEvent.click(screen.getByText("backend"));
     await userEvent.click(screen.getByRole("button", { name: "作成" }));
 
     expect(onSubmit.mock.calls[0][0]).toMatchObject({ tagIds: ["tag1"] });
