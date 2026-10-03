@@ -37,7 +37,7 @@ TRANSLATIONS: dict[str, str] = {
     "タスク総数": "Total Tasks",
     "完了率": "Completion Rate",
     "期限超過": "Overdue",
-    "7日以内に期限": "Due within 7 days",
+    "期限が近い（3日後まで）": "Due soon (today to +3 days)",
     "期限超過のタスク": "Overdue Tasks",
     "期限が近いタスク": "Upcoming Tasks",
     "プロジェクトがありません": "No projects yet",

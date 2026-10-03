@@ -39,7 +39,7 @@ def render_stat_cards_row(parent, stats: dict) -> ctk.CTkFrame:
     build_stat_card(
         row, t("期限超過"), stats["overdue"], accent="#dc2626" if stats["overdue"] > 0 else None
     ).pack(side="left", fill="both", expand=True, padx=6)
-    build_stat_card(row, t("7日以内に期限"), stats["dueSoon"], accent="#d97706").pack(
+    build_stat_card(row, t("期限が近い（3日後まで）"), stats["dueSoon"], accent="#d97706").pack(
         side="left", fill="both", expand=True, padx=(6, 0)
     )
     return row

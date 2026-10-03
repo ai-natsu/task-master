@@ -7,7 +7,6 @@ winfo_containing()により実際にカーソル下にあるウィジェット�
 列/カードを判定する方式を採る。
 """
 
-import datetime
 import tkinter as tk
 
 import customtkinter as ctk
@@ -16,6 +15,7 @@ from app.db.statuses import list_statuses
 from app.db.tasks import create_task, list_tasks, reorder_tasks, update_task
 from app.i18n import t
 from app.logic.dnd import plan_kanban_drag
+from app.logic.due import is_overdue
 from app.ui import theme
 from app.ui.widgets.badges import color_pill, priority_badge
 from app.ui.widgets.task_form_dialog import ask_task_form
@@ -30,10 +30,6 @@ _MAX_TAG_NAME_LEN = 4
 # 判定する(列幅自体がwidth=272で固定されているため、概算値も安定する)。
 _META_ROW_WIDTH = 200
 _ELLIPSIS_RESERVE = 36
-
-
-def _now_iso() -> str:
-    return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
 def _truncate(text: str, max_len: int) -> str:
@@ -153,7 +149,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
         # width=272で固定のため安定する概算値)を基準に判定する。
         due_width = 0
         if task.due_date:
-            overdue = not is_done and task.due_date < _now_iso()
+            overdue = not is_done and is_overdue(task.due_date)
             due_label = ctk.CTkLabel(
                 meta_row,
                 text=t("期限: {date}").format(date=task.due_date[:10]),
