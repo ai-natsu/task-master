@@ -6,6 +6,7 @@ import {
   taskMoveSchema as moveSchema,
   taskReorderSchema as reorderSchema,
 } from "../schemas.js";
+import { MSG, sendError, sendValidationError } from "../errors.js";
 
 const router = Router();
 
@@ -65,20 +66,20 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
   const { tagIds, dueDate, ...rest } = parsed.data;
 
   if (rest.parentId) {
     const parent = await prisma.task.findUnique({ where: { id: rest.parentId } });
-    if (!parent) return res.status(400).json({ error: "Parent task not found" });
+    if (!parent) return sendError(res, 400, MSG.parentNotFound);
   }
 
   if (rest.status) {
     const exists = await prisma.status.findUnique({ where: { id: rest.status } });
-    if (!exists) return res.status(400).json({ error: "Invalid status" });
+    if (!exists) return sendError(res, 400, MSG.invalidStatus);
   } else {
     const first = await prisma.status.findFirst({ orderBy: { order: "asc" } });
-    if (!first) return res.status(400).json({ error: "No statuses defined" });
+    if (!first) return sendError(res, 400, MSG.noStatuses);
     rest.status = first.id;
   }
 
@@ -101,12 +102,12 @@ router.post("/", async (req, res) => {
 
 router.patch("/reorder", async (req, res) => {
   const parsed = reorderSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
 
   // 親の付け替えを含む場合は、move と同じく循環参照（自分自身・自分の子孫の配下）を拒否する
   for (const { id, parentId } of parsed.data.items) {
     if (parentId && (await isDescendantOrSelf(id, parentId))) {
-      return res.status(400).json({ error: "Cannot move a task under itself or its own subtask" });
+      return sendError(res, 400, MSG.cycle);
     }
   }
 
@@ -130,18 +131,18 @@ router.get("/:id", async (req, res) => {
     where: { id: req.params.id },
     include: taskInclude,
   });
-  if (!task) return res.status(404).json({ error: "Task not found" });
+  if (!task) return sendError(res, 404, MSG.taskNotFound);
   res.json(serialize(task));
 });
 
 router.patch("/:id", async (req, res) => {
   const parsed = updateSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
   const { tagIds, ...rest } = parsed.data;
 
   if (rest.status) {
     const exists = await prisma.status.findUnique({ where: { id: rest.status } });
-    if (!exists) return res.status(400).json({ error: "Invalid status" });
+    if (!exists) return sendError(res, 400, MSG.invalidStatus);
   }
 
   try {
@@ -160,20 +161,20 @@ router.patch("/:id", async (req, res) => {
     });
     res.json(serialize(task));
   } catch {
-    res.status(404).json({ error: "Task not found" });
+    sendError(res, 404, MSG.taskNotFound);
   }
 });
 
 router.patch("/:id/move", async (req, res) => {
   const parsed = moveSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
 
   const { id } = req.params;
   const { parentId } = parsed.data;
 
   if (parentId) {
     if (await isDescendantOrSelf(id, parentId)) {
-      return res.status(400).json({ error: "Cannot move a task under itself or its own subtask" });
+      return sendError(res, 400, MSG.cycle);
     }
   }
 
@@ -185,7 +186,7 @@ router.patch("/:id/move", async (req, res) => {
     });
     res.json(serialize(task));
   } catch {
-    res.status(404).json({ error: "Task not found" });
+    sendError(res, 404, MSG.taskNotFound);
   }
 });
 
@@ -194,7 +195,7 @@ router.delete("/:id", async (req, res) => {
     await prisma.task.delete({ where: { id: req.params.id } });
     res.status(204).end();
   } catch {
-    res.status(404).json({ error: "Task not found" });
+    sendError(res, 404, MSG.taskNotFound);
   }
 });
 

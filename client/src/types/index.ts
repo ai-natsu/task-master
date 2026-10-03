@@ -14,6 +14,8 @@ export interface Tag {
   id: string;
   name: string;
   color: string;
+  /** このタグが付いているタスクの件数（GET /api/tags のみ） */
+  _count?: { tasks: number };
 }
 
 export interface Holiday {

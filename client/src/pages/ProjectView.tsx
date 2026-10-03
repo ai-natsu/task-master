@@ -12,6 +12,7 @@ import { TaskFormModal, taskToFormValue, type TaskFormValue } from "../component
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { StatsCards } from "../components/StatsCards";
 import { PaperTabs } from "../components/PaperTabs";
+import { errorMessage } from "../utils/errorMessage";
 import { buildTaskTree, descendantIds, flattenWithDepth, type TaskTreeNode } from "../utils/tree";
 import { planRowDrop, type RowDropZone } from "../utils/dnd";
 import type { Task } from "../types";
@@ -36,7 +37,11 @@ export function ProjectView() {
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const reorderTasks = useReorderTasks();
-  const moveTask = useMoveTask();
+  // フォーム（モーダル）からの保存は、失敗をモーダル内に表示する（inline）
+  const formCreateTask = useCreateTask({ inline: true });
+  const formUpdateTask = useUpdateTask({ inline: true });
+  const formMoveTask = useMoveTask({ inline: true });
+  const [formError, setFormError] = useState("");
   const deleteTask = useDeleteTask();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -58,46 +63,55 @@ export function ProjectView() {
   const openCreate = (parentId: string | null = null) => {
     setEditingTask(undefined);
     setNewTaskParentId(parentId);
+    setFormError("");
     setFormOpen(true);
   };
 
   const openEdit = (task: Task) => {
     setEditingTask(task);
+    setFormError("");
     setFormOpen(true);
   };
 
-  const handleSubmit = (value: TaskFormValue) => {
+  const handleSubmit = async (value: TaskFormValue) => {
     const startDate = value.startDate ? new Date(value.startDate).toISOString() : null;
     const dueDate = value.dueDate ? new Date(value.dueDate).toISOString() : null;
-    if (editingTask) {
-      updateTask.mutate({
-        id: editingTask.id,
-        title: value.title,
-        description: value.description || null,
-        status: value.status || undefined,
-        priority: value.priority,
-        startDate,
-        dueDate,
-        tagIds: value.tagIds,
-      });
-      if (value.parentId !== editingTask.parentId) {
-        // 親タスクを変えた場合は、新しい親の最後の子として付け替える
-        const siblings = allTasks.filter((t) => t.parentId === value.parentId && t.id !== editingTask.id);
-        const order = siblings.reduce((max, t) => Math.max(max, t.order), -1) + 1;
-        moveTask.mutate({ id: editingTask.id, parentId: value.parentId, order });
+    setFormError("");
+    try {
+      if (editingTask) {
+        await formUpdateTask.mutateAsync({
+          id: editingTask.id,
+          title: value.title,
+          description: value.description || null,
+          status: value.status || undefined,
+          priority: value.priority,
+          startDate,
+          dueDate,
+          tagIds: value.tagIds,
+        });
+        if (value.parentId !== editingTask.parentId) {
+          // 親タスクを変えた場合は、新しい親の最後の子として付け替える
+          const siblings = allTasks.filter((t) => t.parentId === value.parentId && t.id !== editingTask.id);
+          const order = siblings.reduce((max, t) => Math.max(max, t.order), -1) + 1;
+          await formMoveTask.mutateAsync({ id: editingTask.id, parentId: value.parentId, order });
+        }
+      } else {
+        await formCreateTask.mutateAsync({
+          title: value.title,
+          description: value.description || undefined,
+          projectId,
+          parentId: value.parentId ?? newTaskParentId,
+          status: value.status || undefined,
+          priority: value.priority,
+          startDate,
+          dueDate,
+          tagIds: value.tagIds,
+        });
       }
-    } else {
-      createTask.mutate({
-        title: value.title,
-        description: value.description || undefined,
-        projectId,
-        parentId: value.parentId ?? newTaskParentId,
-        status: value.status || undefined,
-        priority: value.priority,
-        startDate,
-        dueDate,
-        tagIds: value.tagIds,
-      });
+    } catch (e) {
+      // 失敗したらモーダルを閉じず、理由をモーダル内に表示する
+      setFormError(errorMessage(e, t));
+      return;
     }
     setFormOpen(false);
     setEditingTask(undefined);
@@ -192,10 +206,12 @@ export function ProjectView() {
         mode={editingTask ? "edit" : "create"}
         initial={editingTask ? taskToFormValue(editingTask) : { parentId: newTaskParentId }}
         parentOptions={parentOptions}
+        error={formError}
         onSubmit={handleSubmit}
         onClose={() => {
           setFormOpen(false);
           setEditingTask(undefined);
+          setFormError("");
           setNewTaskParentId(null);
         }}
       />

@@ -14,11 +14,13 @@ interface Props {
   open: boolean;
   mode: "create" | "edit";
   initial?: Project;
-  onSubmit: (value: ProjectFormValue) => void;
+  onSubmit: (value: ProjectFormValue) => void | Promise<void>;
   onClose: () => void;
+  /** 保存に失敗したときのメッセージ（モーダルを閉じず、ボタンの上に赤字で表示する） */
+  error?: string;
 }
 
-export function ProjectFormModal({ open, mode, initial, onSubmit, onClose }: Props) {
+export function ProjectFormModal({ open, mode, initial, onSubmit, onClose, error }: Props) {
   const t = useT();
   const [value, setValue] = useState<ProjectFormValue>({
     name: initial?.name ?? "",
@@ -80,6 +82,12 @@ export function ProjectFormModal({ open, mode, initial, onSubmit, onClose }: Pro
             </div>
           </div>
         </div>
+
+        {error && (
+          <p role="alert" className="mt-4 text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
         <div className="mt-5 flex justify-end gap-2">
           <button

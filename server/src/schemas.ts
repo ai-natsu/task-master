@@ -62,6 +62,13 @@ export const tagCreateSchema = z.object({
   color: z.string().optional(),
 });
 
+export const tagUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(50).optional(),
+    color: z.string().optional(),
+  })
+  .refine((v) => v.name !== undefined || v.color !== undefined, "nothing to update");
+
 export const statusCreateSchema = z.object({
   label: z.string().min(1).max(50),
   color: z.string().optional(),

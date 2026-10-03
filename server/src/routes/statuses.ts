@@ -5,6 +5,7 @@ import {
   statusUpdateSchema as updateSchema,
   statusReorderSchema as reorderSchema,
 } from "../schemas.js";
+import { MSG, sendError, sendValidationError } from "../errors.js";
 
 const router = Router();
 
@@ -15,7 +16,7 @@ router.get("/", async (_req, res) => {
 
 router.post("/", async (req, res) => {
   const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
 
   const maxOrder = await prisma.status.aggregate({ _max: { order: true } });
   const status = await prisma.status.create({
@@ -26,7 +27,7 @@ router.post("/", async (req, res) => {
 
 router.patch("/reorder", async (req, res) => {
   const parsed = reorderSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
 
   await prisma.$transaction(
     parsed.data.ids.map((id, index) =>
@@ -38,7 +39,7 @@ router.patch("/reorder", async (req, res) => {
 
 router.patch("/:id", async (req, res) => {
   const parsed = updateSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
 
   try {
     const status = await prisma.status.update({
@@ -47,26 +48,24 @@ router.patch("/:id", async (req, res) => {
     });
     res.json(status);
   } catch {
-    res.status(404).json({ error: "Status not found" });
+    sendError(res, 404, MSG.statusNotFound);
   }
 });
 
 router.delete("/:id", async (req, res) => {
   const inUse = await prisma.task.count({ where: { status: req.params.id } });
   if (inUse > 0) {
-    return res
-      .status(409)
-      .json({ error: `このステータスは ${inUse} 件のタスクで使用中のため削除できません` });
+    return sendError(res, 409, MSG.statusInUse, { count: inUse });
   }
   const total = await prisma.status.count();
   if (total <= 1) {
-    return res.status(409).json({ error: "最後のステータスは削除できません" });
+    return sendError(res, 409, MSG.lastStatus);
   }
   try {
     await prisma.status.delete({ where: { id: req.params.id } });
     res.status(204).end();
   } catch {
-    res.status(404).json({ error: "Status not found" });
+    sendError(res, 404, MSG.statusNotFound);
   }
 });
 

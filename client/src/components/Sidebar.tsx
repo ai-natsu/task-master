@@ -6,23 +6,32 @@ import { ProjectFormModal, type ProjectFormValue } from "./ProjectFormModal";
 import { ConfirmDialog } from "./ConfirmDialog";
 import type { Project } from "../types";
 import { useT } from "../i18n";
+import { errorMessage } from "../utils/errorMessage";
 
 export function Sidebar() {
   const t = useT();
   const { data: projects = [] } = useProjects();
-  const createProject = useCreateProject();
-  const updateProject = useUpdateProject();
+  const formCreateProject = useCreateProject({ inline: true });
+  const formUpdateProject = useUpdateProject({ inline: true });
+  const [formError, setFormError] = useState("");
   const deleteProject = useDeleteProject();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Project | undefined>();
   const [deleting, setDeleting] = useState<Project | undefined>();
 
-  const handleSubmit = (value: ProjectFormValue) => {
-    if (editing) {
-      updateProject.mutate({ id: editing.id, ...value });
-    } else {
-      createProject.mutate(value);
+  const handleSubmit = async (value: ProjectFormValue) => {
+    setFormError("");
+    try {
+      if (editing) {
+        await formUpdateProject.mutateAsync({ id: editing.id, ...value });
+      } else {
+        await formCreateProject.mutateAsync(value);
+      }
+    } catch (e) {
+      // 失敗したらモーダルを閉じず、理由をモーダル内に表示する
+      setFormError(errorMessage(e, t));
+      return;
     }
     setFormOpen(false);
     setEditing(undefined);
@@ -123,10 +132,12 @@ export function Sidebar() {
         open={formOpen}
         mode={editing ? "edit" : "create"}
         initial={editing}
+        error={formError}
         onSubmit={handleSubmit}
         onClose={() => {
           setFormOpen(false);
           setEditing(undefined);
+          setFormError("");
         }}
       />
 

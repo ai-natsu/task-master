@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
+import { inlineMeta, type MutationOpts } from "./meta";
 import type { Priority, Task } from "../types";
 
 export interface TaskFilters {
@@ -40,9 +41,10 @@ export interface CreateTaskInput {
   tagIds?: string[];
 }
 
-export function useCreateTask() {
+export function useCreateTask(opts?: MutationOpts) {
   const qc = useQueryClient();
   return useMutation({
+    meta: inlineMeta(opts),
     mutationFn: (data: CreateTaskInput) => api.post<Task>("/tasks", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tasks"] });
@@ -63,9 +65,10 @@ export interface UpdateTaskInput {
   tagIds?: string[];
 }
 
-export function useUpdateTask() {
+export function useUpdateTask(opts?: MutationOpts) {
   const qc = useQueryClient();
   return useMutation({
+    meta: inlineMeta(opts),
     mutationFn: ({ id, ...data }: UpdateTaskInput) => api.patch<Task>(`/tasks/${id}`, data),
     onMutate: async (updated) => {
       await qc.cancelQueries({ queryKey: ["tasks"] });
@@ -97,9 +100,10 @@ export function useDeleteTask() {
   });
 }
 
-export function useMoveTask() {
+export function useMoveTask(opts?: MutationOpts) {
   const qc = useQueryClient();
   return useMutation({
+    meta: inlineMeta(opts),
     mutationFn: ({ id, parentId, projectId, order }: { id: string; parentId?: string | null; projectId?: string; order?: number }) =>
       api.patch<Task>(`/tasks/${id}/move`, { parentId, projectId, order }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),

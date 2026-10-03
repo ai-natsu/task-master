@@ -1,23 +1,47 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { tagCreateSchema as createSchema } from "../schemas.js";
+import { tagCreateSchema as createSchema, tagUpdateSchema as updateSchema } from "../schemas.js";
+import { MSG, sendError, sendValidationError } from "../errors.js";
 
 const router = Router();
 
 router.get("/", async (_req, res) => {
-  const tags = await prisma.tag.findMany({ orderBy: { name: "asc" } });
+  // _count.tasks = このタグが付いているタスクの件数（削除確認の表示に使う）
+  const tags = await prisma.tag.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { tasks: true } } },
+  });
   res.json(tags);
 });
 
 router.post("/", async (req, res) => {
   const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
 
   try {
     const tag = await prisma.tag.create({ data: parsed.data });
     res.status(201).json(tag);
   } catch {
-    res.status(409).json({ error: "Tag already exists" });
+    sendError(res, 409, MSG.tagExists);
+  }
+});
+
+// 改名・色変更。名前が既存と重複する場合は 409
+router.patch("/:id", async (req, res) => {
+  const parsed = updateSchema.safeParse(req.body);
+  if (!parsed.success) return sendValidationError(res, parsed.error);
+
+  try {
+    const tag = await prisma.tag.update({
+      where: { id: req.params.id },
+      data: parsed.data,
+      include: { _count: { select: { tasks: true } } },
+    });
+    res.json(tag);
+  } catch (e) {
+    const code = (e as { code?: string }).code;
+    if (code === "P2002") return sendError(res, 409, MSG.tagExists);
+    sendError(res, 404, MSG.tagNotFound);
   }
 });
 
@@ -26,7 +50,7 @@ router.delete("/:id", async (req, res) => {
     await prisma.tag.delete({ where: { id: req.params.id } });
     res.status(204).end();
   } catch {
-    res.status(404).json({ error: "Tag not found" });
+    sendError(res, 404, MSG.tagNotFound);
   }
 });
 

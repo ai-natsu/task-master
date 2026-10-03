@@ -5,6 +5,7 @@ import { useCreateTag, useTags } from "../api/tags";
 import { useStatuses } from "../api/statuses";
 import { TagPill } from "./Badges";
 import { useT } from "../i18n";
+import { errorMessage } from "../utils/errorMessage";
 
 export interface TaskFormValue {
   title: string;
@@ -22,8 +23,10 @@ interface Props {
   mode: "create" | "edit";
   initial?: Partial<TaskFormValue>;
   parentOptions: { id: string; title: string; depth: number }[];
-  onSubmit: (value: TaskFormValue) => void;
+  onSubmit: (value: TaskFormValue) => void | Promise<void>;
   onClose: () => void;
+  /** 保存に失敗したときのメッセージ（モーダルを閉じず、ボタンの上に赤字で表示する） */
+  error?: string;
 }
 
 const empty: TaskFormValue = {
@@ -37,13 +40,14 @@ const empty: TaskFormValue = {
   parentId: null,
 };
 
-export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, onClose }: Props) {
+export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, onClose, error }: Props) {
   const t = useT();
   const [value, setValue] = useState<TaskFormValue>({ ...empty, ...initial });
   const [newTagName, setNewTagName] = useState("");
   const { data: tags = [] } = useTags();
   const { data: statuses = [] } = useStatuses();
-  const createTag = useCreateTag();
+  const createTag = useCreateTag({ inline: true });
+  const [tagError, setTagError] = useState("");
 
   useEffect(() => {
     if (open) setValue({ ...empty, ...initial });
@@ -60,9 +64,14 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
 
   const handleCreateTag = async () => {
     if (!newTagName.trim()) return;
-    const tag = await createTag.mutateAsync({ name: newTagName.trim() });
-    setValue((v) => ({ ...v, tagIds: [...v.tagIds, tag.id] }));
-    setNewTagName("");
+    setTagError("");
+    try {
+      const tag = await createTag.mutateAsync({ name: newTagName.trim() });
+      setValue((v) => ({ ...v, tagIds: [...v.tagIds, tag.id] }));
+      setNewTagName("");
+    } catch (e) {
+      setTagError(errorMessage(e, t));
+    }
   };
 
   return (
@@ -178,7 +187,10 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
             <div className="mt-2 flex gap-1.5">
               <input
                 value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
+                onChange={(e) => {
+                  setNewTagName(e.target.value);
+                  setTagError("");
+                }}
                 onKeyDown={(e) => e.key === "Enter" && handleCreateTag()}
                 placeholder={t("新しいタグ")}
                 className="flex-1 rounded-lg border border-slate-300 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
@@ -190,8 +202,15 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
                 {t("追加")}
               </button>
             </div>
+            {tagError && <p className="mt-1 text-xs text-red-600">{tagError}</p>}
           </div>
         </div>
+
+        {error && (
+          <p role="alert" className="mt-4 text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
         <div className="mt-5 flex justify-end gap-2">
           <button

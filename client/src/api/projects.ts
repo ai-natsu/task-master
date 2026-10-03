@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
+import { inlineMeta, type MutationOpts } from "./meta";
 import type { Project } from "../types";
 
 export function useProjects(includeArchived = false) {
@@ -10,18 +11,20 @@ export function useProjects(includeArchived = false) {
   });
 }
 
-export function useCreateProject() {
+export function useCreateProject(opts?: MutationOpts) {
   const qc = useQueryClient();
   return useMutation({
+    meta: inlineMeta(opts),
     mutationFn: (data: { name: string; description?: string; color?: string }) =>
       api.post<Project>("/projects", data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
   });
 }
 
-export function useUpdateProject() {
+export function useUpdateProject(opts?: MutationOpts) {
   const qc = useQueryClient();
   return useMutation({
+    meta: inlineMeta(opts),
     mutationFn: ({ id, ...data }: { id: string; name?: string; description?: string; color?: string; archived?: boolean }) =>
       api.patch<Project>(`/projects/${id}`, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),

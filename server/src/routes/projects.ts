@@ -5,6 +5,7 @@ import {
   projectUpdateSchema as updateSchema,
   projectReorderSchema as reorderSchema,
 } from "../schemas.js";
+import { MSG, sendError, sendValidationError } from "../errors.js";
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const parsed = createSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
 
   const maxOrder = await prisma.project.aggregate({ _max: { order: true } });
   const project = await prisma.project.create({
@@ -38,7 +39,7 @@ router.post("/", async (req, res) => {
 
 router.patch("/reorder", async (req, res) => {
   const parsed = reorderSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
 
   await prisma.$transaction(
     parsed.data.ids.map((id, index) =>
@@ -50,13 +51,13 @@ router.patch("/reorder", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   const project = await prisma.project.findUnique({ where: { id: req.params.id } });
-  if (!project) return res.status(404).json({ error: "Project not found" });
+  if (!project) return sendError(res, 404, MSG.projectNotFound);
   res.json(project);
 });
 
 router.patch("/:id", async (req, res) => {
   const parsed = updateSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendValidationError(res, parsed.error);
 
   try {
     const project = await prisma.project.update({
@@ -65,7 +66,7 @@ router.patch("/:id", async (req, res) => {
     });
     res.json(project);
   } catch {
-    res.status(404).json({ error: "Project not found" });
+    sendError(res, 404, MSG.projectNotFound);
   }
 });
 
@@ -74,7 +75,7 @@ router.delete("/:id", async (req, res) => {
     await prisma.project.delete({ where: { id: req.params.id } });
     res.status(204).end();
   } catch {
-    res.status(404).json({ error: "Project not found" });
+    sendError(res, 404, MSG.projectNotFound);
   }
 });
 

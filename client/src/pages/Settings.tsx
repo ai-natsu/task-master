@@ -9,6 +9,8 @@ import {
 import type { StatusDef } from "../types";
 import { LANGUAGES, useLanguage, useT, type Language } from "../i18n";
 import { HolidaySettings } from "../components/HolidaySettings";
+import { TagSettings } from "../components/TagSettings";
+import { errorMessage } from "../utils/errorMessage";
 
 function StatusRow({
   status,
@@ -16,18 +18,23 @@ function StatusRow({
   isLast,
   onMoveUp,
   onMoveDown,
+  onSuccess,
+  onError,
 }: {
   status: StatusDef;
   isFirst: boolean;
   isLast: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onSuccess: () => void;
+  onError: (message: string) => void;
 }) {
   const t = useT();
-  const updateStatus = useUpdateStatus();
-  const deleteStatus = useDeleteStatus();
+  const updateStatus = useUpdateStatus({ inline: true });
+  const deleteStatus = useDeleteStatus({ inline: true });
+  // 失敗は、ステータスの節の下に赤字で表示する（親が表示する）
+  const handlers = { onSuccess, onError: (e: unknown) => onError(errorMessage(e, t)) };
   const [label, setLabel] = useState(status.label);
-  const [error, setError] = useState("");
 
   const saveLabel = () => {
     const trimmed = label.trim();
@@ -35,14 +42,11 @@ function StatusRow({
       setLabel(status.label);
       return;
     }
-    updateStatus.mutate({ id: status.id, label: trimmed });
+    updateStatus.mutate({ id: status.id, label: trimmed }, handlers);
   };
 
   const handleDelete = () => {
-    setError("");
-    deleteStatus.mutate(status.id, {
-      onError: (e) => setError(e.message),
-    });
+    deleteStatus.mutate(status.id, handlers);
   };
 
   return (
@@ -70,7 +74,7 @@ function StatusRow({
         <input
           type="color"
           value={status.color}
-          onChange={(e) => updateStatus.mutate({ id: status.id, color: e.target.value })}
+          onChange={(e) => updateStatus.mutate({ id: status.id, color: e.target.value }, handlers)}
           className="h-8 w-8 cursor-pointer rounded border border-slate-300 dark:border-slate-600"
           title={t("カラー")}
         />
@@ -87,7 +91,7 @@ function StatusRow({
           <input
             type="checkbox"
             checked={status.isDone}
-            onChange={(e) => updateStatus.mutate({ id: status.id, isDone: e.target.checked })}
+            onChange={(e) => updateStatus.mutate({ id: status.id, isDone: e.target.checked }, handlers)}
             className="rounded"
           />
           {t("完了として扱う")}
@@ -100,7 +104,6 @@ function StatusRow({
           {t("削除")}
         </button>
       </div>
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
     </div>
   );
 }
@@ -109,15 +112,20 @@ export function Settings() {
   const t = useT();
   const { language, setLanguage } = useLanguage();
   const { data: statuses = [] } = useStatuses();
-  const createStatus = useCreateStatus();
-  const reorderStatuses = useReorderStatuses();
+  const createStatus = useCreateStatus({ inline: true });
+  const reorderStatuses = useReorderStatuses({ inline: true });
+  const [statusError, setStatusError] = useState("");
+  const statusHandlers = {
+    onSuccess: () => setStatusError(""),
+    onError: (e: unknown) => setStatusError(errorMessage(e, t)),
+  };
   const [newLabel, setNewLabel] = useState("");
   const [newColor, setNewColor] = useState("#f59e0b");
 
   const handleCreate = () => {
     const label = newLabel.trim();
     if (!label) return;
-    createStatus.mutate({ label, color: newColor });
+    createStatus.mutate({ label, color: newColor }, statusHandlers);
     setNewLabel("");
   };
 
@@ -126,7 +134,7 @@ export function Settings() {
     const target = index + delta;
     if (target < 0 || target >= ids.length) return;
     [ids[index], ids[target]] = [ids[target], ids[index]];
-    reorderStatuses.mutate(ids);
+    reorderStatuses.mutate(ids, statusHandlers);
   };
 
   return (
@@ -148,6 +156,8 @@ export function Settings() {
               isLast={i === statuses.length - 1}
               onMoveUp={() => move(i, -1)}
               onMoveDown={() => move(i, 1)}
+              onSuccess={statusHandlers.onSuccess}
+              onError={setStatusError}
             />
           ))}
         </div>
@@ -174,9 +184,15 @@ export function Settings() {
             {t("追加")}
           </button>
         </div>
+        {statusError && (
+          <p role="alert" className="mt-2 text-xs text-red-600">
+            {statusError}
+          </p>
+        )}
       </section>
 
       <HolidaySettings />
+      <TagSettings />
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold">{t("言語 / Language")}</h2>

@@ -9,13 +9,23 @@ import {
 } from "../api/holidays";
 import { useFormatDate, useT } from "../i18n";
 import { parseHolidayCsv } from "../utils/holidayCsv";
+import { errorMessage } from "../utils/errorMessage";
 import type { Holiday } from "../types";
 
-function HolidayRow({ holiday }: { holiday: Holiday }) {
+function HolidayRow({
+  holiday,
+  onSuccess,
+  onError,
+}: {
+  holiday: Holiday;
+  onSuccess: () => void;
+  onError: (message: string) => void;
+}) {
   const t = useT();
   const formatDate = useFormatDate();
-  const rename = useRenameHoliday();
-  const remove = useDeleteHoliday();
+  const rename = useRenameHoliday({ inline: true });
+  const remove = useDeleteHoliday({ inline: true });
+  const handlers = { onSuccess, onError: (e: unknown) => onError(errorMessage(e, t)) };
   const [name, setName] = useState(holiday.name);
 
   const commit = () => {
@@ -24,7 +34,7 @@ function HolidayRow({ holiday }: { holiday: Holiday }) {
       setName(holiday.name); // 空や未変更は元に戻す
       return;
     }
-    rename.mutate({ id: holiday.id, name: next });
+    rename.mutate({ id: holiday.id, name: next }, handlers);
   };
 
   return (
@@ -39,7 +49,7 @@ function HolidayRow({ holiday }: { holiday: Holiday }) {
         className="flex-1 rounded-lg border border-slate-300 px-3 py-1 text-sm dark:border-slate-600 dark:bg-slate-900"
       />
       <button
-        onClick={() => remove.mutate(holiday.id)}
+        onClick={() => remove.mutate(holiday.id, handlers)}
         className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
       >
         {t("削除")}
@@ -52,8 +62,11 @@ function HolidayRow({ holiday }: { holiday: Holiday }) {
 export function HolidaySettings() {
   const t = useT();
   const { data: holidays = [] } = useHolidays();
-  const upsert = useUpsertHoliday();
-  const bulk = useBulkHolidays();
+  const upsert = useUpsertHoliday({ inline: true });
+  const bulk = useBulkHolidays({ inline: true });
+  // 追加・名称変更・削除の失敗は、祝日の節の下に赤字で表示する
+  const [error, setError] = useState("");
+  const clearError = () => setError("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [date, setDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [name, setName] = useState("");
@@ -62,7 +75,10 @@ export function HolidaySettings() {
   const handleAdd = () => {
     const trimmed = name.trim();
     if (!trimmed || !date) return;
-    upsert.mutate({ date, name: trimmed });
+    upsert.mutate(
+      { date, name: trimmed },
+      { onSuccess: clearError, onError: (e) => setError(errorMessage(e, t)) }
+    );
     setName("");
   };
 
@@ -76,7 +92,7 @@ export function HolidaySettings() {
       const { count } = await bulk.mutateAsync(rows);
       setCsvResult({ text: t("{count} 件を登録・更新しました", { count }), error: false });
     } catch (e) {
-      setCsvResult({ text: e instanceof Error ? e.message : String(e), error: true });
+      setCsvResult({ text: errorMessage(e, t), error: true });
     }
   };
 
@@ -95,9 +111,15 @@ export function HolidaySettings() {
           </div>
         )}
         {holidays.map((h) => (
-          <HolidayRow key={h.id} holiday={h} />
+          <HolidayRow key={h.id} holiday={h} onSuccess={clearError} onError={setError} />
         ))}
       </div>
+
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-red-600">
+          {error}
+        </p>
+      )}
 
       <div className="mt-4 flex items-center gap-2 rounded-lg border border-dashed border-slate-300 p-3 dark:border-slate-700">
         <input
