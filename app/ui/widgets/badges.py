@@ -33,8 +33,22 @@ def priority_badge(parent, priority: str) -> ctk.CTkLabel:
     )
 
 
-def color_pill(parent, text: str) -> ctk.CTkLabel:
-    """タグ用のピル。タグごとの固有色ではなく、周囲と馴染む統一グレーで表示する。"""
+def _tint(color: str, ratio: float) -> str:
+    """16進カラーを白に近づける（ピルの薄い背景色用）。"""
+    r, g, b = (int(color[i:i + 2], 16) for i in (1, 3, 5))
+    return "#{:02x}{:02x}{:02x}".format(*(round(c + (255 - c) * ratio) for c in (r, g, b)))
+
+
+def color_pill(parent, text: str, color: str | None = None) -> ctk.CTkLabel:
+    """タグ用のピル。タグの色が分かれば、その色の薄い背景＋色付きの文字（V1 と同じ）で表示する。
+
+    色を渡さない場合（「...」の省略ピルなど）は、周囲と馴染むグレーで表示する。
+    """
+    if color:
+        return ctk.CTkLabel(
+            parent, text=text, fg_color=_tint(color, 0.85), text_color=color, corner_radius=8,
+            padx=8,
+        )
     return ctk.CTkLabel(
         parent,
         text=text,

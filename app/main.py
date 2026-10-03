@@ -11,7 +11,9 @@ from app.ui.app_window import AppWindow
 
 
 def main() -> None:
-    ctk.set_appearance_mode("system")
+    # ツリー・ガント・紙のタブなどの色はライト用に固定しているため、外観はライトに固定する
+    # （OS がダークでも、一部だけダークになる混在を避ける）
+    ctk.set_appearance_mode("light")
     ctk.set_default_color_theme("blue")
     # CustomTkinter既定の"Roboto"は日本語グリフを持たず代替表示が環境依存に
     # なるため、familyを指定していない全CTkFont呼び出しに反映されるデフォルト
