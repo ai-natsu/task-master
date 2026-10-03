@@ -329,7 +329,7 @@ V1 の外部インターフェース（HTTP API）に相当する、画面とデ
 | IF-H1〜5 | `list_holidays` / `upsert_holiday` / `delete_holiday` / `parse_holiday_csv` / `bulk_upsert_holidays` | 祝日管理（V2 のみ） |
 | IF-A1〜2 | `get_setting` / `set_setting` | アプリ設定（言語など。V2 のみ） |
 | IF-ST | `get_stats(project_id, today)` | 統計（`project_id` 指定＝当該、未指定＝非アーカイブ横断） |
-| IF-DB | `connect` / `ensure_default_statuses` | 接続・スキーマ作成・初期ステータス投入（V1 の `API-H` に相当する起動時処理） |
+| IF-DB | `connect` / `ensure_default_statuses` | 接続・スキーマ作成・初期ステータス投入（V1 の `API-HC` に相当する起動時処理） |
 
 ### 5.3 IF仕様サンプル：IF-T2 タスク作成
 **関数**: `create_task(conn, title, project_id, ...)`
