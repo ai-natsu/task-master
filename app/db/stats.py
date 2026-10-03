@@ -9,13 +9,18 @@ import sqlite3
 
 from app.constants import PRIORITIES
 from app.db.statuses import list_statuses
+from app.logic.due import due_soon_last_key, today_key
 
 
 def _iso(dt: datetime.datetime) -> str:
     return dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
-def get_stats(conn: sqlite3.Connection, project_id: str | None = None) -> dict:
+def get_stats(
+    conn: sqlite3.Connection,
+    project_id: str | None = None,
+    today: datetime.date | None = None,
+) -> dict:
     if project_id:
         where = "projectId = ?"
         params: list[object] = [project_id]
@@ -41,22 +46,22 @@ def get_stats(conn: sqlite3.Connection, project_id: str | None = None) -> dict:
         by_priority[row["priority"]] = row["c"]
 
     now = datetime.datetime.now(datetime.UTC)
-    now_iso = _iso(now)
-    soon_iso = _iso(now + datetime.timedelta(days=3))
+    today_str = today_key(today)
+    soon_last = due_soon_last_key(today)
     week_ago_iso = _iso(now - datetime.timedelta(days=7))
 
     done_placeholders = ",".join("?" for _ in done_ids) if done_ids else "NULL"
 
     overdue = conn.execute(
         f'SELECT COUNT(*) FROM "Task" WHERE {where} AND status NOT IN ({done_placeholders}) '
-        f"AND dueDate IS NOT NULL AND dueDate < ?",
-        [*params, *done_ids, now_iso],
+        f"AND dueDate IS NOT NULL AND substr(dueDate, 1, 10) < ?",
+        [*params, *done_ids, today_str],
     ).fetchone()[0]
 
     due_soon = conn.execute(
         f'SELECT COUNT(*) FROM "Task" WHERE {where} AND status NOT IN ({done_placeholders}) '
-        f"AND dueDate IS NOT NULL AND dueDate >= ? AND dueDate <= ?",
-        [*params, *done_ids, now_iso, soon_iso],
+        f"AND dueDate IS NOT NULL AND substr(dueDate, 1, 10) BETWEEN ? AND ?",
+        [*params, *done_ids, today_str, soon_last],
     ).fetchone()[0]
 
     completed_last_7_days = conn.execute(

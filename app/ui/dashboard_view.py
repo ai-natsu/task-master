@@ -1,6 +1,5 @@
 """ダッシュボード画面（旧 client/src/pages/Dashboard.tsx の移植）。"""
 
-import datetime
 
 import customtkinter as ctk
 
@@ -9,13 +8,10 @@ from app.db.stats import get_stats
 from app.db.statuses import list_statuses
 from app.db.tasks import list_tasks
 from app.i18n import t
+from app.logic.due import is_due_soon, is_overdue
 from app.ui import theme
 from app.ui.widgets.badges import priority_badge
 from app.ui.widgets.stats_cards import render_breakdown_panels
-
-
-def _now_iso() -> str:
-    return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
 class DashboardView(ctk.CTkScrollableFrame):
@@ -39,20 +35,21 @@ class DashboardView(ctk.CTkScrollableFrame):
         self._stat_card(cards_row, t("タスク総数"), str(stats["total"]))
         self._stat_card(cards_row, t("完了率"), f"{stats['completionRate']}%")
         self._stat_card(cards_row, t("期限超過"), str(stats["overdue"]), accent="#dc2626")
-        self._stat_card(cards_row, t("7日以内に期限"), str(stats["dueSoon"]), accent="#d97706")
+        self._stat_card(
+            cards_row, t("期限が近い（3日後まで）"), str(stats["dueSoon"]), accent="#d97706"
+        )
 
-        now = _now_iso()
         overdue = sorted(
             (
                 task for task in tasks
-                if task.status not in done_ids and task.due_date and task.due_date < now
+                if task.status not in done_ids and is_overdue(task.due_date)
             ),
             key=lambda task: task.due_date,
         )[:8]
         upcoming = sorted(
             (
                 task for task in tasks
-                if task.status not in done_ids and task.due_date and task.due_date >= now
+                if task.status not in done_ids and is_due_soon(task.due_date)
             ),
             key=lambda task: task.due_date,
         )[:8]

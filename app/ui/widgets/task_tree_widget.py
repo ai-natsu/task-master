@@ -5,7 +5,6 @@ ttk.Treeview はネイティブに展開/折りたたみを持つため採用し
 という元実装の制約はそのまま）。
 """
 
-import datetime
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -16,6 +15,7 @@ from app.db.statuses import list_statuses
 from app.db.tasks import create_task, delete_task, list_tasks, move_task, reorder_tasks, update_task
 from app.i18n import t
 from app.logic.dnd import plan_tree_drag
+from app.logic.due import is_overdue
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
 from app.ui.widgets.badges import PRIORITY_COLORS, priority_label
@@ -24,10 +24,6 @@ from app.ui.widgets.task_form_dialog import ask_task_form
 
 _EMPTY_IID = "__empty__"
 _TAGS_MAX_LEN = 14  # タグ列(幅160px)に収まる目安の文字数。超過分は"..."で省略する
-
-
-def _now_iso() -> str:
-    return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
 def _format_tags(tags) -> str:
@@ -299,12 +295,11 @@ class TaskTreeWidget(ctk.CTkFrame):
             self.after_idle(self._redraw_overlays)
             return
 
-        now = _now_iso()
         for flat in flatten_nodes(tree_nodes):
             task = flat.node.task
             status = statuses.get(task.status)
             is_done = status.is_done if status else False
-            overdue = bool(task.due_date) and not is_done and task.due_date < now
+            overdue = not is_done and is_overdue(task.due_date)
 
             tags = []
             if overdue:
