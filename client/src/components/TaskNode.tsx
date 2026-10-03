@@ -3,7 +3,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
-import { format, isPast } from "date-fns";
+import { format } from "date-fns";
+import { isOverdue } from "../utils/due";
 import type { TaskTreeNode } from "../utils/tree";
 import { useStatuses } from "../api/statuses";
 import { PriorityBadge, TagPill } from "./Badges";
@@ -32,7 +33,7 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
 
   const statusDef = statuses.find((s) => s.id === node.status);
   const isDone = statusDef?.isDone ?? false;
-  const overdue = node.dueDate && !isDone && isPast(new Date(node.dueDate));
+  const overdue = node.dueDate && !isDone && isOverdue(node.dueDate);
 
   return (
     <div>

@@ -15,7 +15,8 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-import { format, isPast } from "date-fns";
+import { format } from "date-fns";
+import { isOverdue } from "../utils/due";
 import type { StatusDef, Task } from "../types";
 import { PriorityBadge, TagPill } from "./Badges";
 import { useReorderTasks, useUpdateTask } from "../api/tasks";
@@ -28,7 +29,7 @@ interface Props {
 }
 
 function KanbanCard({ task, isDone, onEdit, dragging }: { task: Task; isDone: boolean; onEdit?: (task: Task) => void; dragging?: boolean }) {
-  const overdue = task.dueDate && !isDone && isPast(new Date(task.dueDate));
+  const overdue = task.dueDate && !isDone && isOverdue(task.dueDate);
   return (
     <div
       onClick={() => onEdit?.(task)}

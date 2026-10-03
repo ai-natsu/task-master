@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import { format, isPast } from "date-fns";
+import { format } from "date-fns";
 import { useProjects } from "../api/projects";
 import { useStats } from "../api/stats";
 import { useTasks } from "../api/tasks";
 import { useStatuses } from "../api/statuses";
 import { Card, StatsCards } from "../components/StatsCards";
 import { PriorityBadge } from "../components/Badges";
+import { isDueSoon, isOverdue } from "../utils/due";
 
 export function Dashboard() {
   const { data: projects = [] } = useProjects();
@@ -17,12 +18,12 @@ export function Dashboard() {
   const doneIds = new Set(statuses.filter((s) => s.isDone).map((s) => s.id));
 
   const overdue = tasks
-    .filter((t) => !doneIds.has(t.status) && t.dueDate && isPast(new Date(t.dueDate)))
+    .filter((t) => !doneIds.has(t.status) && t.dueDate && isOverdue(t.dueDate))
     .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
     .slice(0, 8);
 
   const upcoming = tasks
-    .filter((t) => !doneIds.has(t.status) && t.dueDate && !isPast(new Date(t.dueDate)))
+    .filter((t) => !doneIds.has(t.status) && t.dueDate && isDueSoon(t.dueDate))
     .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
     .slice(0, 8);
 

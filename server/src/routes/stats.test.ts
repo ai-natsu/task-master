@@ -7,7 +7,7 @@ import { makeProject, makeTask, seedStatuses } from "../test/factories.js";
 
 const app = createApp();
 
-const NOW = new Date("2026-07-14T00:00:00.000Z");
+const NOW = new Date("2026-07-14T12:00:00.000Z");
 
 beforeEach(async () => {
   vi.useFakeTimers();
@@ -19,8 +19,9 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function daysFromNow(n: number) {
-  return new Date(NOW.getTime() + n * 24 * 60 * 60 * 1000);
+// 期限日は UTC 0 時の日付として保存される（フォームの YYYY-MM-DD → ISO）。今日を基準に n 日後の日付。
+function dueOn(n: number) {
+  return new Date(Date.UTC(2026, 6, 14 + n));
 }
 
 describe("/api/stats", () => {
@@ -55,22 +56,25 @@ describe("/api/stats", () => {
 
   it("ST-6: overdue counts non-done past-due only", async () => {
     const p = await makeProject();
-    await makeTask(p.id, { status: "TODO", dueDate: daysFromNow(-1) }); // overdue
-    await makeTask(p.id, { status: "DONE", dueDate: daysFromNow(-1) }); // done, not overdue
-    await makeTask(p.id, { status: "TODO", dueDate: daysFromNow(5) }); // future
+    await makeTask(p.id, { status: "TODO", dueDate: dueOn(-1) }); // overdue
+    await makeTask(p.id, { status: "TODO", dueDate: dueOn(0) }); // due today is not overdue
+    await makeTask(p.id, { status: "DONE", dueDate: dueOn(-1) }); // done, not overdue
+    await makeTask(p.id, { status: "TODO", dueDate: dueOn(5) }); // future
 
     const res = await request(app).get("/api/stats");
     expect(res.body.overdue).toBe(1);
   });
 
-  it("ST-7: dueSoon counts non-done due within 3 days", async () => {
+  it("ST-7: dueSoon counts non-done due from today through 3 days later (4 days)", async () => {
     const p = await makeProject();
-    await makeTask(p.id, { status: "TODO", dueDate: daysFromNow(2) }); // soon
-    await makeTask(p.id, { status: "TODO", dueDate: daysFromNow(10) }); // later
-    await makeTask(p.id, { status: "DONE", dueDate: daysFromNow(1) }); // done
+    await makeTask(p.id, { status: "TODO", dueDate: dueOn(0) }); // today: soon
+    await makeTask(p.id, { status: "TODO", dueDate: dueOn(3) }); // +3 days: soon (last day)
+    await makeTask(p.id, { status: "TODO", dueDate: dueOn(4) }); // +4 days: later
+    await makeTask(p.id, { status: "TODO", dueDate: dueOn(-1) }); // overdue, not soon
+    await makeTask(p.id, { status: "DONE", dueDate: dueOn(1) }); // done
 
     const res = await request(app).get("/api/stats");
-    expect(res.body.dueSoon).toBe(1);
+    expect(res.body.dueSoon).toBe(2);
   });
 
   it("ST-8: global stats exclude archived projects", async () => {

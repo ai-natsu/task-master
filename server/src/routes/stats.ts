@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
 import { PRIORITIES } from "../constants.js";
+import { dueRange } from "../dueRange.js";
 
 const router = Router();
 
@@ -10,6 +11,7 @@ router.get("/", async (req, res) => {
 
   const statuses = await prisma.status.findMany({ orderBy: { order: "asc" } });
   const doneIds = statuses.filter((s) => s.isDone).map((s) => s.id);
+  const { todayStart, soonEnd } = dueRange();
 
   const [total, byStatusRaw, byPriorityRaw, overdue, dueSoon, completedLast7Days] =
     await Promise.all([
@@ -17,13 +19,13 @@ router.get("/", async (req, res) => {
       prisma.task.groupBy({ by: ["status"], where, _count: true }),
       prisma.task.groupBy({ by: ["priority"], where, _count: true }),
       prisma.task.count({
-        where: { ...where, status: { notIn: doneIds }, dueDate: { lt: new Date() } },
+        where: { ...where, status: { notIn: doneIds }, dueDate: { lt: todayStart } },
       }),
       prisma.task.count({
         where: {
           ...where,
           status: { notIn: doneIds },
-          dueDate: { gte: new Date(), lte: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) },
+          dueDate: { gte: todayStart, lt: soonEnd },
         },
       }),
       prisma.task.count({
