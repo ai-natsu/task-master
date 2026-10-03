@@ -60,7 +60,10 @@ class GanttChartWidget(ctk.CTkFrame):
         self._label_font = tkfont.Font(root=self, family=theme.FONT_FAMILY, size=11)
         h_scroll = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
         v_scroll = ctk.CTkScrollbar(self, orientation="vertical", command=self.canvas.yview)
-        self.canvas.configure(xscrollcommand=h_scroll.set, yscrollcommand=v_scroll.set)
+        self._fixed_x = 0.0  # ラベル列（"fixed" タグの要素）を今どれだけ右へずらしているか
+        self.canvas.configure(
+            xscrollcommand=self._on_xscroll(h_scroll), yscrollcommand=v_scroll.set
+        )
 
         self._tooltip = Tooltip(self.canvas)
         self.canvas.bind("<Motion>", self._on_canvas_motion, add="+")
@@ -73,6 +76,23 @@ class GanttChartWidget(ctk.CTkFrame):
 
         self.refresh()
 
+    def _on_xscroll(self, scrollbar):
+        """横スクロールのたびに、ラベル列を画面の左端に固定し直す（V1 と同じ挙動）。"""
+
+        def _handler(*args) -> None:
+            scrollbar.set(*args)
+            self._sync_fixed()
+
+        return _handler
+
+    def _sync_fixed(self) -> None:
+        left = self.canvas.canvasx(0)
+        delta = left - self._fixed_x
+        if delta:
+            self.canvas.move("fixed", delta, 0)
+            self._fixed_x = left
+        self.canvas.tag_raise("fixed")
+
     def set_filters(self, filters: dict) -> None:
         self.filters = filters
         self.refresh()
@@ -80,6 +100,7 @@ class GanttChartWidget(ctk.CTkFrame):
     def refresh(self) -> None:
         self._tooltip.hide()
         self.canvas.delete("all")
+        self._fixed_x = 0.0
         self._row_hl = {}
         self._hover_row = None
         self._tip_key = None
@@ -120,19 +141,25 @@ class GanttChartWidget(ctk.CTkFrame):
         self.canvas.tag_raise("bar")
 
         self.canvas.configure(scrollregion=(0, 0, total_width, total_height))
+        self._sync_fixed()
 
     def _draw_vertical_gridlines(self, days, total_height) -> None:
         grid_top = HEADER_H + SUBHEADER_H
-        self.canvas.create_line(LABEL_W, 0, LABEL_W, total_height, fill="#e2e8f0")
+        self.canvas.create_line(
+            LABEL_W, 0, LABEL_W, total_height, fill="#e2e8f0", tags=("fixed",)
+        )
         for i in range(len(days) + 1):
             x = LABEL_W + i * DAY_W
             self.canvas.create_line(x, grid_top, x, total_height, fill="#e2e8f0")
 
     def _draw_month_header(self, months) -> None:
         heading_font = (theme.FONT_FAMILY, 10, "bold")
-        self.canvas.create_rectangle(0, 0, LABEL_W, HEADER_H, fill="#ffffff", outline="#e2e8f0")
+        self.canvas.create_rectangle(
+            0, 0, LABEL_W, HEADER_H, fill="#ffffff", outline="#e2e8f0", tags=("fixed",)
+        )
         self.canvas.create_text(
-            8, HEADER_H / 2, anchor="w", text=t("タスク"), fill="#64748b", font=heading_font
+            8, HEADER_H / 2, anchor="w", text=t("タスク"), fill="#64748b", font=heading_font,
+            tags=("fixed",),
         )
         x = LABEL_W
         for month in months:
@@ -147,7 +174,8 @@ class GanttChartWidget(ctk.CTkFrame):
     def _draw_day_header(self, days, today, holiday_dates: set[str]) -> None:
         y0 = HEADER_H
         self.canvas.create_rectangle(
-            0, y0, LABEL_W, y0 + SUBHEADER_H, fill="#ffffff", outline="#e2e8f0"
+            0, y0, LABEL_W, y0 + SUBHEADER_H, fill="#ffffff", outline="#e2e8f0",
+            tags=("fixed",),
         )
         for i, d in enumerate(days):
             dx = LABEL_W + i * DAY_W
@@ -181,19 +209,20 @@ class GanttChartWidget(ctk.CTkFrame):
             row_y = row_top + index * ROW_H
 
             label_bg = self.canvas.create_rectangle(
-                0, row_y, LABEL_W, row_y + ROW_H, fill="#ffffff", outline="#f1f5f9"
+                0, row_y, LABEL_W, row_y + ROW_H, fill="#ffffff", outline="#f1f5f9",
+                tags=("fixed",),
             )
             dot_x = 12 + flat.depth * 16
             dot_color = status.color if status else "#94a3b8"
             self.canvas.create_oval(
                 dot_x, row_y + ROW_H / 2 - 3, dot_x + 6, row_y + ROW_H / 2 + 3,
-                fill=dot_color, outline="",
+                fill=dot_color, outline="", tags=("fixed",),
             )
             label_fg = "#94a3b8" if is_done else "#0f172a"
             label_text = self.canvas.create_text(
                 dot_x + 12, row_y + ROW_H / 2, anchor="w",
                 text=ellipsize(task.title, self._label_font, LABEL_W - dot_x - 12 - 8),
-                fill=label_fg, font=(theme.FONT_FAMILY, 11),
+                fill=label_fg, font=(theme.FONT_FAMILY, 11), tags=("fixed",),
             )
 
             for i, d in enumerate(days):
@@ -343,12 +372,12 @@ class GanttChartWidget(ctk.CTkFrame):
         if self._is_dragging():
             return
         row_top = HEADER_H + SUBHEADER_H
-        x, y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+        y = self.canvas.canvasy(event.y)
         index = int((y - row_top) // ROW_H) if y >= row_top else -1
         index = index if 0 <= index < len(self._rows_cache) else None
         self._set_hover_row(index)
 
-        key = ("label", index) if index is not None and x < LABEL_W else None
+        key = ("label", index) if index is not None and event.x < LABEL_W else None
         if key != self._tip_key:
             self._tip_key = key
             self._tooltip.hide()
@@ -390,7 +419,7 @@ class GanttChartWidget(ctk.CTkFrame):
         if not item:
             return
         x0, _y0, x1, _y1 = self.canvas.coords(item[0])
-        mode = self._bar_mode_at(event.x, x0, x1)
+        mode = self._bar_mode_at(self.canvas.canvasx(event.x), x0, x1)
         cursor = "sb_h_double_arrow" if mode != "move" else "fleur"
         self.canvas.configure(cursor=cursor)
 
@@ -398,7 +427,7 @@ class GanttChartWidget(ctk.CTkFrame):
         self._tooltip.hide()
         coords = self.canvas.coords(bar_item)
         x0, _y0, x1, _y1 = coords
-        mode = self._bar_mode_at(event.x, x0, x1)
+        mode = self._bar_mode_at(self.canvas.canvasx(event.x), x0, x1)
         self._drag = {
             "task": task, "bar_item": bar_item, "mode": mode,
             "start_x": event.x, "orig_coords": coords, "moved": False,

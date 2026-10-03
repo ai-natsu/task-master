@@ -29,7 +29,7 @@ _MAX_TAG_NAME_LEN = 4
 # refresh()中に同期的に行われ、winfo_width()がまだ正しい値を返さない
 # ("要アイドル処理"問題)ため、実測ではなくこの概算値を基準に折り返しを
 # 判定する(列幅自体がwidth=272で固定されているため、概算値も安定する)。
-_META_ROW_WIDTH = 200
+_META_ROW_WIDTH = 205
 _ELLIPSIS_RESERVE = 36
 
 
@@ -185,28 +185,14 @@ class KanbanBoardWidget(ctk.CTkFrame):
         meta_row = ctk.CTkFrame(card, fg_color="transparent")
         meta_row.pack(fill="x", padx=10, pady=(0, 10))
 
-        # 期限を先にside="right"でpackして自分の幅を実測してから、タグ側に
-        # 残り幅にいくつのタグが収まるか判定して配置する。tags_areaを
-        # fill="x", expand=Trueにするだけでは中の子(バッジ・ピル)自身は
-        # 幅に合わせて縮んでくれず、期限側に重なって見切れてしまうため。
-        # なお、カード構築はrefresh()中に同期的に行われてwinfo_width()が
-        # まだ正しい値を返さないため、実測ではなく_META_ROW_WIDTH(列幅が
-        # width=272で固定のため安定する概算値)を基準に判定する。
-        due_width = 0
-        if task.due_date:
-            overdue = not is_done and is_overdue(task.due_date)
-            due_label = ctk.CTkLabel(
-                meta_row,
-                text=t("期限: {date}").format(date=format_date(task.due_date)),
-                text_color="#dc2626" if overdue else theme.TEXT_MUTED,
-            )
-            due_label.pack(side="right")
-            due_label.update_idletasks()
-            due_width = due_label.winfo_reqwidth()
-
+        # 1段目＝優先度・タグ、2段目＝期限。日本語の日付表示（2026年10月05日）は幅が広く、
+        # 同じ段に置くとタグが入らなくなるため、期限は別の段にする（V1 のカードと同じ）。
+        # なお、カード構築はrefresh()中に同期的に行われてwinfo_width()がまだ正しい値を
+        # 返さないため、実測ではなく_META_ROW_WIDTH(列幅がwidth=272で固定のため安定する
+        # 概算値)を基準に、タグがいくつ収まるか判定する。
         tags_area = ctk.CTkFrame(meta_row, fg_color="transparent")
-        tags_area.pack(side="left")
-        available_width = max(_META_ROW_WIDTH - due_width - 8, 0)
+        tags_area.pack(anchor="w")
+        available_width = _META_ROW_WIDTH
 
         badge = priority_badge(tags_area, task.priority)
         badge.pack(side="left")
@@ -217,7 +203,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
         shown = 0
         for index, tag in enumerate(task.tags[:_MAX_VISIBLE_TAGS]):
             label = _truncate(tag.name, _MAX_TAG_NAME_LEN)
-            probe = color_pill(tags_area, label)
+            probe = color_pill(tags_area, label, tag.color)
             probe.pack(side="left", padx=(4, 0))
             probe.update_idletasks()
             pill_width = probe.winfo_reqwidth() + 4
@@ -230,6 +216,14 @@ class KanbanBoardWidget(ctk.CTkFrame):
             shown += 1
         if total_tags > shown:
             color_pill(tags_area, "...").pack(side="left", padx=(4, 0))
+
+        if task.due_date:
+            overdue = not is_done and is_overdue(task.due_date)
+            ctk.CTkLabel(
+                meta_row,
+                text=t("期限: {date}").format(date=format_date(task.due_date)),
+                text_color="#dc2626" if overdue else theme.TEXT_MUTED,
+            ).pack(anchor="w", pady=(4, 0))
 
         return title_label, meta_row
 
