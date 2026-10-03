@@ -41,8 +41,8 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
     <div>
       <div
         ref={setNodeRef}
-        onDoubleClick={(e) => {
-          // 行内のボタン・セレクト上でのダブルクリックは編集を開かない
+        onClick={(e) => {
+          // 行内のボタン・セレクト上のクリックは編集を開かない（それぞれの操作を優先）
           if ((e.target as HTMLElement).closest("button, select")) return;
           onEdit(node);
         }}

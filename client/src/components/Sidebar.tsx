@@ -82,7 +82,7 @@ export function Sidebar() {
               <span className="truncate">{p.name}</span>
               <span className="ml-auto shrink-0 text-xs text-slate-400">{p._count?.tasks ?? 0}</span>
             </NavLink>
-            <div className="hidden shrink-0 group-hover:flex">
+            <div className="flex shrink-0">
               <button
                 onClick={() => {
                   setEditing(p);

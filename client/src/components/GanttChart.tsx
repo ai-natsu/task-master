@@ -1,4 +1,4 @@
-import { useMemo, useState, type PointerEvent } from "react";
+import { useMemo, useRef, useState, type PointerEvent } from "react";
 import clsx from "clsx";
 import { differenceInCalendarDays, format, isSameDay, startOfDay } from "date-fns";
 import type { Task } from "../types";
@@ -12,6 +12,7 @@ import {
   type GanttDragMode,
 } from "../utils/gantt";
 import { useStatuses } from "../api/statuses";
+import type { RowDropZone } from "../utils/dnd";
 import { useT } from "../i18n";
 
 const DAY_W = 28;
@@ -23,7 +24,17 @@ interface Props {
   tasks: Task[];
   onEdit: (task: Task) => void;
   onChangeDates?: (task: Task, startDate: string, dueDate: string) => void;
+  onRowDrop?: (activeId: string, targetId: string, zone: RowDropZone) => void;
 }
+
+interface RowDragState {
+  id: string;
+  startY: number;
+  moved: boolean;
+  target: { index: number; zone: RowDropZone } | null;
+}
+
+const DROP_EDGE = 0.25; // 行の上下この割合 = 兄弟として挿入、中央 = 子にする
 
 interface DragState {
   id: string;
@@ -40,8 +51,10 @@ function dragModeAt(e: PointerEvent<HTMLDivElement>): GanttDragMode {
   return "move";
 }
 
-export function GanttChart({ tasks, onEdit, onChangeDates }: Props) {
+export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
   const t = useT();
+  const rowsRef = useRef<HTMLDivElement>(null);
+  const [rowDrag, setRowDrag] = useState<RowDragState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const { data: statuses = [] } = useStatuses();
   const statusById = useMemo(() => new Map(statuses.map((s) => [s.id, s])), [statuses]);
@@ -112,6 +125,7 @@ export function GanttChart({ tasks, onEdit, onChangeDates }: Props) {
         </div>
 
         {/* タスク行 */}
+        <div ref={rowsRef} className="relative">
         {rows.map(({ node, depth }) => {
           const statusDef = statusById.get(node.status);
           const baseBar = computeBar(node, rangeStart);
@@ -130,7 +144,36 @@ export function GanttChart({ tasks, onEdit, onChangeDates }: Props) {
             >
               <button
                 onDoubleClick={() => onEdit(node)}
-                className="sticky left-0 z-10 flex shrink-0 items-center gap-1.5 truncate border-r border-slate-200 bg-white px-3 text-left text-sm hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:hover:text-indigo-400"
+                onPointerDown={(e) => {
+                  if (e.button !== 0 || !onRowDrop) return;
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  setRowDrag({ id: node.id, startY: e.clientY, moved: false, target: null });
+                }}
+                onPointerMove={(e) => {
+                  if (rowDrag?.id !== node.id || !rowsRef.current) return;
+                  const moved = rowDrag.moved || Math.abs(e.clientY - rowDrag.startY) > 4;
+                  if (!moved) return;
+                  const y = e.clientY - rowsRef.current.getBoundingClientRect().top;
+                  const index = Math.floor(y / ROW_H);
+                  let target: RowDragState["target"] = null;
+                  if (index >= 0 && index < rows.length) {
+                    const frac = (y - index * ROW_H) / ROW_H;
+                    target = {
+                      index,
+                      zone: frac < DROP_EDGE ? "before" : frac > 1 - DROP_EDGE ? "after" : "child",
+                    };
+                  }
+                  setRowDrag({ ...rowDrag, moved, target });
+                }}
+                onPointerUp={() => {
+                  if (rowDrag?.id === node.id && rowDrag.moved && rowDrag.target) {
+                    const targetNode = rows[rowDrag.target.index].node;
+                    if (targetNode.id !== node.id) onRowDrop?.(node.id, targetNode.id, rowDrag.target.zone);
+                  }
+                  setRowDrag(null);
+                }}
+                onPointerCancel={() => setRowDrag(null)}
+                className="sticky left-0 z-10 flex shrink-0 touch-none select-none items-center gap-1.5 truncate border-r border-slate-200 bg-white px-3 text-left text-sm hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:hover:text-indigo-400"
                 style={{ width: LABEL_W, paddingLeft: 12 + depth * 16 }}
                 title={`${node.title}\n${t("ダブルクリックで編集")}`}
               >
@@ -197,6 +240,21 @@ export function GanttChart({ tasks, onEdit, onChangeDates }: Props) {
             </div>
           );
         })}
+        {rowDrag?.moved && rowDrag.target && (
+          <div
+            className={
+              rowDrag.target.zone === "child"
+                ? "pointer-events-none absolute inset-x-0 z-30 border-2 border-indigo-500"
+                : "pointer-events-none absolute inset-x-0 z-30 h-[3px] bg-indigo-500"
+            }
+            style={
+              rowDrag.target.zone === "child"
+                ? { top: rowDrag.target.index * ROW_H, height: ROW_H }
+                : { top: (rowDrag.target.index + (rowDrag.target.zone === "after" ? 1 : 0)) * ROW_H - 1 }
+            }
+          />
+        )}
+        </div>
       </div>
 
       <p className="border-t border-slate-200 px-3 py-2 text-xs text-slate-400 dark:border-slate-700">

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useProjects } from "../api/projects";
-import { useCreateTask, useDeleteTask, useTasks, useUpdateTask } from "../api/tasks";
+import { useCreateTask, useDeleteTask, useReorderTasks, useTasks, useUpdateTask } from "../api/tasks";
 import { useTags } from "../api/tags";
 import { useStats } from "../api/stats";
 import { FilterBar, type FilterState } from "../components/FilterBar";
@@ -11,7 +11,9 @@ import { GanttChart } from "../components/GanttChart";
 import { TaskFormModal, taskToFormValue, type TaskFormValue } from "../components/TaskFormModal";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { StatsCards } from "../components/StatsCards";
+import { PaperTabs } from "../components/PaperTabs";
 import { buildTaskTree, flattenWithDepth, type TaskTreeNode } from "../utils/tree";
+import { planRowDrop } from "../utils/dnd";
 import type { Task } from "../types";
 import { useT } from "../i18n";
 
@@ -33,6 +35,7 @@ export function ProjectView() {
 
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
+  const reorderTasks = useReorderTasks();
   const deleteTask = useDeleteTask();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -112,48 +115,25 @@ export function ProjectView() {
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{project.description}</p>
           )}
         </div>
-        <div className="flex gap-2">
-          <div className="flex overflow-hidden rounded-lg border border-slate-300 text-sm font-medium dark:border-slate-600">
-            <button
-              onClick={() => setViewMode("tree")}
-              className={
-                viewMode === "tree"
-                  ? "bg-indigo-600 px-3 py-1.5 text-white"
-                  : "px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
-              }
-            >
-              {t("ツリー")}
-            </button>
-            <button
-              onClick={() => setViewMode("kanban")}
-              className={
-                viewMode === "kanban"
-                  ? "bg-indigo-600 px-3 py-1.5 text-white"
-                  : "px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
-              }
-            >
-              {t("カンバン")}
-            </button>
-            <button
-              onClick={() => setViewMode("gantt")}
-              className={
-                viewMode === "gantt"
-                  ? "bg-indigo-600 px-3 py-1.5 text-white"
-                  : "px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
-              }
-            >
-              {t("ガント")}
-            </button>
-          </div>
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setShowStats((s) => !s)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
+            className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-800"
           >
             {showStats ? t("統計を隠す") : t("統計を表示")}
           </button>
+          <PaperTabs
+            value={viewMode}
+            onChange={setViewMode}
+            tabs={[
+              { key: "tree", label: t("ツリー") },
+              { key: "kanban", label: t("カンバン") },
+              { key: "gantt", label: t("ガント") },
+            ]}
+          />
           <button
             onClick={() => openCreate(null)}
-            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-lg bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-600"
           >
             {t("+ 新しいタスク")}
           </button>
@@ -187,6 +167,10 @@ export function ProjectView() {
           onChangeDates={(task, startDate, dueDate) =>
             updateTask.mutate({ id: task.id, startDate, dueDate })
           }
+          onRowDrop={(activeId, targetId, zone) => {
+            const plan = planRowDrop(allTasks, activeId, targetId, zone);
+            if (plan.reorder) reorderTasks.mutate(plan.reorder);
+          }}
         />
       )}
 
