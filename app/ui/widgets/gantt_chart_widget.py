@@ -13,11 +13,12 @@ import customtkinter as ctk
 from app.db.holidays import list_holidays
 from app.db.statuses import list_statuses
 from app.db.tasks import create_task, list_tasks, reorder_tasks, update_task
-from app.i18n import t
+from app.i18n import format_date, t
 from app.logic.dnd import plan_row_drop
 from app.logic.gantt import compute_bar, compute_months, compute_range
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
+from app.ui.widgets.task_edit import edit_task
 from app.ui.widgets.task_form_dialog import ask_task_form
 from app.ui.widgets.tooltip import Tooltip
 
@@ -364,8 +365,8 @@ class GanttChartWidget(ctk.CTkFrame):
         if self._is_dragging():
             return
         self.canvas.itemconfigure(bar_item, fill=_lighten(color, 0.3))
-        start = task.start_date[5:10].replace("-", "/") if task.start_date else "?"
-        due = task.due_date[5:10].replace("-", "/") if task.due_date else "?"
+        start = format_date(task.start_date) or "?"
+        due = format_date(task.due_date) or "?"
         self._tooltip.schedule(f"{task.title}\n{start} 〜 {due}", event.x_root, event.y_root)
 
     def _on_bar_leave(self, bar_item: int, color: str) -> None:
@@ -441,10 +442,7 @@ class GanttChartWidget(ctk.CTkFrame):
         self.on_change()
 
     def _edit(self, task) -> None:
-        result = ask_task_form(self.app, self.app.conn, self.project_id, task=task)
-        if result:
-            result.pop("parent_id", None)
-            update_task(self.app.conn, task.id, **result)
+        if edit_task(self, self.app, self.project_id, task):
             self.refresh()
             self.on_change()
 

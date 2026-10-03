@@ -7,7 +7,7 @@ from app.db.projects import list_projects
 from app.db.stats import get_stats
 from app.db.statuses import list_statuses
 from app.db.tasks import list_tasks
-from app.i18n import t
+from app.i18n import format_date, t
 from app.logic.due import is_due_soon, is_overdue
 from app.ui import theme
 from app.ui.widgets.badges import priority_badge
@@ -142,6 +142,6 @@ class DashboardView(ctk.CTkScrollableFrame):
                 font=ctk.CTkFont(weight="bold"),
             ).pack(side="left", fill="x", expand=True)
 
-            due = task.due_date[:10] if task.due_date else ""
+            due = format_date(task.due_date)
             ctk.CTkLabel(row, text=due, text_color=theme.TEXT_MUTED).pack(side="right")
         return frame

@@ -13,11 +13,12 @@ import customtkinter as ctk
 
 from app.db.statuses import list_statuses
 from app.db.tasks import create_task, list_tasks, reorder_tasks, update_task
-from app.i18n import t
+from app.i18n import format_date, t
 from app.logic.dnd import plan_kanban_drag
 from app.logic.due import is_overdue
 from app.ui import theme
 from app.ui.widgets.badges import color_pill, priority_badge
+from app.ui.widgets.task_edit import edit_task
 from app.ui.widgets.task_form_dialog import ask_task_form
 
 _DRAG_THRESHOLD_PX = 4  # これ未満の移動は単なるクリックとみなしドラッグ扱いしない
@@ -197,7 +198,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
             overdue = not is_done and is_overdue(task.due_date)
             due_label = ctk.CTkLabel(
                 meta_row,
-                text=t("期限: {date}").format(date=task.due_date[:10]),
+                text=t("期限: {date}").format(date=format_date(task.due_date)),
                 text_color="#dc2626" if overdue else theme.TEXT_MUTED,
             )
             due_label.pack(side="right")
@@ -338,10 +339,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
         return None
 
     def _edit(self, task) -> None:
-        result = ask_task_form(self.app, self.app.conn, self.project_id, task=task)
-        if result:
-            result.pop("parent_id", None)
-            update_task(self.app.conn, task.id, **result)
+        if edit_task(self, self.app, self.project_id, task):
             self.refresh()
             self.on_change()
 

@@ -69,30 +69,6 @@ def plan_kanban_drag(tasks: list[Task], active_id: str, over: dict | None) -> di
     }
 
 
-def plan_tree_drag(tasks: list[Task], active_id: str, over_id: str | None) -> dict:
-    """ツリードラッグの純粋な意思決定ロジック。同じ親の配下でのみ並べ替える。"""
-    if not over_id or active_id == over_id:
-        return {}
-
-    active = next((t for t in tasks if t.id == active_id), None)
-    over = next((t for t in tasks if t.id == over_id), None)
-    if active is None or over is None:
-        return {}
-    if active.parent_id != over.parent_id:
-        return {}
-
-    siblings = sorted(
-        (t for t in tasks if t.parent_id == active.parent_id), key=lambda t: t.order
-    )
-    old_index = next((i for i, t in enumerate(siblings) if t.id == active.id), -1)
-    new_index = next((i for i, t in enumerate(siblings) if t.id == over.id), -1)
-    if old_index == -1 or new_index == -1:
-        return {}
-
-    reordered = _array_move(siblings, old_index, new_index)
-    return {"reorder": [{"id": t.id, "order": i} for i, t in enumerate(reordered)]}
-
-
 def _is_descendant_or_self(tasks: list[Task], ancestor_id: str, task_id: str) -> bool:
     """task_id が ancestor_id 自身、またはその子孫かどうか。"""
     parent_of = {t.id: t.parent_id for t in tasks}

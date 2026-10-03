@@ -23,7 +23,7 @@ from app.db.statuses import (
     update_status,
 )
 from app.db.tags import count_tagged_tasks, create_tag, delete_tag, list_tags, update_tag
-from app.i18n import LANGUAGES, calendar_locale, get_language, set_language, t
+from app.i18n import LANGUAGES, calendar_locale, format_date, get_language, set_language, t
 from app.ui import theme
 from app.ui.widgets.calendar_style import (
     apply_calendar_dropdown_icon,
@@ -371,7 +371,7 @@ class SettingsView(ctk.CTkScrollableFrame):
 
     def _update_holiday_row(self, row: ctk.CTkFrame, holiday, index: int) -> None:
         row.grid(row=index, column=0, sticky="ew", pady=2)
-        row.date_label.configure(text=holiday.date)
+        row.date_label.configure(text=format_date(holiday.date))
         if self.focus_get() is not row.name_entry and row.name_entry.get() != holiday.name:
             row.name_entry.delete(0, "end")
             row.name_entry.insert(0, holiday.name)
