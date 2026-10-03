@@ -88,8 +88,22 @@ TRANSLATIONS: dict[str, str] = {
     "+ サブタスクを追加": "+ Add Subtask",
     "ステータス変更": "Change Status",
     "エラー": "Error",
-    "タスクを自分自身またはその配下には移動できません。": (
-        "You cannot move a task under itself or its own subtask."
+    "タスクを自分自身またはその配下には移動できません": (
+        "A task cannot be moved under itself or its own subtasks"
+    ),
+    # --- 共通のエラーメッセージ（V1 と同じ。docs/BASIC_DESIGN.md §7.2） -----------
+    "タスクが見つかりません": "Task not found",
+    "ステータスが見つかりません": "Status not found",
+    "タグが見つかりません": "Tag not found",
+    "祝日が見つかりません": "Holiday not found",
+    "親タスクが見つかりません": "Parent task not found",
+    "指定のステータスが存在しません": "Invalid status",
+    "ステータスが1件もありません": "No statuses defined",
+    "このステータスは {count} 件のタスクで使用中のため削除できません": (
+        "This status is used by {count} tasks and cannot be deleted"
+    ),
+    "予期しないエラーが発生しました。もう一度お試しください": (
+        "An unexpected error occurred. Please try again."
     ),
     "「{title}」を削除しますか？配下のサブタスクも削除されます。": (
         'Delete "{title}"? Its subtasks will also be deleted.'
@@ -111,7 +125,7 @@ TRANSLATIONS: dict[str, str] = {
     ),
     "新しいステータス名": "New status name",
     "完了として扱う": "Treat as done",
-    "最後のステータスは削除できません": "You cannot delete the last remaining status.",
+    "最後のステータスは削除できません": "The last status cannot be deleted",
     # --- 設定画面：祝日 -----------------------------------------------------
     "祝日": "Holidays",
     "祝日を登録します。ガントチャート等での休日表示に使われます。"
@@ -139,5 +153,5 @@ TRANSLATIONS: dict[str, str] = {
     "「{name}」タグを削除しますか？{count}件のタスクからこのタグが外れます。": (
         'Delete the tag "{name}"? It will be removed from {count} task(s).'
     ),
-    "タグが既に存在します": "This tag already exists.",
+    "タグが既に存在します": "Tag already exists",
 }

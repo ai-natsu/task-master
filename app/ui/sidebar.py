@@ -143,9 +143,9 @@ class Sidebar(ctk.CTkFrame):
                 "description": project.description,
                 "color": project.color,
             },
+            on_save=lambda r: update_project(self.app.conn, project.id, **r),
         )
         if result:
-            update_project(self.app.conn, project.id, **result)
             self.app.refresh_current_view()
 
     def _delete(self, project) -> None:

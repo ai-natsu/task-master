@@ -10,7 +10,7 @@ from tkinter import ttk
 import customtkinter as ctk
 
 from app.db.statuses import list_statuses
-from app.db.tasks import create_task, delete_task, list_tasks, reorder_tasks, update_task
+from app.db.tasks import delete_task, list_tasks, reorder_tasks, update_task
 from app.i18n import format_date, t
 from app.logic.dnd import plan_row_drop
 from app.logic.due import is_overdue
@@ -18,8 +18,7 @@ from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
 from app.ui.widgets.badges import PRIORITY_COLORS, priority_label
 from app.ui.widgets.confirm_dialog import ask_confirm
-from app.ui.widgets.task_edit import edit_task
-from app.ui.widgets.task_form_dialog import ask_task_form
+from app.ui.widgets.task_edit import create_task_via_form, edit_task
 
 _EMPTY_IID = "__empty__"
 _DRAG_THRESHOLD_PX = 5  # これ以下の動きはドラッグでなくクリック（編集）として扱う
@@ -476,15 +475,12 @@ class TaskTreeWidget(ctk.CTkFrame):
         self._add_subtask(None)
 
     def _add_subtask(self, parent_id: str | None) -> None:
-        result = ask_task_form(self.app, self.app.conn, self.project_id, parent_id=parent_id)
-        if result:
-            result.pop("parent_id", None)
-            create_task(self.app.conn, project_id=self.project_id, parent_id=parent_id, **result)
+        if create_task_via_form(self.app, self.project_id, parent_id):
             self.refresh()
             self.on_change()
 
     def _edit(self, task) -> None:
-        if edit_task(self, self.app, self.project_id, task):
+        if edit_task(self.app, self.project_id, task):
             self.refresh()
             self.on_change()
 

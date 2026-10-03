@@ -87,7 +87,7 @@ def delete_status(conn: sqlite3.Connection, status_id: str) -> None:
     ).fetchone()[0]
     if in_use > 0:
         raise ConflictError(
-            f"このステータスは {in_use} 件のタスクで使用中のため削除できません"
+            "このステータスは {count} 件のタスクで使用中のため削除できません", count=in_use
         )
 
     total = conn.execute('SELECT COUNT(*) FROM "Status"').fetchone()[0]

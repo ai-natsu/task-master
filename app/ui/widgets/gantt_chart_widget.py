@@ -12,14 +12,13 @@ import customtkinter as ctk
 
 from app.db.holidays import list_holidays
 from app.db.statuses import list_statuses
-from app.db.tasks import create_task, list_tasks, reorder_tasks, update_task
+from app.db.tasks import list_tasks, reorder_tasks, update_task
 from app.i18n import format_date, t
 from app.logic.dnd import plan_row_drop
 from app.logic.gantt import compute_bar, compute_months, compute_range
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
-from app.ui.widgets.task_edit import edit_task
-from app.ui.widgets.task_form_dialog import ask_task_form
+from app.ui.widgets.task_edit import create_task_via_form, edit_task
 from app.ui.widgets.tooltip import Tooltip
 
 DAY_W = 28
@@ -442,14 +441,11 @@ class GanttChartWidget(ctk.CTkFrame):
         self.on_change()
 
     def _edit(self, task) -> None:
-        if edit_task(self, self.app, self.project_id, task):
+        if edit_task(self.app, self.project_id, task):
             self.refresh()
             self.on_change()
 
     def add_root_task(self) -> None:
-        result = ask_task_form(self.app, self.app.conn, self.project_id)
-        if result:
-            result.pop("parent_id", None)
-            create_task(self.app.conn, project_id=self.project_id, **result)
+        if create_task_via_form(self.app, self.project_id):
             self.refresh()
             self.on_change()

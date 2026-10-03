@@ -17,7 +17,7 @@ from app.db.tasks import (
 
 def test_create_without_statuses_raises(conn):
     p = create_project(conn, "P")
-    with pytest.raises(ValidationError, match="No statuses defined"):
+    with pytest.raises(ValidationError, match="ステータスが1件もありません"):
         create_task(conn, title="T", project_id=p.id)
 
 
@@ -29,13 +29,13 @@ def test_create_auto_picks_lowest_order_status(conn, statuses):
 
 def test_create_with_invalid_status_raises(conn, statuses):
     p = create_project(conn, "P")
-    with pytest.raises(ValidationError, match="Invalid status"):
+    with pytest.raises(ValidationError, match="指定のステータスが存在しません"):
         create_task(conn, title="T", project_id=p.id, status="NOPE")
 
 
 def test_create_with_missing_parent_raises(conn, statuses):
     p = create_project(conn, "P")
-    with pytest.raises(ValidationError, match="Parent task not found"):
+    with pytest.raises(ValidationError, match="親タスクが見つかりません"):
         create_task(conn, title="T", project_id=p.id, parent_id="no-such-id")
 
 

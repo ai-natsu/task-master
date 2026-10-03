@@ -1,7 +1,9 @@
 """ルートウィンドウ：サイドバー＋切替コンテンツ領域（旧 Layout.tsx の移植）。"""
 
 import sqlite3
+import sys
 import tkinter as tk
+import traceback
 from pathlib import Path
 from tkinter import ttk
 
@@ -9,6 +11,7 @@ import customtkinter as ctk
 
 from app.ui import theme
 from app.ui.dashboard_view import DashboardView
+from app.ui.errors import show_error
 from app.ui.project_view import ProjectView
 from app.ui.projects_list_view import ProjectsListView
 from app.ui.settings_view import SettingsView
@@ -49,6 +52,18 @@ class AppWindow(ctk.CTk):
         self._current_route = "dashboard"
         self._current_kwargs: dict = {}
         self.navigate("dashboard")
+
+    def report_callback_exception(self, exc, val, tb) -> None:
+        """画面操作の中で捕まえなかった例外を、エラーダイアログで利用者に知らせる。
+
+        業務例外はそのメッセージを、それ以外は「予期しないエラー」の共通文言を表示する。
+        原因調査のため、詳細は標準エラー出力にも残す。
+        """
+        traceback.print_exception(exc, val, tb, file=sys.stderr)
+        try:
+            show_error(self, val)
+        except tk.TclError:
+            pass  # ダイアログすら出せない状態（終了処理中など）では何もしない
 
     def _set_icon(self) -> None:
         icon_path = Path(__file__).resolve().parent.parent / "assets" / "icon.ico"
