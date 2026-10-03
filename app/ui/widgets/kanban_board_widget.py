@@ -48,6 +48,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
         self._drag_start_xy: tuple[int, int] | None = None
         self._drag_started = False
         self._drag_ghost: tk.Toplevel | None = None
+        self._task_is_done: dict[str, bool] = {}
         self._card_widgets: dict[str, ctk.CTkFrame] = {}
         self._column_containers: dict[int, str] = {}
 
@@ -69,6 +70,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
         for child in self.scroll.winfo_children():
             child.destroy()
         self._card_widgets.clear()
+        self._task_is_done.clear()
         self._column_containers.clear()
 
         statuses = list_statuses(self.app.conn)
@@ -126,7 +128,21 @@ class KanbanBoardWidget(ctk.CTkFrame):
         )
         card.pack(fill="x", pady=4)
         self._card_widgets[task.id] = card
+        self._task_is_done[task.id] = is_done
 
+        title_label, meta_row = self._populate_card(card, task, is_done)
+
+        for widget in (card, title_label, meta_row):
+            widget.bind("<ButtonPress-1>", lambda e, tk_=task: self._start_drag(e, tk_))
+            widget.bind("<B1-Motion>", self._on_drag_motion)
+            widget.bind("<ButtonRelease-1>", self._end_drag)
+            widget.bind("<Double-Button-1>", lambda _e, tk_=task: self._edit(tk_))
+
+    def _populate_card(self, card, task, is_done: bool):
+        """カード枠の中身（タイトル・優先度・タグ・期限）を組み立てる。
+
+        通常のカードとドラッグ中のゴースト（カード全体の複製）で共用する。
+        """
         title_label = ctk.CTkLabel(
             card,
             text=task.title,
@@ -186,11 +202,7 @@ class KanbanBoardWidget(ctk.CTkFrame):
         if total_tags > shown:
             color_pill(tags_area, "...").pack(side="left", padx=(4, 0))
 
-        for widget in (card, title_label, meta_row):
-            widget.bind("<ButtonPress-1>", lambda e, tk_=task: self._start_drag(e, tk_))
-            widget.bind("<B1-Motion>", self._on_drag_motion)
-            widget.bind("<ButtonRelease-1>", self._end_drag)
-            widget.bind("<Double-Button-1>", lambda _e, tk_=task: self._edit(tk_))
+        return title_label, meta_row
 
     def _start_drag(self, event, task) -> None:
         # ここではまだゴースト(浮動プレビュー)は出さない。単なるクリックで
@@ -212,10 +224,20 @@ class KanbanBoardWidget(ctk.CTkFrame):
             ghost.attributes("-topmost", True)
         except tk.TclError:
             pass  # 一部環境では透過/最前面がサポートされないため握りつぶす
-        ctk.CTkLabel(
-            ghost, text=task.title, fg_color=theme.ACCENT, text_color="#ffffff",
-            corner_radius=8, padx=12, pady=6, font=ctk.CTkFont(weight="bold"),
-        ).pack()
+        # ドラッグ元と同じ見た目のカード全体を複製して追従させる（V1 と同じ）。
+        ghost_card = ctk.CTkFrame(
+            ghost, corner_radius=10, border_width=2,
+            fg_color=theme.CARD_BG, border_color=theme.ACCENT,
+        )
+        ghost_card.pack()
+        self._populate_card(ghost_card, task, self._task_is_done.get(task.id, False))
+        if card:
+            # ドラッグ元カードと同じ大きさに揃える（CTkのサイズ指定は拡大率前の値）
+            scale = ctk.ScalingTracker.get_widget_scaling(card)
+            ghost_card.configure(
+                width=card.winfo_width() / scale, height=card.winfo_height() / scale
+            )
+            ghost_card.pack_propagate(False)
         self._drag_ghost = ghost
 
     def _on_drag_motion(self, event) -> None:
