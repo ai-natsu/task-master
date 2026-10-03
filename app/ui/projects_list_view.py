@@ -7,6 +7,7 @@ from app.db.tasks import list_tasks
 from app.i18n import t
 from app.ui import theme
 from app.ui.widgets.confirm_dialog import ask_confirm
+from app.ui.widgets.ellipsis import EllipsisLabel
 from app.ui.widgets.project_form_dialog import ask_project_form
 
 
@@ -66,27 +67,11 @@ class ProjectsListView(ctk.CTkScrollableFrame):
             ctk.CTkLabel(
                 top, text="●", text_color=project.color, width=16, font=ctk.CTkFont(size=14)
             ).pack(side="left")
-            name_btn = ctk.CTkButton(
-                top,
-                text=project.name,
-                fg_color="transparent",
-                text_color=theme.TEXT_PRIMARY,
-                hover_color=("#eef2ff", "#312e81"),
-                font=ctk.CTkFont(size=14, weight="bold"),
-                anchor="w",
-                command=lambda pid=project.id: self.app.navigate("project", project_id=pid),
-            )
-            name_btn.pack(side="left")
-            if project.archived:
-                ctk.CTkLabel(
-                    top, text=t("アーカイブ済み"), fg_color="#e2e8f0", text_color="#475569",
-                    corner_radius=8, padx=8,
-                ).pack(side="left", padx=8)
-
+            # 右側のボタンを先に pack して幅を確保し、残りの幅にプロジェクト名を「...」付きで収める
             ctk.CTkButton(
-                top, text=t("編集"), width=60, fg_color="transparent",
-                text_color=("gray10", "gray90"), hover_color=("gray85", "gray25"),
-                command=lambda p=project: self._edit(p),
+                top, text=t("削除"), width=60, fg_color="transparent",
+                text_color="#9f6b6b", hover_color=("#f3e8e8", "#4a3636"),
+                command=lambda p=project: self._delete(p),
             ).pack(side="right")
             archive_label = t("復元") if project.archived else t("アーカイブ")
             ctk.CTkButton(
@@ -95,14 +80,33 @@ class ProjectsListView(ctk.CTkScrollableFrame):
                 command=lambda p=project: self._toggle_archive(p),
             ).pack(side="right")
             ctk.CTkButton(
-                top, text=t("削除"), width=60, fg_color="transparent",
-                text_color="#9f6b6b", hover_color=("#f3e8e8", "#4a3636"),
-                command=lambda p=project: self._delete(p),
+                top, text=t("編集"), width=60, fg_color="transparent",
+                text_color=("gray10", "gray90"), hover_color=("gray85", "gray25"),
+                command=lambda p=project: self._edit(p),
             ).pack(side="right")
+            if project.archived:
+                ctk.CTkLabel(
+                    top, text=t("アーカイブ済み"), fg_color="#e2e8f0", text_color="#475569",
+                    corner_radius=8, padx=8,
+                ).pack(side="right", padx=8)
+            name_label = EllipsisLabel(
+                top,
+                text=project.name,
+                font=ctk.CTkFont(size=14, weight="bold"),
+                text_color=theme.TEXT_PRIMARY,
+                cursor="hand2",
+                padding=12,
+            )
+            name_label.pack(side="left", fill="x", expand=True, padx=(6, 0))
+            name_label.bind(
+                "<Button-1>",
+                lambda _e, pid=project.id: self.app.navigate("project", project_id=pid),
+            )
 
             if project.description:
-                ctk.CTkLabel(
-                    row, text=project.description, text_color=theme.TEXT_MUTED, anchor="w"
+                EllipsisLabel(
+                    row, text=project.description.replace("\n", " "), text_color=theme.TEXT_MUTED,
+                    padding=4,
                 ).pack(fill="x", padx=16)
             ctk.CTkLabel(
                 row,

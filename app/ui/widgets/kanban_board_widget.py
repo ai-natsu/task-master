@@ -18,6 +18,7 @@ from app.logic.dnd import plan_kanban_drag
 from app.logic.due import is_overdue
 from app.ui import theme
 from app.ui.widgets.badges import color_pill, priority_badge
+from app.ui.widgets.ellipsis import EllipsisLabel
 from app.ui.widgets.task_edit import create_task_via_form, edit_task
 
 _DRAG_THRESHOLD_PX = 4  # これ未満の移動は単なるクリックとみなしドラッグ扱いしない
@@ -172,13 +173,12 @@ class KanbanBoardWidget(ctk.CTkFrame):
 
         通常のカードとドラッグ中のゴースト（カード全体の複製）で共用する。
         """
-        title_label = ctk.CTkLabel(
+        title_label = EllipsisLabel(
             card,
             text=task.title,
-            anchor="w",
             font=ctk.CTkFont(overstrike=is_done, weight="bold"),
             text_color=theme.TEXT_MUTED if is_done else theme.TEXT_PRIMARY,
-            justify="left",
+            padding=4,
         )
         title_label.pack(fill="x", padx=10, pady=(10, 4))
 

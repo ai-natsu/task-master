@@ -7,6 +7,7 @@ tkinter.Canvas に直接描画する。旧実装の「ラベル列を横スク�
 
 import datetime
 import tkinter as tk
+import tkinter.font as tkfont
 
 import customtkinter as ctk
 
@@ -18,6 +19,7 @@ from app.logic.dnd import plan_row_drop
 from app.logic.gantt import compute_bar, compute_months, compute_range
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
+from app.ui.widgets.ellipsis import ellipsize
 from app.ui.widgets.task_edit import create_task_via_form, edit_task
 from app.ui.widgets.tooltip import Tooltip
 
@@ -55,6 +57,7 @@ class GanttChartWidget(ctk.CTkFrame):
         self._total_width = 0
 
         self.canvas = tk.Canvas(self, highlightthickness=0, background="#ffffff")
+        self._label_font = tkfont.Font(root=self, family=theme.FONT_FAMILY, size=11)
         h_scroll = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
         v_scroll = ctk.CTkScrollbar(self, orientation="vertical", command=self.canvas.yview)
         self.canvas.configure(xscrollcommand=h_scroll.set, yscrollcommand=v_scroll.set)
@@ -188,9 +191,9 @@ class GanttChartWidget(ctk.CTkFrame):
             )
             label_fg = "#94a3b8" if is_done else "#0f172a"
             label_text = self.canvas.create_text(
-                dot_x + 12, row_y + ROW_H / 2, anchor="w", text=task.title,
-                fill=label_fg, width=LABEL_W - dot_x - 16,
-                font=(theme.FONT_FAMILY, 11),
+                dot_x + 12, row_y + ROW_H / 2, anchor="w",
+                text=ellipsize(task.title, self._label_font, LABEL_W - dot_x - 12 - 8),
+                fill=label_fg, font=(theme.FONT_FAMILY, 11),
             )
 
             for i, d in enumerate(days):

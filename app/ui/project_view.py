@@ -5,6 +5,7 @@ import customtkinter as ctk
 from app.db.projects import get_project
 from app.i18n import t
 from app.ui import theme
+from app.ui.widgets.ellipsis import EllipsisLabel
 from app.ui.widgets.filter_bar import FilterBar
 from app.ui.widgets.gantt_chart_widget import GanttChartWidget
 from app.ui.widgets.kanban_board_widget import KanbanBoardWidget
@@ -42,17 +43,20 @@ class ProjectView(ctk.CTkFrame):
         header.grid(row=0, column=0, sticky="ew", pady=(0, 12))
 
         title_box = ctk.CTkFrame(header, fg_color="transparent")
-        title_box.pack(side="left", anchor="w")
-        ctk.CTkLabel(
+        # 右側のボタンを残した幅いっぱいを名前に使い、収まらない分は「...」にする
+        title_box.pack(side="left", fill="x", expand=True)
+        EllipsisLabel(
             title_box,
             text=project.name,
             font=ctk.CTkFont(size=20, weight="bold"),
             text_color=theme.TEXT_PRIMARY,
-        ).pack(anchor="w")
+            padding=8,
+        ).pack(fill="x")
         if project.description:
-            ctk.CTkLabel(
-                title_box, text=project.description, text_color=theme.TEXT_MUTED
-            ).pack(anchor="w")
+            EllipsisLabel(
+                title_box, text=project.description.replace("\n", " "),
+                text_color=theme.TEXT_MUTED, padding=8,
+            ).pack(fill="x")
 
         ctk.CTkButton(
             header,
