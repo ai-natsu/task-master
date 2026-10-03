@@ -204,6 +204,9 @@ class GanttChartWidget(ctk.CTkFrame):
                 self.canvas.tag_bind(bar_item, "<ButtonRelease-1>", self._on_bar_release)
                 self.canvas.tag_bind(bar_item, "<Motion>", self._on_bar_hover)
                 self.canvas.tag_bind(
+                    bar_item, "<Double-Button-1>", lambda _e, tk_=task: self._edit(tk_)
+                )
+                self.canvas.tag_bind(
                     bar_item, "<Leave>", lambda _e: self.canvas.configure(cursor="")
                 )
 
@@ -289,8 +292,7 @@ class GanttChartWidget(ctk.CTkFrame):
             return
         task = drag["task"]
         if not drag["moved"]:
-            self._edit(task)
-            return
+            return  # シングルクリックでは何もしない（編集はダブルクリック）
 
         x0, _y0, x1, _y1 = drag.get("live_coords", drag["orig_coords"])
         range_start = self._range_start
