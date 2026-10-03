@@ -136,7 +136,36 @@ class KanbanBoardWidget(ctk.CTkFrame):
             widget.bind("<ButtonPress-1>", lambda e, tk_=task: self._start_drag(e, tk_))
             widget.bind("<B1-Motion>", self._on_drag_motion)
             widget.bind("<ButtonRelease-1>", self._end_drag)
-            widget.bind("<Double-Button-1>", lambda _e, tk_=task: self._edit(tk_))
+            widget.bind("<Enter>", lambda _e, c=card: self._hover_card(c, True), add="+")
+            widget.bind("<Leave>", lambda _e, c=card: self._hover_leave(c), add="+")
+        self._set_cursor_recursive(card, "fleur")
+
+    # --- マウスオーバー（枠をアクセント色で強調＋つかむカーソル） -----------------
+    def _set_cursor_recursive(self, widget, cursor: str) -> None:
+        try:
+            widget.configure(cursor=cursor)
+        except (tk.TclError, ValueError):
+            pass  # カーソル指定に対応しないウィジェットは既定のまま
+        for child in widget.winfo_children():
+            self._set_cursor_recursive(child, cursor)
+
+    def _hover_card(self, card, on: bool) -> None:
+        if self._drag_started:
+            return
+        card.configure(border_color=theme.ACCENT if on else theme.CARD_BORDER)
+
+    def _hover_leave(self, card) -> None:
+        # 子ウィジェットへ移動しただけの Leave では解除しない
+        def check() -> None:
+            if not card.winfo_exists():
+                return
+            under = card.winfo_containing(*card.winfo_pointerxy())
+            while under is not None and under is not card:
+                under = getattr(under, "master", None)
+            if under is not card:
+                self._hover_card(card, False)
+
+        card.after(15, check)
 
     def _populate_card(self, card, task, is_done: bool):
         """カード枠の中身（タイトル・優先度・タグ・期限）を組み立てる。
@@ -273,7 +302,8 @@ class KanbanBoardWidget(ctk.CTkFrame):
         if card:
             card.configure(border_width=1)
         if not started:
-            # しきい値未満の移動(=実質ただのクリック)では何もしない
+            # しきい値未満の移動 = シングルクリック → 編集を開く
+            self._edit(task)
             return
 
         target_widget = self.winfo_containing(event.x_root, event.y_root)

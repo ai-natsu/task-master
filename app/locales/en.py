@@ -22,6 +22,7 @@ TRANSLATIONS: dict[str, str] = {
     "日付": "Date",
     "タグ": "Tags",
     "タスク": "Task",
+    "ダブルクリックで編集": "Double-click to edit",
     "ステータス": "Status",
     "優先度": "Priority",
     "開始日": "Start Date",

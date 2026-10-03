@@ -14,11 +14,12 @@ from app.db.holidays import list_holidays
 from app.db.statuses import list_statuses
 from app.db.tasks import create_task, list_tasks, reorder_tasks, update_task
 from app.i18n import t
-from app.logic.dnd import plan_tree_drag
+from app.logic.dnd import plan_row_drop
 from app.logic.gantt import compute_bar, compute_months, compute_range
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
 from app.ui.widgets.task_form_dialog import ask_task_form
+from app.ui.widgets.tooltip import Tooltip
 
 DAY_W = 28
 ROW_H = 36
@@ -26,6 +27,15 @@ LABEL_W = 220
 HEADER_H = 24
 SUBHEADER_H = 20
 _EDGE_PX = 6  # バー端のドラッグ判定幅(px)
+_ROW_HOVER_BG = "#eef2ff"
+_LABEL_HOVER_FG = "#4f46e5"
+_DROP_EDGE = 0.25  # 行の上下この割合の範囲にドロップすると兄弟として挿入、中央なら子にする
+
+
+def _lighten(color: str, ratio: float) -> str:
+    """16進カラーを白に近づける（バーのマウスオーバー表示用）。"""
+    r, g, b = (int(color[i:i + 2], 16) for i in (1, 3, 5))
+    return "#{:02x}{:02x}{:02x}".format(*(round(c + (255 - c) * ratio) for c in (r, g, b)))
 
 
 class GanttChartWidget(ctk.CTkFrame):
@@ -39,12 +49,19 @@ class GanttChartWidget(ctk.CTkFrame):
         self._drag: dict | None = None
         self._rows_cache: list = []
         self._row_drag_id: str | None = None
+        self._row_hl: dict[int, tuple[int, int, int, str]] = {}
+        self._hover_row: int | None = None
+        self._tip_key: tuple | None = None
+        self._total_width = 0
 
         self.canvas = tk.Canvas(self, highlightthickness=0, background="#ffffff")
         h_scroll = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
         v_scroll = ctk.CTkScrollbar(self, orientation="vertical", command=self.canvas.yview)
         self.canvas.configure(xscrollcommand=h_scroll.set, yscrollcommand=v_scroll.set)
 
+        self._tooltip = Tooltip(self.canvas)
+        self.canvas.bind("<Motion>", self._on_canvas_motion, add="+")
+        self.canvas.bind("<Leave>", self._on_canvas_leave)
         self.canvas.grid(row=0, column=0, sticky="nsew")
         v_scroll.grid(row=0, column=1, sticky="ns")
         h_scroll.grid(row=1, column=0, sticky="ew")
@@ -58,7 +75,11 @@ class GanttChartWidget(ctk.CTkFrame):
         self.refresh()
 
     def refresh(self) -> None:
+        self._tooltip.hide()
         self.canvas.delete("all")
+        self._row_hl = {}
+        self._hover_row = None
+        self._tip_key = None
         tasks = list_tasks(self.app.conn, project_id=self.project_id, **self.filters)
         statuses = {s.id: s for s in list_statuses(self.app.conn)}
         rows = flatten_nodes(build_task_tree(tasks))
@@ -80,6 +101,7 @@ class GanttChartWidget(ctk.CTkFrame):
         holiday_dates = {h.date for h in list_holidays(self.app.conn)}
 
         total_width = LABEL_W + len(days) * DAY_W
+        self._total_width = total_width
         total_height = HEADER_H + SUBHEADER_H + len(rows) * ROW_H
 
         self._draw_month_header(months)
@@ -164,9 +186,10 @@ class GanttChartWidget(ctk.CTkFrame):
                 dot_x, row_y + ROW_H / 2 - 3, dot_x + 6, row_y + ROW_H / 2 + 3,
                 fill=dot_color, outline="",
             )
+            label_fg = "#94a3b8" if is_done else "#0f172a"
             label_text = self.canvas.create_text(
                 dot_x + 12, row_y + ROW_H / 2, anchor="w", text=task.title,
-                fill="#94a3b8" if is_done else "#0f172a", width=LABEL_W - dot_x - 16,
+                fill=label_fg, width=LABEL_W - dot_x - 16,
                 font=(theme.FONT_FAMILY, 11),
             )
 
@@ -179,6 +202,10 @@ class GanttChartWidget(ctk.CTkFrame):
                         dx, row_y, dx + DAY_W, row_y + ROW_H,
                         fill="#fef9f9" if is_holiday else "#f8fafc", outline="",
                     )
+            row_hl = self.canvas.create_rectangle(
+                LABEL_W, row_y, total_width, row_y + ROW_H, fill="", outline=""
+            )
+            self._row_hl[index] = (label_bg, row_hl, label_text, label_fg)
             self.canvas.create_line(
                 0, row_y + ROW_H, total_width, row_y + ROW_H, fill="#e2e8f0", tags=("rowline",)
             )
@@ -203,11 +230,17 @@ class GanttChartWidget(ctk.CTkFrame):
                 self.canvas.tag_bind(bar_item, "<B1-Motion>", self._on_bar_motion)
                 self.canvas.tag_bind(bar_item, "<ButtonRelease-1>", self._on_bar_release)
                 self.canvas.tag_bind(bar_item, "<Motion>", self._on_bar_hover)
+                bar_color = status.color if status else "#6366f1"
+                self.canvas.tag_bind(
+                    bar_item, "<Enter>",
+                    lambda e, bi=bar_item, c=bar_color, tk_=task: self._on_bar_enter(e, bi, c, tk_),
+                )
                 self.canvas.tag_bind(
                     bar_item, "<Double-Button-1>", lambda _e, tk_=task: self._edit(tk_)
                 )
                 self.canvas.tag_bind(
-                    bar_item, "<Leave>", lambda _e: self.canvas.configure(cursor="")
+                    bar_item, "<Leave>",
+                    lambda _e, bi=bar_item, c=bar_color: self._on_bar_leave(bi, c),
                 )
 
             for label_item in (label_bg, label_text):
@@ -215,33 +248,131 @@ class GanttChartWidget(ctk.CTkFrame):
                     label_item, "<ButtonPress-1>",
                     lambda _e, tk_=task: self._on_row_press(tk_),
                 )
+                self.canvas.tag_bind(label_item, "<B1-Motion>", self._on_row_motion)
                 self.canvas.tag_bind(label_item, "<ButtonRelease-1>", self._on_row_release)
                 self.canvas.tag_bind(
                     label_item, "<Double-Button-1>", lambda _e, tk_=task: self._edit(tk_)
                 )
 
-    # --- 行ラベルのドラッグ（上下の並べ替え、同じ親配下のみ） -------------------
+    # --- 行ラベルのドラッグ（並べ替え・親の付け替え） -----------------------------
+    def _row_drop_target(self, event) -> tuple[int, str] | None:
+        """ポインタ位置から (行インデックス, ドロップ位置) を求める。範囲外は None。
+
+        行の上端 25% = before（直前に兄弟として挿入）、下端 25% = after（直後）、
+        中央 = child（その行の子にする）。
+        """
+        row_top = HEADER_H + SUBHEADER_H
+        y = self.canvas.canvasy(event.y)
+        index = int((y - row_top) // ROW_H)
+        if not (0 <= index < len(self._rows_cache)):
+            return None
+        frac = ((y - row_top) % ROW_H) / ROW_H
+        zone = "before" if frac < _DROP_EDGE else "after" if frac > 1 - _DROP_EDGE else "child"
+        return index, zone
+
+    def _draw_drop_indicator(self, index: int, zone: str) -> None:
+        self.canvas.delete("drop_indicator")
+        row_y = HEADER_H + SUBHEADER_H + index * ROW_H
+        if zone == "child":
+            self.canvas.create_rectangle(
+                1, row_y + 1, self._total_width - 1, row_y + ROW_H - 1,
+                outline=theme.ACCENT, width=2, tags=("drop_indicator",),
+            )
+        else:
+            y = row_y if zone == "before" else row_y + ROW_H
+            self.canvas.create_line(
+                0, y, self._total_width, y, fill=theme.ACCENT, width=3, tags=("drop_indicator",)
+            )
+
     def _on_row_press(self, task) -> None:
         self._row_drag_id = task.id
+        self._tooltip.hide()
+
+    def _on_row_motion(self, event) -> None:
+        if not self._row_drag_id:
+            return
+        target = self._row_drop_target(event)
+        if target is None:
+            self.canvas.delete("drop_indicator")
+            return
+        self._draw_drop_indicator(*target)
 
     def _on_row_release(self, event) -> None:
         if not self._row_drag_id:
             return
         active_id, self._row_drag_id = self._row_drag_id, None
-        row_top = HEADER_H + SUBHEADER_H
-        index = int((event.y - row_top) // ROW_H)
-        if not (0 <= index < len(self._rows_cache)):
+        self.canvas.delete("drop_indicator")
+        target = self._row_drop_target(event)
+        if target is None:
             return
+        index, zone = target
         target_task = self._rows_cache[index].node.task
         if target_task.id == active_id:
             return
 
         tasks = list_tasks(self.app.conn, project_id=self.project_id)
-        plan = plan_tree_drag(tasks, active_id, target_task.id)
+        plan = plan_row_drop(tasks, active_id, target_task.id, zone)
         if plan.get("reorder"):
             reorder_tasks(self.app.conn, plan["reorder"])
             self.refresh()
             self.on_change()
+
+    # --- マウスオーバー（行の強調・ツールチップ） -------------------------------
+    def _is_dragging(self) -> bool:
+        return self._drag is not None or self._row_drag_id is not None
+
+    def _set_hover_row(self, index: int | None) -> None:
+        if index == self._hover_row:
+            return
+        if self._hover_row in self._row_hl:
+            label_bg, row_hl, label_text, label_fg = self._row_hl[self._hover_row]
+            self.canvas.itemconfigure(label_bg, fill="#ffffff")
+            self.canvas.itemconfigure(row_hl, fill="")
+            self.canvas.itemconfigure(label_text, fill=label_fg)
+        self._hover_row = index
+        if index in self._row_hl:
+            label_bg, row_hl, label_text, _fg = self._row_hl[index]
+            self.canvas.itemconfigure(label_bg, fill=_ROW_HOVER_BG)
+            self.canvas.itemconfigure(row_hl, fill=_ROW_HOVER_BG)
+            self.canvas.itemconfigure(label_text, fill=_LABEL_HOVER_FG)
+
+    def _on_canvas_motion(self, event) -> None:
+        if self._is_dragging():
+            return
+        row_top = HEADER_H + SUBHEADER_H
+        x, y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+        index = int((y - row_top) // ROW_H) if y >= row_top else -1
+        index = index if 0 <= index < len(self._rows_cache) else None
+        self._set_hover_row(index)
+
+        key = ("label", index) if index is not None and x < LABEL_W else None
+        if key != self._tip_key:
+            self._tip_key = key
+            self._tooltip.hide()
+            if key is not None:
+                task = self._rows_cache[index].node.task
+                text = f"{task.title}\n{t('ダブルクリックで編集')}"
+                self._tooltip.schedule(text, event.x_root, event.y_root)
+
+    def _on_canvas_leave(self, _event) -> None:
+        self._set_hover_row(None)
+        self._tip_key = None
+        self._tooltip.hide()
+        self.canvas.configure(cursor="")
+
+    def _on_bar_enter(self, event, bar_item: int, color: str, task) -> None:
+        if self._is_dragging():
+            return
+        self.canvas.itemconfigure(bar_item, fill=_lighten(color, 0.3))
+        start = task.start_date[5:10].replace("-", "/") if task.start_date else "?"
+        due = task.due_date[5:10].replace("-", "/") if task.due_date else "?"
+        self._tooltip.schedule(f"{task.title}\n{start} 〜 {due}", event.x_root, event.y_root)
+
+    def _on_bar_leave(self, bar_item: int, color: str) -> None:
+        self.canvas.configure(cursor="")
+        self._tooltip.hide()
+        if self._drag is None:
+            self.canvas.itemconfigure(bar_item, fill=color)
 
     # --- ガントバーのドラッグ（平行移動・端のリサイズ） -------------------
     def _bar_mode_at(self, event_x: float, x0: float, x1: float) -> str:
@@ -261,6 +392,7 @@ class GanttChartWidget(ctk.CTkFrame):
         self.canvas.configure(cursor=cursor)
 
     def _on_bar_press(self, event, task, bar_item: int) -> None:
+        self._tooltip.hide()
         coords = self.canvas.coords(bar_item)
         x0, _y0, x1, _y1 = coords
         mode = self._bar_mode_at(event.x, x0, x1)

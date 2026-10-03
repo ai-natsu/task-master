@@ -44,6 +44,8 @@ class TaskTreeWidget(ctk.CTkFrame):
         self._statuses_by_id: dict = {}
         self._status_labels: dict[str, str] = {}
         self._drag_id: str | None = None
+        self._press_on_indicator = False
+        self._hover_id: str | None = None
         self._grid_lines: list[tk.Frame] = []
         self._column_lines: list[tk.Frame] = []
         self._priority_overlays: list[tk.Label] = []
@@ -94,6 +96,7 @@ class TaskTreeWidget(ctk.CTkFrame):
 
         self.tree.tag_configure("overdue", foreground="#dc2626")
         self.tree.tag_configure("done", foreground="#94a3b8")
+        self.tree.tag_configure("hover", background="#eef2ff")
 
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         hscrollbar = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
@@ -107,7 +110,11 @@ class TaskTreeWidget(ctk.CTkFrame):
 
         self.tree.bind("<ButtonPress-1>", self._on_press)
         self.tree.bind("<ButtonRelease-1>", self._on_release)
-        self.tree.bind("<Double-1>", self._on_double_click)
+        # ダブルクリックでは何もしない（既定の「展開/折りたたみの切替」も止める）。
+        # 編集はシングルクリック。
+        self.tree.bind("<Double-1>", lambda _e: "break")
+        self.tree.bind("<Motion>", self._on_motion)
+        self.tree.bind("<Leave>", lambda _e: self._set_hover(None))
         self.tree.bind("<Button-3>", self._on_right_click)
         self.tree.bind("<Configure>", lambda _e: self._redraw_overlays())
         self.tree.bind("<<TreeviewOpen>>", lambda _e: self.after_idle(self._redraw_overlays))
@@ -326,12 +333,36 @@ class TaskTreeWidget(ctk.CTkFrame):
     def _on_press(self, event) -> None:
         row_id = self.tree.identify_row(event.y)
         self._drag_id = row_id if row_id != _EMPTY_IID else None
+        # 展開/折りたたみの矢印を押したときは、編集を開かない
+        self._press_on_indicator = "indicator" in self.tree.identify_element(event.x, event.y)
+
+    # --- マウスオーバー（行を薄く強調） -----------------------------------------
+    def _on_motion(self, event) -> None:
+        row_id = self.tree.identify_row(event.y)
+        self._set_hover(row_id if row_id and row_id != _EMPTY_IID else None)
+
+    def _set_hover(self, row_id: str | None) -> None:
+        if row_id == self._hover_id:
+            return
+        if self._hover_id is not None and self.tree.exists(self._hover_id):
+            tags = [x for x in self.tree.item(self._hover_id, "tags") if x != "hover"]
+            self.tree.item(self._hover_id, tags=tuple(tags))
+        self._hover_id = row_id
+        if row_id is not None and self.tree.exists(row_id):
+            tags = [*self.tree.item(row_id, "tags"), "hover"]
+            self.tree.item(row_id, tags=tuple(tags))
 
     def _on_release(self, event) -> None:
         if not self._drag_id:
             return
         active_id, self._drag_id = self._drag_id, None
         drop_id = self.tree.identify_row(event.y)
+        if drop_id == active_id and not self._press_on_indicator:
+            # 同じ行で押して離した＝シングルクリック → 編集を開く
+            task = self._tasks_by_id.get(active_id)
+            if task:
+                self._edit(task)
+            return
         if not drop_id or drop_id == active_id or drop_id == _EMPTY_IID:
             return
 
@@ -363,12 +394,6 @@ class TaskTreeWidget(ctk.CTkFrame):
         menu.add_separator()
         menu.add_command(label=t("削除"), command=lambda: self._delete(task))
         menu.tk_popup(event.x_root, event.y_root)
-
-    def _on_double_click(self, event) -> None:
-        row_id = self.tree.identify_row(event.y)
-        task = self._tasks_by_id.get(row_id)
-        if task:
-            self._edit(task)
 
     # --- CRUD操作 -------------------------------------------------------------
     def _change_status(self, task_id: str, status_id: str) -> None:

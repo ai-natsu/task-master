@@ -91,3 +91,71 @@ def plan_tree_drag(tasks: list[Task], active_id: str, over_id: str | None) -> di
 
     reordered = _array_move(siblings, old_index, new_index)
     return {"reorder": [{"id": t.id, "order": i} for i, t in enumerate(reordered)]}
+
+
+def _is_descendant_or_self(tasks: list[Task], ancestor_id: str, task_id: str) -> bool:
+    """task_id が ancestor_id 自身、またはその子孫かどうか。"""
+    parent_of = {t.id: t.parent_id for t in tasks}
+    current: str | None = task_id
+    seen: set[str] = set()
+    while current is not None and current not in seen:
+        if current == ancestor_id:
+            return True
+        seen.add(current)
+        current = parent_of.get(current)
+    return False
+
+
+def plan_row_drop(tasks: list[Task], active_id: str, target_id: str, zone: str) -> dict:
+    """ガント行のドラッグ（親の付け替えを含む並べ替え）の純粋な意思決定ロジック。
+
+    zone は、ドロップした行の上端 "before"（対象の直前に兄弟として挿入）・
+    下端 "after"（直後に兄弟として挿入）・中央 "child"（対象の最後の子にする）。
+    自分自身や自分の子孫の配下には移動できない（循環の防止）。
+
+    戻り値: {"reorder": [{"id", "order", ["parent_id"]}, ...]}。変化が無ければ {}。
+    親が変わる場合のみ、移動するタスクの要素に "parent_id" を含める。
+    """
+    if active_id == target_id or zone not in ("before", "after", "child"):
+        return {}
+    active = next((t for t in tasks if t.id == active_id), None)
+    target = next((t for t in tasks if t.id == target_id), None)
+    if active is None or target is None:
+        return {}
+    if _is_descendant_or_self(tasks, active_id, target_id):
+        return {}
+
+    new_parent = target.id if zone == "child" else target.parent_id
+    siblings = sorted(
+        (t for t in tasks if t.parent_id == new_parent and t.id != active_id),
+        key=lambda t: t.order,
+    )
+    if zone == "child":
+        index = len(siblings)
+    else:
+        target_index = next(i for i, t in enumerate(siblings) if t.id == target_id)
+        index = target_index if zone == "before" else target_index + 1
+    siblings.insert(index, active)
+
+    parent_changed = active.parent_id != new_parent
+    plan: list[dict] = []
+    for i, t in enumerate(siblings):
+        item: dict = {"id": t.id, "order": i}
+        if t.id == active_id and parent_changed:
+            item["parent_id"] = new_parent
+        plan.append(item)
+
+    if parent_changed:
+        # 元の親の兄弟も詰め直す（順序の欠番を残さない）
+        old_siblings = sorted(
+            (t for t in tasks if t.parent_id == active.parent_id and t.id != active_id),
+            key=lambda t: t.order,
+        )
+        plan.extend({"id": t.id, "order": i} for i, t in enumerate(old_siblings))
+    else:
+        old_siblings = sorted(
+            (t for t in tasks if t.parent_id == active.parent_id), key=lambda t: t.order
+        )
+        if [t.id for t in old_siblings] == [t.id for t in siblings]:
+            return {}
+    return {"reorder": plan}
