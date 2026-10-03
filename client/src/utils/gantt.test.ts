@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { format } from "date-fns";
-import { computeBar, computeMonths, computeRange } from "./gantt";
+import { applyGanttDrag, barToDates, computeBar, computeMonths, computeRange } from "./gantt";
 import { makeTask } from "../test/factories";
 
 // `today` is passed in rather than read from the clock, so these need no fake
@@ -112,5 +112,40 @@ describe("computeMonths", () => {
 
   it("GA-6b: 空配列なら空", () => {
     expect(computeMonths([])).toEqual([]);
+  });
+});
+
+describe("applyGanttDrag", () => {
+  const bar = { offsetDays: 5, spanDays: 3 };
+
+  it("move shifts the whole bar and keeps the span", () => {
+    expect(applyGanttDrag(bar, "move", 2)).toEqual({ offsetDays: 7, spanDays: 3 });
+    expect(applyGanttDrag(bar, "move", -4)).toEqual({ offsetDays: 1, spanDays: 3 });
+  });
+
+  it("resize-start changes the start only, never below one day", () => {
+    expect(applyGanttDrag(bar, "resize-start", -2)).toEqual({ offsetDays: 3, spanDays: 5 });
+    expect(applyGanttDrag(bar, "resize-start", 1)).toEqual({ offsetDays: 6, spanDays: 2 });
+    expect(applyGanttDrag(bar, "resize-start", 10)).toEqual({ offsetDays: 7, spanDays: 1 });
+  });
+
+  it("resize-end changes the due date only, never below one day", () => {
+    expect(applyGanttDrag(bar, "resize-end", 2)).toEqual({ offsetDays: 5, spanDays: 5 });
+    expect(applyGanttDrag(bar, "resize-end", -10)).toEqual({ offsetDays: 5, spanDays: 1 });
+  });
+});
+
+describe("barToDates", () => {
+  it("converts a bar to start/due stored as UTC midnight of the calendar day", () => {
+    const rangeStart = new Date(2026, 6, 10); // 2026-07-10 (local)
+    expect(barToDates({ offsetDays: 2, spanDays: 3 }, rangeStart)).toEqual({
+      startDate: "2026-07-12T00:00:00.000Z",
+      dueDate: "2026-07-14T00:00:00.000Z",
+    });
+  });
+
+  it("a one-day bar has the same start and due", () => {
+    const { startDate, dueDate } = barToDates({ offsetDays: 0, spanDays: 1 }, new Date(2026, 6, 10));
+    expect(startDate).toBe(dueDate);
   });
 });

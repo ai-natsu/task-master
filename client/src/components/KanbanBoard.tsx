@@ -32,7 +32,7 @@ function KanbanCard({ task, isDone, onEdit, dragging }: { task: Task; isDone: bo
   const overdue = task.dueDate && !isDone && isOverdue(task.dueDate);
   return (
     <div
-      onClick={() => onEdit?.(task)}
+      onDoubleClick={() => onEdit?.(task)}
       className={clsx(
         "cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-indigo-600",
         dragging && "rotate-2 shadow-lg ring-2 ring-indigo-400"

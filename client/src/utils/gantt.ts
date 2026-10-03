@@ -63,6 +63,37 @@ export function computeBar(
   };
 }
 
+export type GanttDragMode = "move" | "resize-start" | "resize-end";
+
+/**
+ * Bar geometry after dragging by `deltaDays`. "move" shifts the whole bar;
+ * "resize-start" / "resize-end" change only one side. A bar never shrinks
+ * below one day.
+ */
+export function applyGanttDrag(bar: GanttBar, mode: GanttDragMode, deltaDays: number): GanttBar {
+  switch (mode) {
+    case "move":
+      return { offsetDays: bar.offsetDays + deltaDays, spanDays: bar.spanDays };
+    case "resize-start": {
+      const d = Math.min(deltaDays, bar.spanDays - 1);
+      return { offsetDays: bar.offsetDays + d, spanDays: bar.spanDays - d };
+    }
+    case "resize-end":
+      return { offsetDays: bar.offsetDays, spanDays: Math.max(1, bar.spanDays + deltaDays) };
+  }
+}
+
+/**
+ * Start/due dates (ISO, stored as UTC midnight of the calendar day — the same
+ * form the task form saves) for a bar positioned relative to `rangeStart`.
+ */
+export function barToDates(bar: GanttBar, rangeStart: Date): { startDate: string; dueDate: string } {
+  const start = addDays(rangeStart, bar.offsetDays);
+  const due = addDays(start, bar.spanDays - 1);
+  const stored = (d: Date) => new Date(format(d, "yyyy-MM-dd")).toISOString();
+  return { startDate: stored(start), dueDate: stored(due) };
+}
+
 /** Groups consecutive days into month headers with their column spans. */
 export function computeMonths(days: Date[]): { label: string; count: number }[] {
   const acc: { label: string; count: number }[] = [];

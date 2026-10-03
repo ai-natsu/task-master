@@ -1,21 +1,46 @@
-import { useMemo } from "react";
+import { useMemo, useState, type PointerEvent } from "react";
 import clsx from "clsx";
 import { differenceInCalendarDays, format, isSameDay, startOfDay } from "date-fns";
 import type { Task } from "../types";
 import { buildTaskTree, flattenNodes } from "../utils/tree";
-import { computeBar, computeMonths, computeRange } from "../utils/gantt";
+import {
+  applyGanttDrag,
+  barToDates,
+  computeBar,
+  computeMonths,
+  computeRange,
+  type GanttDragMode,
+} from "../utils/gantt";
 import { useStatuses } from "../api/statuses";
 
 const DAY_W = 28;
 const ROW_H = 36;
 const LABEL_W = 220;
+const EDGE_W = 6; // バー端のリサイズ用つかみ幅(px)
 
 interface Props {
   tasks: Task[];
   onEdit: (task: Task) => void;
+  onChangeDates?: (task: Task, startDate: string, dueDate: string) => void;
 }
 
-export function GanttChart({ tasks, onEdit }: Props) {
+interface DragState {
+  id: string;
+  mode: GanttDragMode;
+  startX: number;
+  deltaDays: number;
+}
+
+function dragModeAt(e: PointerEvent<HTMLDivElement>): GanttDragMode {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  if (x <= EDGE_W) return "resize-start";
+  if (x >= rect.width - EDGE_W) return "resize-end";
+  return "move";
+}
+
+export function GanttChart({ tasks, onEdit, onChangeDates }: Props) {
+  const [drag, setDrag] = useState<DragState | null>(null);
   const { data: statuses = [] } = useStatuses();
   const statusById = useMemo(() => new Map(statuses.map((s) => [s.id, s])), [statuses]);
 
@@ -87,7 +112,11 @@ export function GanttChart({ tasks, onEdit }: Props) {
         {/* タスク行 */}
         {rows.map(({ node, depth }) => {
           const statusDef = statusById.get(node.status);
-          const bar = computeBar(node, rangeStart);
+          const baseBar = computeBar(node, rangeStart);
+          const bar =
+            baseBar && drag?.id === node.id
+              ? applyGanttDrag(baseBar, drag.mode, drag.deltaDays)
+              : baseBar;
           const left = bar ? bar.offsetDays * DAY_W : 0;
           const width = bar ? bar.spanDays * DAY_W - 4 : 0;
 
@@ -98,10 +127,10 @@ export function GanttChart({ tasks, onEdit }: Props) {
               style={{ height: ROW_H }}
             >
               <button
-                onClick={() => onEdit(node)}
+                onDoubleClick={() => onEdit(node)}
                 className="sticky left-0 z-10 flex shrink-0 items-center gap-1.5 truncate border-r border-slate-200 bg-white px-3 text-left text-sm hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:hover:text-indigo-400"
                 style={{ width: LABEL_W, paddingLeft: 12 + depth * 16 }}
-                title={node.title}
+                title={`${node.title}\nダブルクリックで編集`}
               >
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
@@ -127,9 +156,31 @@ export function GanttChart({ tasks, onEdit }: Props) {
                 )}
                 {bar && (
                   <div
-                    onClick={() => onEdit(node)}
+                    onDoubleClick={() => onEdit(node)}
+                    onPointerDown={(e) => {
+                      if (e.button !== 0 || !onChangeDates) return;
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      setDrag({ id: node.id, mode: dragModeAt(e), startX: e.clientX, deltaDays: 0 });
+                    }}
+                    onPointerMove={(e) => {
+                      if (drag?.id === node.id) {
+                        const deltaDays = Math.round((e.clientX - drag.startX) / DAY_W);
+                        if (deltaDays !== drag.deltaDays) setDrag({ ...drag, deltaDays });
+                      } else {
+                        e.currentTarget.style.cursor = dragModeAt(e) === "move" ? "grab" : "ew-resize";
+                      }
+                    }}
+                    onPointerUp={() => {
+                      if (drag?.id === node.id && drag.deltaDays !== 0 && baseBar) {
+                        const next = applyGanttDrag(baseBar, drag.mode, drag.deltaDays);
+                        const dates = barToDates(next, rangeStart);
+                        onChangeDates?.(node, dates.startDate, dates.dueDate);
+                      }
+                      setDrag(null);
+                    }}
+                    onPointerCancel={() => setDrag(null)}
                     className={clsx(
-                      "absolute top-1/2 h-4 -translate-y-1/2 cursor-pointer rounded-full shadow-sm hover:opacity-80",
+                      "absolute top-1/2 h-4 -translate-y-1/2 touch-none select-none rounded-full shadow-sm hover:opacity-80",
                       statusDef?.isDone && "opacity-50"
                     )}
                     style={{
@@ -147,7 +198,7 @@ export function GanttChart({ tasks, onEdit }: Props) {
       </div>
 
       <p className="border-t border-slate-200 px-3 py-2 text-xs text-slate-400 dark:border-slate-700">
-        バーは開始日〜期限の期間を表します（片方のみ設定の場合は1日分）。開始日・期限が未設定のタスクはバー非表示。バーまたはタスク名クリックで編集できます。
+        バーは開始日〜期限の期間を表します（片方のみ設定の場合は1日分）。開始日・期限が未設定のタスクはバー非表示。バーを左右にドラッグして日程を移動、両端のドラッグで期間を変更できます。バーまたはタスク名のダブルクリックで編集できます。
       </p>
     </div>
   );

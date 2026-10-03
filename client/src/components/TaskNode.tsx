@@ -39,6 +39,11 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
     <div>
       <div
         ref={setNodeRef}
+        onDoubleClick={(e) => {
+          // 行内のボタン・セレクト上でのダブルクリックは編集を開かない
+          if ((e.target as HTMLElement).closest("button, select")) return;
+          onEdit(node);
+        }}
         style={{ ...style, paddingLeft: depth * 24 }}
         className={clsx(
           "group flex items-center gap-2 rounded-lg border border-transparent px-2 py-2 hover:border-slate-200 hover:bg-white dark:hover:border-slate-700 dark:hover:bg-slate-800"

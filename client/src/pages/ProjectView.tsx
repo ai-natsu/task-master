@@ -179,7 +179,13 @@ export function ProjectView() {
       ) : viewMode === "kanban" ? (
         <KanbanBoard tasks={tasksToShow} onEdit={openEdit} />
       ) : (
-        <GanttChart tasks={tasksToShow} onEdit={openEdit} />
+        <GanttChart
+          tasks={tasksToShow}
+          onEdit={openEdit}
+          onChangeDates={(task, startDate, dueDate) =>
+            updateTask.mutate({ id: task.id, startDate, dueDate })
+          }
+        />
       )}
 
       <TaskFormModal
