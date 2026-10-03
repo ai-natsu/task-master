@@ -118,18 +118,18 @@ def create_task(
     if parent_id is not None:
         parent = conn.execute('SELECT id FROM "Task" WHERE id = ?', (parent_id,)).fetchone()
         if parent is None:
-            raise ValidationError("Parent task not found")
+            raise ValidationError("親タスクが見つかりません")
 
     if status is not None:
         status_row = conn.execute('SELECT id FROM "Status" WHERE id = ?', (status,)).fetchone()
         if status_row is None:
-            raise ValidationError("Invalid status")
+            raise ValidationError("指定のステータスが存在しません")
     else:
         first_status = conn.execute(
             'SELECT id FROM "Status" ORDER BY "order" ASC LIMIT 1'
         ).fetchone()
         if first_status is None:
-            raise ValidationError("No statuses defined")
+            raise ValidationError("ステータスが1件もありません")
         status = first_status["id"]
 
     max_order = conn.execute(
@@ -178,7 +178,7 @@ def update_task(
     if status is not None:
         status_row = conn.execute('SELECT id FROM "Status" WHERE id = ?', (status,)).fetchone()
         if status_row is None:
-            raise ValidationError("Invalid status")
+            raise ValidationError("指定のステータスが存在しません")
 
     fields: list[str] = []
     values: list[object] = []
@@ -228,7 +228,7 @@ def move_task(
 
     if parent_id is not _UNSET and parent_id:
         if is_descendant_or_self(conn, task_id, parent_id):
-            raise CycleError("Cannot move a task under itself or its own subtask")
+            raise CycleError("タスクを自分自身またはその配下には移動できません")
 
     fields: list[str] = []
     values: list[object] = []

@@ -25,6 +25,7 @@ from app.db.statuses import (
 from app.db.tags import count_tagged_tasks, create_tag, delete_tag, list_tags, update_tag
 from app.i18n import LANGUAGES, calendar_locale, format_date, get_language, set_language, t
 from app.ui import theme
+from app.ui.errors import error_message
 from app.ui.widgets.calendar_style import (
     apply_calendar_dropdown_icon,
     apply_locale_header_format,
@@ -327,7 +328,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         try:
             delete_status(self.app.conn, status_id)
         except ConflictError as exc:
-            self.error_label.configure(text=t(str(exc)))
+            self.error_label.configure(text=error_message(exc))
             return
         self._refresh()
 
@@ -412,7 +413,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         try:
             rows = parse_holiday_csv(raw_bytes)
         except ValidationError as exc:
-            self.holiday_csv_result_label.configure(text=t(str(exc)), text_color="#dc2626")
+            self.holiday_csv_result_label.configure(text=error_message(exc), text_color="#dc2626")
             return
         count = bulk_upsert_holidays(self.app.conn, rows)
         self.holiday_csv_result_label.configure(
@@ -480,7 +481,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         try:
             update_tag(self.app.conn, tag_id, name=new_name)
         except ConflictError as exc:
-            self.tag_error_label.configure(text=t(str(exc)))
+            self.tag_error_label.configure(text=error_message(exc))
             entry.delete(0, "end")
             entry.insert(0, current.name)
 
@@ -506,7 +507,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         try:
             create_tag(self.app.conn, name, color=self._new_tag_color)
         except ConflictError as exc:
-            self.tag_error_label.configure(text=t(str(exc)))
+            self.tag_error_label.configure(text=error_message(exc))
             return
         self.new_tag_entry.delete(0, "end")
         self._refresh_tags()

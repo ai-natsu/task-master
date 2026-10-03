@@ -12,14 +12,13 @@ import tkinter as tk
 import customtkinter as ctk
 
 from app.db.statuses import list_statuses
-from app.db.tasks import create_task, list_tasks, reorder_tasks, update_task
+from app.db.tasks import list_tasks, reorder_tasks, update_task
 from app.i18n import format_date, t
 from app.logic.dnd import plan_kanban_drag
 from app.logic.due import is_overdue
 from app.ui import theme
 from app.ui.widgets.badges import color_pill, priority_badge
-from app.ui.widgets.task_edit import edit_task
-from app.ui.widgets.task_form_dialog import ask_task_form
+from app.ui.widgets.task_edit import create_task_via_form, edit_task
 
 _DRAG_THRESHOLD_PX = 4  # これ未満の移動は単なるクリックとみなしドラッグ扱いしない
 _MAX_VISIBLE_TAGS = 2
@@ -339,14 +338,11 @@ class KanbanBoardWidget(ctk.CTkFrame):
         return None
 
     def _edit(self, task) -> None:
-        if edit_task(self, self.app, self.project_id, task):
+        if edit_task(self.app, self.project_id, task):
             self.refresh()
             self.on_change()
 
     def add_root_task(self) -> None:
-        result = ask_task_form(self.app, self.app.conn, self.project_id)
-        if result:
-            result.pop("parent_id", None)
-            create_task(self.app.conn, project_id=self.project_id, **result)
+        if create_task_via_form(self.app, self.project_id):
             self.refresh()
             self.on_change()

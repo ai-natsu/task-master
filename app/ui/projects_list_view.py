@@ -112,9 +112,10 @@ class ProjectsListView(ctk.CTkScrollableFrame):
             ).pack(fill="x", padx=16, pady=(0, 14))
 
     def _create(self) -> None:
-        result = ask_project_form(self.app)
+        result = ask_project_form(
+            self.app, on_save=lambda r: create_project(self.app.conn, **r)
+        )
         if result:
-            create_project(self.app.conn, **result)
             self._refresh_list()
             self.app.sidebar.refresh_projects()
 
@@ -126,9 +127,9 @@ class ProjectsListView(ctk.CTkScrollableFrame):
                 "description": project.description,
                 "color": project.color,
             },
+            on_save=lambda r: update_project(self.app.conn, project.id, **r),
         )
         if result:
-            update_project(self.app.conn, project.id, **result)
             self._refresh_list()
             self.app.sidebar.refresh_projects()
 

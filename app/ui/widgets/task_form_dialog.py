@@ -7,6 +7,7 @@ import customtkinter as ctk
 from tkcalendar import DateEntry
 
 from app.constants import PRIORITIES
+from app.db.errors import AppError
 from app.db.holidays import list_holidays
 from app.db.statuses import list_statuses
 from app.db.tags import count_tagged_tasks, create_tag, delete_tag, list_tags
@@ -14,6 +15,7 @@ from app.db.tasks import create_task, list_tasks
 from app.i18n import calendar_locale, t
 from app.logic.tree import build_task_tree, flatten_with_depth
 from app.ui import theme
+from app.ui.errors import error_message
 from app.ui.widgets.badges import priority_label
 from app.ui.widgets.calendar_style import (
     apply_calendar_dropdown_icon,
@@ -24,8 +26,13 @@ from app.ui.widgets.confirm_dialog import ask_confirm
 
 
 class TaskFormDialog(ctk.CTkToplevel):
-    def __init__(self, parent, conn, project_id: str, task=None, parent_id: str | None = None):
+    def __init__(
+        self, parent, conn, project_id: str, task=None, parent_id: str | None = None,
+        on_save=None,
+    ):
         super().__init__(parent)
+        # 保存処理（失敗時は業務例外を送出）。指定時は、失敗をフォーム内に表示して閉じない。
+        self._on_save = on_save
         self.conn = conn
         self.project_id = project_id
         self.task = task
@@ -142,6 +149,11 @@ class TaskFormDialog(ctk.CTkToplevel):
         ctk.CTkButton(new_tag_row, text=t("追加"), width=60, command=self._add_tag).pack(
             side="left"
         )
+
+        self.error_label = ctk.CTkLabel(
+            self, text="", text_color="#dc2626", anchor="w", justify="left", wraplength=500
+        )
+        self.error_label.pack(fill="x", padx=20, pady=(0, 4))
 
         button_row = ctk.CTkFrame(self, fg_color="transparent")
         button_row.pack(fill="x", padx=14, pady=(0, 14))
@@ -341,8 +353,18 @@ class TaskFormDialog(ctk.CTkToplevel):
             "parent_id": parent_id,
         }
 
+        self.error_label.configure(text="")
+        try:
+            if self._on_save is not None:
+                self._on_save(result)
+            elif self.continue_var is not None and self.continue_var.get():
+                create_task(self.conn, project_id=self.project_id, **result)
+        except AppError as exc:
+            # 失敗したらフォームを閉じず、理由をボタンの上に赤字で表示する
+            self.error_label.configure(text=error_message(exc))
+            return
+
         if self.continue_var is not None and self.continue_var.get():
-            create_task(self.conn, project_id=self.project_id, **result)
             self._reset_form()
             return
 
@@ -380,8 +402,10 @@ class TaskFormDialog(ctk.CTkToplevel):
 
 
 def ask_task_form(
-    parent, conn, project_id: str, task=None, parent_id: str | None = None
+    parent, conn, project_id: str, task=None, parent_id: str | None = None, on_save=None
 ) -> dict | None:
-    dialog = TaskFormDialog(parent, conn, project_id, task=task, parent_id=parent_id)
+    dialog = TaskFormDialog(
+        parent, conn, project_id, task=task, parent_id=parent_id, on_save=on_save
+    )
     parent.wait_window(dialog)
     return dialog.result
