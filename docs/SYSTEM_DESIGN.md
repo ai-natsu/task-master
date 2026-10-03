@@ -53,6 +53,9 @@ tests/
   integration/       # app/db のテスト（一時 SQLite ファイル）
 packaging/
   build_exe.py       # Nuitka ビルドスクリプト
+  build_zip.py       # 配布用 zip の作成（ビルド＋同梱物の整理）
+  release.py         # zip に入れるファイルの作成（ライセンス表記の生成など）
+  dist_files/        # zip に同梱する文書・サンプル（README.txt、holidays_sample.csv）
 docs/                # 設計書
 seed.py              # サンプルデータ投入（破壊的）
 ```
@@ -81,9 +84,19 @@ seed.py              # サンプルデータ投入（破壊的）
 - `python packaging/build_exe.py` で `packaging/dist/TaskMaster.exe`（単一 exe、Windows）を生成する。初回は C コンパイラバックエンド `zig` のダウンロードで数分かかる。
 - exe には Python 実行環境、CustomTkinter/Tk の資産、`app/db/schema.sql`、アイコンが含まれる（`--include-data-files` で明示的に同梱）。
 
-### 4.2 配布（方針）
-- 配布形態は **zip**。解凍すると `TaskMaster/` フォルダができ、その中の `TaskMaster.exe` をそのまま起動できる状態にする。
-- 同梱物（案）：`TaskMaster.exe`、利用者向け `README`（起動方法・データの保存場所・バックアップ方法）、`LICENSE`、`THIRD_PARTY_NOTICES`（利用ライブラリのライセンス表記）、祝日 CSV の例。
+### 4.2 配布
+- 配布形態は **zip**。`python packaging/build_zip.py` で `packaging/dist/TaskMaster-<版>-win64.zip` を作る（exe のビルドを含む。ビルド済みなら `--skip-build` で zip だけ作れる）。
+- 解凍すると `TaskMaster/` フォルダができ、その中の `TaskMaster.exe` をそのまま起動できる。データ（`taskmaster.db`）は初回起動時に同じフォルダへ作られるため、zip には含めない。
+- 同梱物：
+
+| ファイル | 内容 |
+|---|---|
+| `TaskMaster.exe` | アプリ本体 |
+| `README.txt` | 利用者向けの案内（起動方法・データの保存場所・バックアップ・バージョンアップ・SmartScreen の警告について）。メモ帳で読めるよう UTF-8（BOM つき）・CRLF |
+| `THIRD_PARTY_NOTICES.txt` | 利用ライブラリ（customtkinter・tkcalendar・Pillow・charset-normalizer・babel・darkdetect・packaging）の名前・版・ライセンス文書。ビルド時にインストール済みのパッケージから生成する。Python と Tcl/Tk は出典のみ |
+| `holidays_sample.csv` | 祝日の取り込み例（2026 年分）。設定画面の「CSV から読み込む」で使える |
+
+- `LICENSE`（TaskMaster 自体のライセンス）は、ライセンスの選定後に追加する。
 - 対応 OS は Windows。Mac 版は近日対応予定（Mac 用のビルドは Mac 上でしかできないため、GitHub Actions の macOS 環境での生成を想定。データ保存場所は「アプリと同じフォルダ」が使えないため別の場所に変更が必要）。
 
 ---

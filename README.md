@@ -20,7 +20,7 @@
 
 ### 配布方式
 - 配布は **zip**。解凍すると `TaskMaster/` フォルダができ、その中の `TaskMaster.exe` をダブルクリックするだけで起動する（インストール不要）。
-- 現状は zip の作成を整備中。`TaskMaster.exe` 単体をコピーしても同様に動く。
+- zip の中身：`TaskMaster.exe`、利用者向けの `README.txt`（起動方法・データの保存場所・バックアップ方法）、`THIRD_PARTY_NOTICES.txt`（利用ライブラリのライセンス表記）、祝日 CSV の例 `holidays_sample.csv`。
 - 対応 OS は **Windows**。Mac 版は近日対応予定。
 
 ### データの保存場所
@@ -97,6 +97,7 @@ python seed.py             # 任意：サンプルデータ投入（既存デー
 python -m pytest                  # テスト（ユニット＋SQLite 統合。GUI の自動テストは無し）
 python -m ruff check .            # 静的解析
 python packaging/build_exe.py     # packaging/dist/TaskMaster.exe を生成（初回は数分かかる）
+python packaging/build_zip.py     # 上記のビルド＋配布用 zip（packaging/dist/TaskMaster-<版>-win64.zip）を作成
 ```
 
 テスト・ビルドの詳細（構成・方針）は [システム設計書](docs/SYSTEM_DESIGN.md) を参照。
