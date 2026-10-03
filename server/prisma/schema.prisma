@@ -72,3 +72,11 @@ model TaskTag {
 
   @@id([taskId, tagId])
 }
+
+// 祝日（ガントチャートの色分け・設定画面での管理用）。日付は "YYYY-MM-DD" の文字列。
+// CSV一括登録は日付が一致する既存行を上書きする仕様のため、date を一意制約にする。
+model Holiday {
+  id   String @id @default(cuid())
+  date String @unique
+  name String
+}

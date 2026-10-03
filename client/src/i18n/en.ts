@@ -119,6 +119,15 @@ export const en: Record<string, string> = {
     'Add or change task statuses. Statuses marked "Treat as done" count as completed in the completion rate and overdue checks. Statuses in use by tasks cannot be deleted.',
   "完了として扱う": "Treat as done",
   "新しいステータス名（例: レビュー中）": "New status name (e.g. In review)",
+  "祝日": "Holidays",
+  "祝日を登録します。ガントチャート等での休日表示に使われます。日付が同じ行はCSV取り込み時に更新されます。":
+    "Register holidays. They are used to mark days off in the Gantt chart, etc. Rows with a matching date are updated on CSV import.",
+  "日付": "Date",
+  "名称": "Name",
+  "新しい祝日名": "New holiday name",
+  "CSVから読み込む": "Import from CSV",
+  "{count} 件を登録・更新しました": "Registered/updated {count} item(s)",
+  "CSVの文字コードを判定できませんでした": "Could not determine the CSV file's character encoding.",
   "言語 / Language": "言語 / Language",
   "表示言語を切り替えます。この設定はこのブラウザに保存されます。":
     "Choose the display language. This setting is saved in this browser.",

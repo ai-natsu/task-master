@@ -5,6 +5,7 @@ import tasksRouter from "./routes/tasks.js";
 import tagsRouter from "./routes/tags.js";
 import statsRouter from "./routes/stats.js";
 import statusesRouter from "./routes/statuses.js";
+import holidaysRouter from "./routes/holidays.js";
 
 export function createApp() {
   const app = express();
@@ -17,6 +18,7 @@ export function createApp() {
   app.use("/api/tags", tagsRouter);
   app.use("/api/stats", statsRouter);
   app.use("/api/statuses", statusesRouter);
+  app.use("/api/holidays", holidaysRouter);
 
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
 

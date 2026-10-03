@@ -16,6 +16,12 @@ export interface Tag {
   color: string;
 }
 
+export interface Holiday {
+  id: string;
+  date: string; // YYYY-MM-DD
+  name: string;
+}
+
 export interface Project {
   id: string;
   name: string;

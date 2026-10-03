@@ -12,6 +12,7 @@ import {
   type GanttDragMode,
 } from "../utils/gantt";
 import { useStatuses } from "../api/statuses";
+import { useHolidays } from "../api/holidays";
 import type { RowDropZone } from "../utils/dnd";
 import { useT } from "../i18n";
 
@@ -57,6 +58,8 @@ export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
   const [rowDrag, setRowDrag] = useState<RowDragState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const { data: statuses = [] } = useStatuses();
+  const { data: holidays = [] } = useHolidays();
+  const holidayNames = useMemo(() => new Map(holidays.map((h) => [h.date, h.name])), [holidays]);
   const statusById = useMemo(() => new Map(statuses.map((s) => [s.id, s])), [statuses]);
 
   const rows = useMemo(() => flattenNodes(buildTaskTree(tasks)), [tasks]);
@@ -107,16 +110,18 @@ export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
           />
           {days.map((d) => {
             const dow = d.getDay();
+            const holidayName = holidayNames.get(format(d, "yyyy-MM-dd"));
             return (
               <div
                 key={d.toISOString()}
                 className={clsx(
                   "shrink-0 py-1 text-center",
-                  dow === 0 && "bg-red-50 text-red-400 dark:bg-red-950/30",
-                  dow === 6 && "bg-blue-50 text-blue-400 dark:bg-blue-950/30",
+                  (dow === 0 || holidayName) && "bg-red-50 text-red-400 dark:bg-red-950/30",
+                  dow === 6 && !holidayName && "bg-blue-50 text-blue-400 dark:bg-blue-950/30",
                   isSameDay(d, today) && "bg-amber-100 font-bold text-amber-700 dark:bg-amber-900/40"
                 )}
                 style={{ width: DAY_W }}
+                title={holidayName}
               >
                 {format(d, "d")}
               </div>

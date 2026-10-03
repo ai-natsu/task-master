@@ -8,6 +8,7 @@ import {
 } from "../api/statuses";
 import type { StatusDef } from "../types";
 import { LANGUAGES, useLanguage, useT, type Language } from "../i18n";
+import { HolidaySettings } from "../components/HolidaySettings";
 
 function StatusRow({
   status,
@@ -174,6 +175,8 @@ export function Settings() {
           </button>
         </div>
       </section>
+
+      <HolidaySettings />
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold">{t("言語 / Language")}</h2>

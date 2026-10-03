@@ -27,6 +27,7 @@ beforeEach(async () => {
   await prisma.tag.deleteMany();
   await prisma.project.deleteMany();
   await prisma.status.deleteMany();
+  await prisma.holiday.deleteMany();
 });
 
 afterAll(async () => {

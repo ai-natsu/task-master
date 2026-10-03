@@ -35,7 +35,7 @@ describe("app wiring", () => {
   });
 
   it("A-5: all resource routers are mounted under /api", async () => {
-    for (const path of ["/api/projects", "/api/tasks", "/api/tags", "/api/statuses", "/api/stats"]) {
+    for (const path of ["/api/projects", "/api/tasks", "/api/tags", "/api/statuses", "/api/stats", "/api/holidays"]) {
       const res = await request(app).get(path);
       expect(res.status, `${path} should be routed`).not.toBe(404);
     }

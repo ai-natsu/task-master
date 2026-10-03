@@ -77,3 +77,25 @@ export const statusUpdateSchema = z.object({
 export const statusReorderSchema = z.object({
   ids: z.array(z.string()),
 });
+
+// 祝日の日付は "YYYY-MM-DD"。存在しない日付（2026-02-30 など）は拒否する。
+const holidayDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((d) => {
+    const time = Date.parse(`${d}T00:00:00Z`);
+    return !Number.isNaN(time) && new Date(time).toISOString().slice(0, 10) === d;
+  }, "invalid date");
+
+export const holidayUpsertSchema = z.object({
+  date: holidayDate,
+  name: z.string().trim().min(1).max(100),
+});
+
+export const holidayUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+});
+
+export const holidayBulkSchema = z.object({
+  rows: z.array(holidayUpsertSchema).max(2000),
+});
