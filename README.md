@@ -88,7 +88,7 @@
 ### 動作要件
 
 - 開発時：Python 3.11以上
-- 配布exe利用時：Windows のみ（Python・Node.jsのインストール不要）
+- 配布exe利用時：Windows のみ（Python・Node.jsのインストール不要）。Mac 版は近日対応予定
 
 ## データベース定義
 
