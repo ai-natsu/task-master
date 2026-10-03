@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { format } from "date-fns";
 import { useProjects } from "../api/projects";
 import { useStats } from "../api/stats";
 import { useTasks } from "../api/tasks";
@@ -7,10 +6,11 @@ import { useStatuses } from "../api/statuses";
 import { Card, StatsCards } from "../components/StatsCards";
 import { PriorityBadge } from "../components/Badges";
 import { isDueSoon, isOverdue } from "../utils/due";
-import { useT } from "../i18n";
+import { useFormatDate, useT } from "../i18n";
 
 export function Dashboard() {
   const t = useT();
+  const formatDate = useFormatDate();
   const { data: projects = [] } = useProjects();
   const { data: stats } = useStats();
   const { data: tasks = [] } = useTasks();
@@ -55,7 +55,7 @@ export function Dashboard() {
                     {projectNameById.get(t.projectId)?.name}
                   </span>
                   <span className="text-xs font-medium text-red-600">
-                    {format(new Date(t.dueDate!), "MM/dd")}
+                    {formatDate(t.dueDate!)}
                   </span>
                 </li>
               ))}
@@ -77,7 +77,7 @@ export function Dashboard() {
                     {projectNameById.get(t.projectId)?.name}
                   </span>
                   <span className="text-xs text-slate-500">
-                    {format(new Date(t.dueDate!), "MM/dd")}
+                    {formatDate(t.dueDate!)}
                   </span>
                 </li>
               ))}

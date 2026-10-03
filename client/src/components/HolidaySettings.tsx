@@ -7,12 +7,13 @@ import {
   useRenameHoliday,
   useUpsertHoliday,
 } from "../api/holidays";
-import { useT } from "../i18n";
+import { useFormatDate, useT } from "../i18n";
 import { parseHolidayCsv } from "../utils/holidayCsv";
 import type { Holiday } from "../types";
 
 function HolidayRow({ holiday }: { holiday: Holiday }) {
   const t = useT();
+  const formatDate = useFormatDate();
   const rename = useRenameHoliday();
   const remove = useDeleteHoliday();
   const [name, setName] = useState(holiday.name);
@@ -28,7 +29,7 @@ function HolidayRow({ holiday }: { holiday: Holiday }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="w-28 shrink-0 text-sm tabular-nums">{holiday.date}</span>
+      <span className="w-28 shrink-0 text-sm tabular-nums">{formatDate(holiday.date)}</span>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}

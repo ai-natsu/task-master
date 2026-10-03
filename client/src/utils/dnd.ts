@@ -58,33 +58,6 @@ export function planKanbanDrag(
   };
 }
 
-/**
- * Pure decision logic for a tree drag. Reordering only happens within the same
- * parent group; a cross-parent drag is a no-op (moving between parents is done
- * via the edit form, not by dragging).
- */
-export function planTreeDrag(
-  tasks: Task[],
-  activeId: string,
-  overId: string | null
-): { reorder?: ReorderItem[] } {
-  if (!overId || activeId === overId) return {};
-  const active = tasks.find((t) => t.id === activeId);
-  const over = tasks.find((t) => t.id === overId);
-  if (!active || !over) return {};
-  if (active.parentId !== over.parentId) return {};
-
-  const siblings = tasks
-    .filter((t) => t.parentId === active.parentId)
-    .sort((a, b) => a.order - b.order);
-  const oldIndex = siblings.findIndex((t) => t.id === active.id);
-  const newIndex = siblings.findIndex((t) => t.id === over.id);
-  if (oldIndex === -1 || newIndex === -1) return {};
-
-  const reordered = arrayMove(siblings, oldIndex, newIndex);
-  return { reorder: reordered.map((t, i) => ({ id: t.id, order: i })) };
-}
-
 export type RowDropZone = "before" | "after" | "child";
 export type RowDropItem = ReorderItem & { parentId?: string | null };
 

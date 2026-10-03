@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { planKanbanDrag, planRowDrop, planTreeDrag } from "./dnd";
+import { planKanbanDrag, planRowDrop } from "./dnd";
 import { makeTask } from "../test/factories";
 
 describe("planKanbanDrag", () => {
@@ -38,31 +38,6 @@ describe("planKanbanDrag", () => {
 
   it("C-6: over=null is a no-op", () => {
     expect(planKanbanDrag(tasks, "t1", null)).toEqual({});
-  });
-});
-
-describe("planTreeDrag", () => {
-  const tasks = [
-    makeTask({ id: "a", parentId: null, order: 0 }),
-    makeTask({ id: "b", parentId: null, order: 1 }),
-    makeTask({ id: "c1", parentId: "a", order: 0 }),
-  ];
-
-  it("C-1: reorders within the same parent group", () => {
-    const plan = planTreeDrag(tasks, "b", "a");
-    expect(plan.reorder).toEqual([
-      { id: "b", order: 0 },
-      { id: "a", order: 1 },
-    ]);
-  });
-
-  it("C-2: cross-parent drag is a no-op", () => {
-    const plan = planTreeDrag(tasks, "c1", "b");
-    expect(plan).toEqual({});
-  });
-
-  it("C-2b: dropping on itself is a no-op", () => {
-    expect(planTreeDrag(tasks, "a", "a")).toEqual({});
   });
 });
 

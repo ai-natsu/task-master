@@ -1,18 +1,9 @@
-import { useMemo } from "react";
-import {
-  DndContext,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useMemo, useRef, useState, type PointerEvent } from "react";
 import type { Task } from "../types";
 import { buildTaskTree, type TaskTreeNode } from "../utils/tree";
+import type { RowDropZone } from "../utils/dnd";
 import { TaskNode } from "./TaskNode";
-import { useReorderTasks } from "../api/tasks";
-import { planTreeDrag } from "../utils/dnd";
+import { TreeDragContext, type TreeDragState } from "./treeDrag";
 import { useT } from "../i18n";
 
 interface Props {
@@ -21,20 +12,56 @@ interface Props {
   onEdit: (node: TaskTreeNode) => void;
   onDelete: (node: TaskTreeNode) => void;
   onAddSubtask: (parentId: string) => void;
+  onRowDrop?: (activeId: string, targetId: string, zone: RowDropZone) => void;
 }
 
-export function TaskTree({ tasks, onStatusChange, onEdit, onDelete, onAddSubtask }: Props) {
+const DRAG_THRESHOLD_PX = 5;
+const DROP_EDGE = 0.25; // 行の上下この割合 = 兄弟として挿入、中央 = 子にする
+
+export function TaskTree({ tasks, onStatusChange, onEdit, onDelete, onAddSubtask, onRowDrop }: Props) {
   const t = useT();
   const tree = useMemo(() => buildTaskTree(tasks), [tasks]);
-  const reorder = useReorderTasks();
+  const [drag, setDrag] = useState<TreeDragState | null>(null);
+  const dragRef = useRef<TreeDragState | null>(null);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const update = (next: TreeDragState | null) => {
+    dragRef.current = next;
+    setDrag(next);
+  };
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    const plan = planTreeDrag(tasks, String(active.id), over ? String(over.id) : null);
-    if (plan.reorder) reorder.mutate(plan.reorder);
-  }
+  // ドラッグ（ハンドルを掴んで動かす）とクリック（行の編集）は、操作する場所で分ける：
+  // ドラッグはハンドルだけ。ハンドルはクリックしても編集を開かない。
+  const onHandlePointerDown = (id: string, e: PointerEvent<HTMLElement>) => {
+    if (e.button !== 0 || !onRowDrop) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    update({ id, startY: e.clientY, moved: false, target: null });
+  };
+
+  const onHandlePointerMove = (e: PointerEvent<HTMLElement>) => {
+    const cur = dragRef.current;
+    if (!cur) return;
+    const moved = cur.moved || Math.abs(e.clientY - cur.startY) > DRAG_THRESHOLD_PX;
+    if (!moved) return;
+    const row = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-row-id]");
+    let target: TreeDragState["target"] = null;
+    if (row?.dataset.rowId) {
+      const rect = row.getBoundingClientRect();
+      const frac = (e.clientY - rect.top) / rect.height;
+      target = {
+        id: row.dataset.rowId,
+        zone: frac < DROP_EDGE ? "before" : frac > 1 - DROP_EDGE ? "after" : "child",
+      };
+    }
+    update({ ...cur, moved, target });
+  };
+
+  const onHandlePointerUp = () => {
+    const cur = dragRef.current;
+    update(null);
+    if (cur?.moved && cur.target && cur.target.id !== cur.id) {
+      onRowDrop?.(cur.id, cur.target.id, cur.target.zone);
+    }
+  };
 
   if (tree.length === 0) {
     return (
@@ -45,22 +72,22 @@ export function TaskTree({ tasks, onStatusChange, onEdit, onDelete, onAddSubtask
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={tree.map((n) => n.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-0.5">
-          {tree.map((node) => (
-            <TaskNode
-              key={node.id}
-              node={node}
-              depth={0}
-              onStatusChange={onStatusChange}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onAddSubtask={onAddSubtask}
-            />
-          ))}
-        </div>
-      </SortableContext>
-    </DndContext>
+    <TreeDragContext.Provider
+      value={{ drag, onHandlePointerDown, onHandlePointerMove, onHandlePointerUp, onHandleCancel: () => update(null) }}
+    >
+      <div className="space-y-0.5">
+        {tree.map((node) => (
+          <TaskNode
+            key={node.id}
+            node={node}
+            depth={0}
+            onStatusChange={onStatusChange}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onAddSubtask={onAddSubtask}
+          />
+        ))}
+      </div>
+    </TreeDragContext.Provider>
   );
 }

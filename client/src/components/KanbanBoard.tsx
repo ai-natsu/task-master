@@ -13,16 +13,15 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { format } from "date-fns";
 import { isOverdue } from "../utils/due";
 import type { StatusDef, Task } from "../types";
 import { PriorityBadge, TagPill } from "./Badges";
 import { useReorderTasks, useUpdateTask } from "../api/tasks";
 import { useStatuses } from "../api/statuses";
 import { planKanbanDrag } from "../utils/dnd";
-import { useT } from "../i18n";
+import { useFormatDate, useT } from "../i18n";
 
 interface Props {
   tasks: Task[];
@@ -30,6 +29,7 @@ interface Props {
 }
 
 function KanbanCard({ task, isDone, onEdit, dragging }: { task: Task; isDone: boolean; onEdit?: (task: Task) => void; dragging?: boolean }) {
+  const formatDate = useFormatDate();
   const overdue = task.dueDate && !isDone && isOverdue(task.dueDate);
   return (
     <div
@@ -49,7 +49,7 @@ function KanbanCard({ task, isDone, onEdit, dragging }: { task: Task; isDone: bo
         ))}
         {task.dueDate && (
           <span className={clsx("text-xs", overdue ? "font-semibold text-red-600" : "text-slate-400")}>
-            {format(new Date(task.dueDate), "MM/dd")}
+            {formatDate(task.dueDate)}
           </span>
         )}
       </div>
@@ -118,6 +118,13 @@ export function KanbanBoard({ tasks, onEdit }: Props) {
   const updateTask = useUpdateTask();
   const reorder = useReorderTasks();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  // ドラッグを離した直後に発火する click は編集として扱わない（クリックとドラッグを分ける）
+  const suppressClick = useRef(false);
+  const releaseClick = () => {
+    setTimeout(() => {
+      suppressClick.current = false;
+    }, 150);
+  };
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const columns = useMemo(() => {
@@ -129,10 +136,12 @@ export function KanbanBoard({ tasks, onEdit }: Props) {
   }, [tasks, statuses]);
 
   const handleDragStart = (event: DragStartEvent) => {
+    suppressClick.current = true;
     setActiveTask(tasks.find((t) => t.id === event.active.id) ?? null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    releaseClick();
     setActiveTask(null);
     const { active, over } = event;
     if (!over) return;
@@ -158,10 +167,21 @@ export function KanbanBoard({ tasks, onEdit }: Props) {
       collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={() => {
+        releaseClick();
+        setActiveTask(null);
+      }}
     >
       <div className="flex gap-4 overflow-x-auto pb-2">
         {statuses.map((status) => (
-          <Column key={status.id} status={status} tasks={columns[status.id] ?? []} onEdit={onEdit} />
+          <Column
+            key={status.id}
+            status={status}
+            tasks={columns[status.id] ?? []}
+            onEdit={(task) => {
+              if (!suppressClick.current) onEdit(task);
+            }}
+          />
         ))}
       </div>
       <DragOverlay>

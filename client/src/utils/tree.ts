@@ -45,3 +45,19 @@ export function flattenWithDepth(
     ...flattenWithDepth(n.children, depth + 1),
   ]);
 }
+
+/** taskId の子孫（自分自身は含まない）の id 集合。親タスクの選択肢から除外するために使う。 */
+export function descendantIds(tasks: Pick<Task, "id" | "parentId">[], taskId: string): Set<string> {
+  const result = new Set<string>();
+  const queue = [taskId];
+  while (queue.length > 0) {
+    const current = queue.pop()!;
+    for (const t of tasks) {
+      if (t.parentId === current && !result.has(t.id)) {
+        result.add(t.id);
+        queue.push(t.id);
+      }
+    }
+  }
+  return result;
+}

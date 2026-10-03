@@ -1,14 +1,11 @@
 import { useState } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
-import { format } from "date-fns";
 import { isOverdue } from "../utils/due";
 import type { TaskTreeNode } from "../utils/tree";
 import { useStatuses } from "../api/statuses";
 import { PriorityBadge, TagPill } from "./Badges";
-import { useT } from "../i18n";
+import { useFormatDate, useT } from "../i18n";
+import { useTreeDrag } from "./treeDrag";
 
 interface Props {
   node: TaskTreeNode;
@@ -21,17 +18,13 @@ interface Props {
 
 export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddSubtask }: Props) {
   const t = useT();
+  const formatDate = useFormatDate();
   const [expanded, setExpanded] = useState(true);
   const { data: statuses = [] } = useStatuses();
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: node.id,
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+  const { drag, onHandlePointerDown, onHandlePointerMove, onHandlePointerUp, onHandleCancel } = useTreeDrag();
+  const isDragging = drag?.moved === true && drag.id === node.id;
+  // ドロップ先の行には、挿入位置（上端=直前、下端=直後）または「子にする」枠を表示する
+  const dropZone = drag?.moved && drag.target?.id === node.id && drag.id !== node.id ? drag.target.zone : null;
 
   const statusDef = statuses.find((s) => s.id === node.status);
   const isDone = statusDef?.isDone ?? false;
@@ -40,20 +33,26 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
   return (
     <div>
       <div
-        ref={setNodeRef}
+        data-row-id={node.id}
         onClick={(e) => {
           // 行内のボタン・セレクト上のクリックは編集を開かない（それぞれの操作を優先）
           if ((e.target as HTMLElement).closest("button, select")) return;
           onEdit(node);
         }}
-        style={{ ...style, paddingLeft: depth * 24 }}
+        style={{ paddingLeft: depth * 24 }}
         className={clsx(
-          "group flex items-center gap-2 rounded-lg border border-transparent px-2 py-2 hover:border-slate-200 hover:bg-white dark:hover:border-slate-700 dark:hover:bg-slate-800"
+          "group flex items-center gap-2 rounded-lg border border-transparent px-2 py-2 hover:border-slate-200 hover:bg-white dark:hover:border-slate-700 dark:hover:bg-slate-800",
+          isDragging && "opacity-50",
+          dropZone === "before" && "shadow-[inset_0_3px_0_0_#6366f1]",
+          dropZone === "after" && "shadow-[inset_0_-3px_0_0_#6366f1]",
+          dropZone === "child" && "ring-2 ring-inset ring-indigo-500"
         )}
       >
         <button
-          {...attributes}
-          {...listeners}
+          onPointerDown={(e) => onHandlePointerDown(node.id, e)}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandleCancel}
           className="cursor-grab touch-none text-slate-300 opacity-0 group-hover:opacity-100 active:cursor-grabbing dark:text-slate-600"
           title={t("ドラッグして並び替え")}
         >
@@ -101,7 +100,7 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
 
         {node.dueDate && (
           <span className={clsx("whitespace-nowrap text-xs", overdue ? "font-semibold text-red-600" : "text-slate-400")}>
-            {format(new Date(node.dueDate), "MM/dd")}
+            {formatDate(node.dueDate)}
           </span>
         )}
 
@@ -131,7 +130,7 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
       </div>
 
       {expanded && node.children.length > 0 && (
-        <SortableContext items={node.children.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+        <>
           {node.children.map((child) => (
             <TaskNode
               key={child.id}
@@ -143,7 +142,7 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
               onAddSubtask={onAddSubtask}
             />
           ))}
-        </SortableContext>
+        </>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildTaskTree, flattenWithDepth, flattenNodes, countAll } from "./tree";
+import { buildTaskTree, descendantIds, flattenWithDepth, flattenNodes, countAll } from "./tree";
 import { makeTask } from "../test/factories";
 
 describe("buildTaskTree", () => {
@@ -57,5 +57,18 @@ describe("flatten helpers", () => {
 
   it("U-6: countAll counts all descendants", () => {
     expect(countAll(tree)).toBe(4);
+  });
+});
+
+describe("descendantIds", () => {
+  it("子孫（自分自身は含まない）の id を返す", () => {
+    const tasks = [
+      makeTask({ id: "a" }),
+      makeTask({ id: "a1", parentId: "a" }),
+      makeTask({ id: "a11", parentId: "a1" }),
+      makeTask({ id: "b" }),
+    ];
+    expect([...descendantIds(tasks, "a")].sort()).toEqual(["a1", "a11"]);
+    expect([...descendantIds(tasks, "b")]).toEqual([]);
   });
 });

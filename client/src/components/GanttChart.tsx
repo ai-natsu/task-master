@@ -14,7 +14,7 @@ import {
 import { useStatuses } from "../api/statuses";
 import { useHolidays } from "../api/holidays";
 import type { RowDropZone } from "../utils/dnd";
-import { useT } from "../i18n";
+import { useFormatDate, useT } from "../i18n";
 
 const DAY_W = 28;
 const ROW_H = 36;
@@ -54,7 +54,11 @@ function dragModeAt(e: PointerEvent<HTMLDivElement>): GanttDragMode {
 
 export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
   const t = useT();
+  const formatDate = useFormatDate();
   const rowsRef = useRef<HTMLDivElement>(null);
+  // ドラッグを離した直後のダブルクリックは編集として扱わない（クリックとドラッグを分ける）
+  const lastDragEnd = useRef(0);
+  const afterDrag = () => Date.now() - lastDragEnd.current < 400;
   const [rowDrag, setRowDrag] = useState<RowDragState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const { data: statuses = [] } = useStatuses();
@@ -148,7 +152,9 @@ export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
               style={{ height: ROW_H }}
             >
               <button
-                onDoubleClick={() => onEdit(node)}
+                onDoubleClick={() => {
+                  if (!afterDrag()) onEdit(node);
+                }}
                 onPointerDown={(e) => {
                   if (e.button !== 0 || !onRowDrop) return;
                   e.currentTarget.setPointerCapture(e.pointerId);
@@ -171,6 +177,7 @@ export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
                   setRowDrag({ ...rowDrag, moved, target });
                 }}
                 onPointerUp={() => {
+                  if (rowDrag?.id === node.id && rowDrag.moved) lastDragEnd.current = Date.now();
                   if (rowDrag?.id === node.id && rowDrag.moved && rowDrag.target) {
                     const targetNode = rows[rowDrag.target.index].node;
                     if (targetNode.id !== node.id) onRowDrop?.(node.id, targetNode.id, rowDrag.target.zone);
@@ -206,7 +213,9 @@ export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
                 )}
                 {bar && (
                   <div
-                    onDoubleClick={() => onEdit(node)}
+                    onDoubleClick={() => {
+                      if (!afterDrag()) onEdit(node);
+                    }}
                     onPointerDown={(e) => {
                       if (e.button !== 0 || !onChangeDates) return;
                       e.currentTarget.setPointerCapture(e.pointerId);
@@ -221,6 +230,7 @@ export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
                       }
                     }}
                     onPointerUp={() => {
+                      if (drag?.id === node.id && drag.deltaDays !== 0) lastDragEnd.current = Date.now();
                       if (drag?.id === node.id && drag.deltaDays !== 0 && baseBar) {
                         const next = applyGanttDrag(baseBar, drag.mode, drag.deltaDays);
                         const dates = barToDates(next, rangeStart);
@@ -238,7 +248,7 @@ export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
                       width: Math.max(width, DAY_W - 4),
                       backgroundColor: statusDef?.color ?? "#6366f1",
                     }}
-                    title={`${node.title}\n${node.startDate ? format(new Date(node.startDate), "MM/dd") : "?"} 〜 ${node.dueDate ? format(new Date(node.dueDate), "MM/dd") : "?"}`}
+                    title={`${node.title}\n${node.startDate ? formatDate(node.startDate) : "?"} 〜 ${node.dueDate ? formatDate(node.dueDate) : "?"}`}
                   />
                 )}
               </div>

@@ -103,6 +103,13 @@ router.patch("/reorder", async (req, res) => {
   const parsed = reorderSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
+  // 親の付け替えを含む場合は、move と同じく循環参照（自分自身・自分の子孫の配下）を拒否する
+  for (const { id, parentId } of parsed.data.items) {
+    if (parentId && (await isDescendantOrSelf(id, parentId))) {
+      return res.status(400).json({ error: "Cannot move a task under itself or its own subtask" });
+    }
+  }
+
   await prisma.$transaction(
     parsed.data.items.map(({ id, order, parentId, projectId }) =>
       prisma.task.update({

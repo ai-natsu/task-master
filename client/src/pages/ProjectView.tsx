@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useProjects } from "../api/projects";
-import { useCreateTask, useDeleteTask, useReorderTasks, useTasks, useUpdateTask } from "../api/tasks";
+import { useCreateTask, useDeleteTask, useMoveTask, useReorderTasks, useTasks, useUpdateTask } from "../api/tasks";
 import { useTags } from "../api/tags";
 import { useStats } from "../api/stats";
 import { FilterBar, type FilterState } from "../components/FilterBar";
@@ -12,8 +12,8 @@ import { TaskFormModal, taskToFormValue, type TaskFormValue } from "../component
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { StatsCards } from "../components/StatsCards";
 import { PaperTabs } from "../components/PaperTabs";
-import { buildTaskTree, flattenWithDepth, type TaskTreeNode } from "../utils/tree";
-import { planRowDrop } from "../utils/dnd";
+import { buildTaskTree, descendantIds, flattenWithDepth, type TaskTreeNode } from "../utils/tree";
+import { planRowDrop, type RowDropZone } from "../utils/dnd";
 import type { Task } from "../types";
 import { useT } from "../i18n";
 
@@ -36,6 +36,7 @@ export function ProjectView() {
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const reorderTasks = useReorderTasks();
+  const moveTask = useMoveTask();
   const deleteTask = useDeleteTask();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -47,7 +48,9 @@ export function ProjectView() {
 
   const parentOptions = useMemo(() => {
     const tree = buildTaskTree(allTasks);
-    return flattenWithDepth(tree).filter((o) => o.id !== editingTask?.id);
+    // 自分自身とその子孫は親にできない（循環の防止）
+    const excluded = editingTask ? descendantIds(allTasks, editingTask.id) : new Set<string>();
+    return flattenWithDepth(tree).filter((o) => o.id !== editingTask?.id && !excluded.has(o.id));
   }, [allTasks, editingTask]);
 
   if (!projectId) return null;
@@ -77,6 +80,12 @@ export function ProjectView() {
         dueDate,
         tagIds: value.tagIds,
       });
+      if (value.parentId !== editingTask.parentId) {
+        // 親タスクを変えた場合は、新しい親の最後の子として付け替える
+        const siblings = allTasks.filter((t) => t.parentId === value.parentId && t.id !== editingTask.id);
+        const order = siblings.reduce((max, t) => Math.max(max, t.order), -1) + 1;
+        moveTask.mutate({ id: editingTask.id, parentId: value.parentId, order });
+      }
     } else {
       createTask.mutate({
         title: value.title,
@@ -93,6 +102,12 @@ export function ProjectView() {
     setFormOpen(false);
     setEditingTask(undefined);
     setNewTaskParentId(null);
+  };
+
+  // ツリー・ガントの行ドラッグ（並べ替え・親の付け替え）。フィルタ中でも全タスクを基準に計画する
+  const handleRowDrop = (activeId: string, targetId: string, zone: RowDropZone) => {
+    const plan = planRowDrop(allTasks, activeId, targetId, zone);
+    if (plan.reorder) reorderTasks.mutate(plan.reorder);
   };
 
   const handleStatusChange = (id: string, status: string) => {
@@ -157,6 +172,7 @@ export function ProjectView() {
           onEdit={openEdit}
           onDelete={setDeletingTask}
           onAddSubtask={openCreate}
+          onRowDrop={handleRowDrop}
         />
       ) : viewMode === "kanban" ? (
         <KanbanBoard tasks={tasksToShow} onEdit={openEdit} />
@@ -167,10 +183,7 @@ export function ProjectView() {
           onChangeDates={(task, startDate, dueDate) =>
             updateTask.mutate({ id: task.id, startDate, dueDate })
           }
-          onRowDrop={(activeId, targetId, zone) => {
-            const plan = planRowDrop(allTasks, activeId, targetId, zone);
-            if (plan.reorder) reorderTasks.mutate(plan.reorder);
-          }}
+          onRowDrop={handleRowDrop}
         />
       )}
 

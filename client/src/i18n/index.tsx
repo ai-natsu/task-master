@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { en } from "./en";
+import { formatDate } from "../utils/date";
 
 export type Language = "ja" | "en";
 
@@ -68,4 +69,10 @@ export function useLanguage(): LanguageContextValue {
 export function useT(): (text: string, vars?: Record<string, string | number>) => string {
   const { language } = useLanguage();
   return useCallback((text, vars) => translate(language, text, vars), [language]);
+}
+
+/** 現在の言語に合わせて日付を表示形式にする関数を返す（日本語 YYYY年MM月DD日 / 英語 YYYY-MM-DD）。 */
+export function useFormatDate(): (iso: string) => string {
+  const { language } = useLanguage();
+  return useCallback((iso) => formatDate(iso, language), [language]);
 }

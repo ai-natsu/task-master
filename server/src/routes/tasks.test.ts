@@ -117,6 +117,28 @@ describe("/api/tasks", () => {
     const res = await request(app).get(`/api/tasks?projectId=${projectId}`);
     expect(res.body.map((t: any) => t.title)).toEqual(["B", "A"]);
   });
+
+  it("T-15: PATCH /reorder can reparent (parentId) in the same batch", async () => {
+    const a = await makeTask(projectId, { title: "A", order: 0 });
+    const b = await makeTask(projectId, { title: "B", order: 1 });
+    const res = await request(app)
+      .patch("/api/tasks/reorder")
+      .send({ items: [{ id: b.id, order: 0, parentId: a.id }] });
+    expect(res.status).toBe(200);
+    expect((await prisma.task.findUnique({ where: { id: b.id } }))?.parentId).toBe(a.id);
+  });
+
+  it("T-16: PATCH /reorder rejects moving a task under its own subtask (400, nothing written)", async () => {
+    const a = await makeTask(projectId, { title: "A", order: 0 });
+    const b = await makeTask(projectId, { title: "B", parentId: a.id, order: 0 });
+    const res = await request(app)
+      .patch("/api/tasks/reorder")
+      .send({ items: [{ id: a.id, order: 5, parentId: b.id }] });
+    expect(res.status).toBe(400);
+    const unchanged = await prisma.task.findUnique({ where: { id: a.id } });
+    expect(unchanged?.parentId).toBeNull();
+    expect(unchanged?.order).toBe(0);
+  });
 });
 
 describe("/api/tasks/:id/move (cycle detection)", () => {
