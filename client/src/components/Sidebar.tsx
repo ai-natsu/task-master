@@ -5,8 +5,10 @@ import { useCreateProject, useDeleteProject, useProjects, useUpdateProject } fro
 import { ProjectFormModal, type ProjectFormValue } from "./ProjectFormModal";
 import { ConfirmDialog } from "./ConfirmDialog";
 import type { Project } from "../types";
+import { useT } from "../i18n";
 
 export function Sidebar() {
+  const t = useT();
   const { data: projects = [] } = useProjects();
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
@@ -43,7 +45,7 @@ export function Sidebar() {
             )
           }
         >
-          📊 ダッシュボード
+          {t("📊 ダッシュボード")}
         </NavLink>
 
         <NavLink
@@ -56,11 +58,11 @@ export function Sidebar() {
             )
           }
         >
-          📁 プロジェクト一覧
+          {t("📁 プロジェクト一覧")}
         </NavLink>
 
         <div className="mb-1 mt-3 px-3">
-          <span className="text-xs font-semibold uppercase text-slate-400">プロジェクト一覧</span>
+          <span className="text-xs font-semibold uppercase text-slate-400">{t("プロジェクト一覧")}</span>
         </div>
 
         {projects.map((p) => (
@@ -113,7 +115,7 @@ export function Sidebar() {
             )
           }
         >
-          ⚙️ 設定
+          {t("⚙️ 設定")}
         </NavLink>
       </div>
 
@@ -130,8 +132,10 @@ export function Sidebar() {
 
       <ConfirmDialog
         open={!!deleting}
-        title="プロジェクトを削除"
-        message={`「${deleting?.name}」を削除すると、含まれるすべてのタスクも削除されます。よろしいですか？`}
+        title={t("プロジェクトを削除")}
+        message={t("「{name}」を削除すると、含まれるすべてのタスクも削除されます。よろしいですか？", {
+          name: deleting?.name ?? "",
+        })}
         onConfirm={() => {
           if (deleting) deleteProject.mutate(deleting.id);
           setDeleting(undefined);

@@ -12,6 +12,7 @@ import {
   type GanttDragMode,
 } from "../utils/gantt";
 import { useStatuses } from "../api/statuses";
+import { useT } from "../i18n";
 
 const DAY_W = 28;
 const ROW_H = 36;
@@ -40,6 +41,7 @@ function dragModeAt(e: PointerEvent<HTMLDivElement>): GanttDragMode {
 }
 
 export function GanttChart({ tasks, onEdit, onChangeDates }: Props) {
+  const t = useT();
   const [drag, setDrag] = useState<DragState | null>(null);
   const { data: statuses = [] } = useStatuses();
   const statusById = useMemo(() => new Map(statuses.map((s) => [s.id, s])), [statuses]);
@@ -52,12 +54,12 @@ export function GanttChart({ tasks, onEdit, onChangeDates }: Props) {
     [rows, today.getTime()]
   );
   const todayOffset = differenceInCalendarDays(today, rangeStart);
-  const months = useMemo(() => computeMonths(days), [days]);
+  const months = useMemo(() => computeMonths(days, t("yyyy年M月")), [days, t]);
 
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400 dark:border-slate-700">
-        タスクがありません。
+        {t("タスクがありません。")}
       </div>
     );
   }
@@ -71,7 +73,7 @@ export function GanttChart({ tasks, onEdit, onChangeDates }: Props) {
             className="sticky left-0 z-20 shrink-0 border-r border-slate-200 bg-white px-3 py-1.5 dark:border-slate-700 dark:bg-slate-900"
             style={{ width: LABEL_W }}
           >
-            タスク
+            {t("タスク")}
           </div>
           {months.map((m, i) => (
             <div
@@ -130,7 +132,7 @@ export function GanttChart({ tasks, onEdit, onChangeDates }: Props) {
                 onDoubleClick={() => onEdit(node)}
                 className="sticky left-0 z-10 flex shrink-0 items-center gap-1.5 truncate border-r border-slate-200 bg-white px-3 text-left text-sm hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:hover:text-indigo-400"
                 style={{ width: LABEL_W, paddingLeft: 12 + depth * 16 }}
-                title={`${node.title}\nダブルクリックで編集`}
+                title={`${node.title}\n${t("ダブルクリックで編集")}`}
               >
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
@@ -198,7 +200,7 @@ export function GanttChart({ tasks, onEdit, onChangeDates }: Props) {
       </div>
 
       <p className="border-t border-slate-200 px-3 py-2 text-xs text-slate-400 dark:border-slate-700">
-        バーは開始日〜期限の期間を表します（片方のみ設定の場合は1日分）。開始日・期限が未設定のタスクはバー非表示。バーを左右にドラッグして日程を移動、両端のドラッグで期間を変更できます。バーまたはタスク名のダブルクリックで編集できます。
+        {t("バーは開始日〜期限の期間を表します（片方のみ設定の場合は1日分）。開始日・期限が未設定のタスクはバー非表示。バーを左右にドラッグして日程を移動、両端のドラッグで期間を変更できます。バーまたはタスク名のダブルクリックで編集できます。")}
       </p>
     </div>
   );

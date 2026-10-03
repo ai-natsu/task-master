@@ -7,8 +7,10 @@ import { useStatuses } from "../api/statuses";
 import { Card, StatsCards } from "../components/StatsCards";
 import { PriorityBadge } from "../components/Badges";
 import { isDueSoon, isOverdue } from "../utils/due";
+import { useT } from "../i18n";
 
 export function Dashboard() {
+  const t = useT();
   const { data: projects = [] } = useProjects();
   const { data: stats } = useStats();
   const { data: tasks = [] } = useTasks();
@@ -29,20 +31,20 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold">ダッシュボード</h1>
+      <h1 className="text-xl font-bold">{t("ダッシュボード")}</h1>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card label="プロジェクト数" value={projects.length} />
-        <Card label="直近7日の完了" value={stats?.completedLast7Days ?? 0} accent="text-emerald-600" />
+        <Card label={t("プロジェクト数")} value={projects.length} />
+        <Card label={t("直近7日の完了")} value={stats?.completedLast7Days ?? 0} accent="text-emerald-600" />
       </div>
 
       {stats && <StatsCards stats={stats} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="mb-3 text-sm font-semibold text-red-600">期限超過のタスク</h3>
+          <h3 className="mb-3 text-sm font-semibold text-red-600">{t("期限超過のタスク")}</h3>
           {overdue.length === 0 ? (
-            <p className="text-sm text-slate-400">期限超過のタスクはありません</p>
+            <p className="text-sm text-slate-400">{t("期限超過のタスクはありません")}</p>
           ) : (
             <ul className="space-y-2">
               {overdue.map((t) => (
@@ -62,9 +64,9 @@ export function Dashboard() {
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="mb-3 text-sm font-semibold">期限が近いタスク</h3>
+          <h3 className="mb-3 text-sm font-semibold">{t("期限が近いタスク")}</h3>
           {upcoming.length === 0 ? (
-            <p className="text-sm text-slate-400">予定されているタスクはありません</p>
+            <p className="text-sm text-slate-400">{t("予定されているタスクはありません")}</p>
           ) : (
             <ul className="space-y-2">
               {upcoming.map((t) => (
@@ -85,7 +87,7 @@ export function Dashboard() {
       </div>
 
       <div>
-        <h3 className="mb-3 text-sm font-semibold">プロジェクト一覧</h3>
+        <h3 className="mb-3 text-sm font-semibold">{t("プロジェクト一覧")}</h3>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
             <Link
@@ -97,11 +99,11 @@ export function Dashboard() {
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
                 <span className="font-medium">{p.name}</span>
               </div>
-              <div className="mt-2 text-xs text-slate-400">{p._count?.tasks ?? 0} 件のタスク</div>
+              <div className="mt-2 text-xs text-slate-400">{t("{count} 件のタスク", { count: p._count?.tasks ?? 0 })}</div>
             </Link>
           ))}
           {projects.length === 0 && (
-            <p className="text-sm text-slate-400">まだプロジェクトがありません。サイドバーから作成してください。</p>
+            <p className="text-sm text-slate-400">{t("まだプロジェクトがありません。サイドバーから作成してください。")}</p>
           )}
         </div>
       </div>

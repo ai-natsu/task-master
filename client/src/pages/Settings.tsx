@@ -7,6 +7,7 @@ import {
   useUpdateStatus,
 } from "../api/statuses";
 import type { StatusDef } from "../types";
+import { LANGUAGES, useLanguage, useT, type Language } from "../i18n";
 
 function StatusRow({
   status,
@@ -21,6 +22,7 @@ function StatusRow({
   onMoveUp: () => void;
   onMoveDown: () => void;
 }) {
+  const t = useT();
   const updateStatus = useUpdateStatus();
   const deleteStatus = useDeleteStatus();
   const [label, setLabel] = useState(status.label);
@@ -50,7 +52,7 @@ function StatusRow({
             onClick={onMoveUp}
             disabled={isFirst}
             className="px-1 text-xs text-slate-400 hover:text-slate-600 disabled:opacity-30 dark:hover:text-slate-200"
-            title="上へ"
+            title={t("上へ")}
           >
             ▲
           </button>
@@ -58,7 +60,7 @@ function StatusRow({
             onClick={onMoveDown}
             disabled={isLast}
             className="px-1 text-xs text-slate-400 hover:text-slate-600 disabled:opacity-30 dark:hover:text-slate-200"
-            title="下へ"
+            title={t("下へ")}
           >
             ▼
           </button>
@@ -69,7 +71,7 @@ function StatusRow({
           value={status.color}
           onChange={(e) => updateStatus.mutate({ id: status.id, color: e.target.value })}
           className="h-8 w-8 cursor-pointer rounded border border-slate-300 dark:border-slate-600"
-          title="カラー"
+          title={t("カラー")}
         />
 
         <input
@@ -87,14 +89,14 @@ function StatusRow({
             onChange={(e) => updateStatus.mutate({ id: status.id, isDone: e.target.checked })}
             className="rounded"
           />
-          完了として扱う
+          {t("完了として扱う")}
         </label>
 
         <button
           onClick={handleDelete}
           className="rounded-lg px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
         >
-          削除
+          {t("削除")}
         </button>
       </div>
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
@@ -103,6 +105,8 @@ function StatusRow({
 }
 
 export function Settings() {
+  const t = useT();
+  const { language, setLanguage } = useLanguage();
   const { data: statuses = [] } = useStatuses();
   const createStatus = useCreateStatus();
   const reorderStatuses = useReorderStatuses();
@@ -126,12 +130,12 @@ export function Settings() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-xl font-bold">設定</h1>
+      <h1 className="text-xl font-bold">{t("設定")}</h1>
 
       <section className="mt-6">
-        <h2 className="text-sm font-semibold">ステータス設定</h2>
+        <h2 className="text-sm font-semibold">{t("ステータス設定")}</h2>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          タスクのステータスを追加・変更できます。「完了として扱う」を付けたステータスは、完了率の計算や期限超過の判定で完了済みとして扱われます。タスクで使用中のステータスは削除できません。
+          {t("タスクのステータスを追加・変更できます。「完了として扱う」を付けたステータスは、完了率の計算や期限超過の判定で完了済みとして扱われます。タスクで使用中のステータスは削除できません。")}
         </p>
 
         <div className="mt-4 space-y-2">
@@ -153,22 +157,41 @@ export function Settings() {
             value={newColor}
             onChange={(e) => setNewColor(e.target.value)}
             className="h-8 w-8 cursor-pointer rounded border border-slate-300 dark:border-slate-600"
-            title="カラー"
+            title={t("カラー")}
           />
           <input
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-            placeholder="新しいステータス名（例: レビュー中）"
+            placeholder={t("新しいステータス名（例: レビュー中）")}
             className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
           />
           <button
             onClick={handleCreate}
             className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
           >
-            追加
+            {t("追加")}
           </button>
         </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold">{t("言語 / Language")}</h2>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          {t("表示言語を切り替えます。この設定はこのブラウザに保存されます。")}
+        </p>
+        <select
+          value={language}
+          onChange={(e) => setLanguage(e.target.value as Language)}
+          aria-label={t("言語 / Language")}
+          className="mt-3 rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
+        >
+          {LANGUAGES.map((l) => (
+            <option key={l.code} value={l.code}>
+              {l.label}
+            </option>
+          ))}
+        </select>
       </section>
     </div>
   );

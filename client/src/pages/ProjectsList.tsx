@@ -5,8 +5,10 @@ import { useCreateProject, useDeleteProject, useProjects, useUpdateProject } fro
 import { ProjectFormModal, type ProjectFormValue } from "../components/ProjectFormModal";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import type { Project } from "../types";
+import { useT } from "../i18n";
 
 export function ProjectsList() {
+  const t = useT();
   const [showArchived, setShowArchived] = useState(false);
   const { data: projects = [] } = useProjects(showArchived);
   const createProject = useCreateProject();
@@ -30,7 +32,7 @@ export function ProjectsList() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold">プロジェクト一覧</h1>
+        <h1 className="text-xl font-bold">{t("プロジェクト一覧")}</h1>
         <button
           onClick={() => {
             setEditing(undefined);
@@ -38,7 +40,7 @@ export function ProjectsList() {
           }}
           className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
         >
-          + 新しいプロジェクト
+          {t("+ 新しいプロジェクト")}
         </button>
       </div>
 
@@ -49,7 +51,7 @@ export function ProjectsList() {
           onChange={(e) => setShowArchived(e.target.checked)}
           className="rounded"
         />
-        アーカイブ済みも表示
+        {t("アーカイブ済みも表示")}
       </label>
 
       <div className="space-y-2">
@@ -72,7 +74,7 @@ export function ProjectsList() {
                 </Link>
                 {p.archived && (
                   <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                    アーカイブ済み
+                    {t("アーカイブ済み")}
                   </span>
                 )}
               </div>
@@ -80,7 +82,7 @@ export function ProjectsList() {
                 <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{p.description}</p>
               )}
             </div>
-            <span className="shrink-0 text-xs text-slate-400">{p._count?.tasks ?? 0} 件のタスク</span>
+            <span className="shrink-0 text-xs text-slate-400">{t("{count} 件のタスク", { count: p._count?.tasks ?? 0 })}</span>
             <div className="flex shrink-0 gap-1">
               <button
                 onClick={() => {
@@ -89,26 +91,26 @@ export function ProjectsList() {
                 }}
                 className="rounded-lg px-2 py-1 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-700"
               >
-                編集
+                {t("編集")}
               </button>
               <button
                 onClick={() => updateProject.mutate({ id: p.id, archived: !p.archived })}
                 className="rounded-lg px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30"
               >
-                {p.archived ? "復元" : "アーカイブ"}
+                {p.archived ? t("復元") : t("アーカイブ")}
               </button>
               <button
                 onClick={() => setDeleting(p)}
                 className="rounded-lg px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
               >
-                削除
+                {t("削除")}
               </button>
             </div>
           </div>
         ))}
         {projects.length === 0 && (
           <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400 dark:border-slate-700">
-            プロジェクトがありません。「+ 新しいプロジェクト」から作成してください。
+            {t("プロジェクトがありません。「+ 新しいプロジェクト」から作成してください。")}
           </div>
         )}
       </div>
@@ -126,8 +128,10 @@ export function ProjectsList() {
 
       <ConfirmDialog
         open={!!deleting}
-        title="プロジェクトを削除"
-        message={`「${deleting?.name}」を削除すると、含まれるすべてのタスクも削除されます。よろしいですか？`}
+        title={t("プロジェクトを削除")}
+        message={t("「{name}」を削除すると、含まれるすべてのタスクも削除されます。よろしいですか？", {
+          name: deleting?.name ?? "",
+        })}
         onConfirm={() => {
           if (deleting) deleteProject.mutate(deleting.id);
           setDeleting(undefined);

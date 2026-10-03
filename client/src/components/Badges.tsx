@@ -1,11 +1,13 @@
 import clsx from "clsx";
 import type { Priority, StatusDef, Tag } from "../types";
 import { PRIORITY_COLORS, PRIORITY_LABELS } from "../types";
+import { useT } from "../i18n";
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
+  const t = useT();
   return (
     <span className={clsx("rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap", PRIORITY_COLORS[priority])}>
-      {PRIORITY_LABELS[priority]}
+      {t(PRIORITY_LABELS[priority])}
     </span>
   );
 }

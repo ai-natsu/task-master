@@ -95,10 +95,13 @@ export function barToDates(bar: GanttBar, rangeStart: Date): { startDate: string
 }
 
 /** Groups consecutive days into month headers with their column spans. */
-export function computeMonths(days: Date[]): { label: string; count: number }[] {
+export function computeMonths(
+  days: Date[],
+  labelFormat = "yyyy年M月"
+): { label: string; count: number }[] {
   const acc: { label: string; count: number }[] = [];
   for (const d of days) {
-    const label = format(d, "yyyy年M月");
+    const label = format(d, labelFormat);
     const last = acc[acc.length - 1];
     if (last && last.label === label) last.count += 1;
     else acc.push({ label, count: 1 });

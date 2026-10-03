@@ -8,6 +8,7 @@ import { isOverdue } from "../utils/due";
 import type { TaskTreeNode } from "../utils/tree";
 import { useStatuses } from "../api/statuses";
 import { PriorityBadge, TagPill } from "./Badges";
+import { useT } from "../i18n";
 
 interface Props {
   node: TaskTreeNode;
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddSubtask }: Props) {
+  const t = useT();
   const [expanded, setExpanded] = useState(true);
   const { data: statuses = [] } = useStatuses();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -53,7 +55,7 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
           {...attributes}
           {...listeners}
           className="cursor-grab touch-none text-slate-300 opacity-0 group-hover:opacity-100 active:cursor-grabbing dark:text-slate-600"
-          title="ドラッグして並び替え"
+          title={t("ドラッグして並び替え")}
         >
           ⠿
         </button>
@@ -106,24 +108,24 @@ export function TaskNode({ node, depth, onStatusChange, onEdit, onDelete, onAddS
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
           <button
             onClick={() => onAddSubtask(node.id)}
-            title="サブタスクを追加"
+            title={t("サブタスクを追加")}
             className="rounded px-1.5 py-0.5 text-xs text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
           >
-            +サブ
+            {t("+サブ")}
           </button>
           <button
             onClick={() => onEdit(node)}
-            title="編集"
+            title={t("編集")}
             className="rounded px-1.5 py-0.5 text-xs text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
           >
-            編集
+            {t("編集")}
           </button>
           <button
             onClick={() => onDelete(node)}
-            title="削除"
+            title={t("削除")}
             className="rounded px-1.5 py-0.5 text-xs text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
           >
-            削除
+            {t("削除")}
           </button>
         </div>
       </div>

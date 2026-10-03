@@ -22,6 +22,7 @@ import { PriorityBadge, TagPill } from "./Badges";
 import { useReorderTasks, useUpdateTask } from "../api/tasks";
 import { useStatuses } from "../api/statuses";
 import { planKanbanDrag } from "../utils/dnd";
+import { useT } from "../i18n";
 
 interface Props {
   tasks: Task[];
@@ -70,6 +71,7 @@ function SortableCard({ task, isDone, onEdit }: { task: Task; isDone: boolean; o
 }
 
 function Column({ status, tasks, onEdit }: { status: StatusDef; tasks: Task[]; onEdit: (task: Task) => void }) {
+  const t = useT();
   const { setNodeRef, isOver } = useDroppable({
     id: `column:${status.id}`,
     data: { type: "column", statusId: status.id },
@@ -99,7 +101,7 @@ function Column({ status, tasks, onEdit }: { status: StatusDef; tasks: Task[]; o
       </SortableContext>
       {tasks.length === 0 && (
         <div className="rounded-lg border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400 dark:border-slate-700">
-          ここにドロップ
+          {t("ここにドロップ")}
         </div>
       )}
     </div>

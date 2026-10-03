@@ -1,3 +1,5 @@
+import { useT } from "../i18n";
+
 interface Props {
   open: boolean;
   title: string;
@@ -7,6 +9,7 @@ interface Props {
 }
 
 export function ConfirmDialog({ open, title, message, onConfirm, onCancel }: Props) {
+  const t = useT();
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -18,13 +21,13 @@ export function ConfirmDialog({ open, title, message, onConfirm, onCancel }: Pro
             onClick={onCancel}
             className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700"
           >
-            キャンセル
+            {t("キャンセル")}
           </button>
           <button
             onClick={onConfirm}
             className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
           >
-            削除する
+            {t("削除する")}
           </button>
         </div>
       </div>

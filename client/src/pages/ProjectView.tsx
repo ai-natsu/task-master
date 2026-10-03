@@ -13,8 +13,10 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { StatsCards } from "../components/StatsCards";
 import { buildTaskTree, flattenWithDepth, type TaskTreeNode } from "../utils/tree";
 import type { Task } from "../types";
+import { useT } from "../i18n";
 
 export function ProjectView() {
+  const t = useT();
   const { projectId } = useParams<{ projectId: string }>();
   const { data: projects = [] } = useProjects();
   const project = projects.find((p) => p.id === projectId);
@@ -95,7 +97,7 @@ export function ProjectView() {
   };
 
   if (!project) {
-    return <div className="text-sm text-slate-400">プロジェクトを読み込み中...</div>;
+    return <div className="text-sm text-slate-400">{t("プロジェクトを読み込み中...")}</div>;
   }
 
   return (
@@ -120,7 +122,7 @@ export function ProjectView() {
                   : "px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
               }
             >
-              ツリー
+              {t("ツリー")}
             </button>
             <button
               onClick={() => setViewMode("kanban")}
@@ -130,7 +132,7 @@ export function ProjectView() {
                   : "px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
               }
             >
-              カンバン
+              {t("カンバン")}
             </button>
             <button
               onClick={() => setViewMode("gantt")}
@@ -140,20 +142,20 @@ export function ProjectView() {
                   : "px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
               }
             >
-              ガント
+              {t("ガント")}
             </button>
           </div>
           <button
             onClick={() => setShowStats((s) => !s)}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
           >
-            {showStats ? "統計を隠す" : "統計を表示"}
+            {showStats ? t("統計を隠す") : t("統計を表示")}
           </button>
           <button
             onClick={() => openCreate(null)}
             className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
           >
-            + 新しいタスク
+            {t("+ 新しいタスク")}
           </button>
         </div>
       </div>
@@ -203,8 +205,10 @@ export function ProjectView() {
 
       <ConfirmDialog
         open={!!deletingTask}
-        title="タスクを削除"
-        message={`「${deletingTask?.title}」を削除すると、サブタスクも削除されます。よろしいですか？`}
+        title={t("タスクを削除")}
+        message={t("「{name}」を削除すると、サブタスクも削除されます。よろしいですか？", {
+          name: deletingTask?.title ?? "",
+        })}
         onConfirm={() => {
           if (deletingTask) deleteTask.mutate(deletingTask.id);
           setDeletingTask(undefined);

@@ -1,6 +1,7 @@
 import type { Priority, Tag } from "../types";
 import { PRIORITIES, PRIORITY_LABELS } from "../types";
 import { useStatuses } from "../api/statuses";
+import { useT } from "../i18n";
 
 export interface FilterState {
   search: string;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function FilterBar({ value, onChange, tags }: Props) {
+  const t = useT();
   const { data: statuses = [] } = useStatuses();
 
   return (
@@ -23,7 +25,7 @@ export function FilterBar({ value, onChange, tags }: Props) {
       <input
         value={value.search}
         onChange={(e) => onChange({ ...value, search: e.target.value })}
-        placeholder="タスクを検索..."
+        placeholder={t("タスクを検索...")}
         className="w-56 rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
       />
       <select
@@ -31,7 +33,7 @@ export function FilterBar({ value, onChange, tags }: Props) {
         onChange={(e) => onChange({ ...value, status: e.target.value || undefined })}
         className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
       >
-        <option value="">すべてのステータス</option>
+        <option value="">{t("すべてのステータス")}</option>
         {statuses.map((s) => (
           <option key={s.id} value={s.id}>
             {s.label}
@@ -43,10 +45,10 @@ export function FilterBar({ value, onChange, tags }: Props) {
         onChange={(e) => onChange({ ...value, priority: (e.target.value || undefined) as Priority | undefined })}
         className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
       >
-        <option value="">すべての優先度</option>
+        <option value="">{t("すべての優先度")}</option>
         {PRIORITIES.map((p) => (
           <option key={p} value={p}>
-            {PRIORITY_LABELS[p]}
+            {t(PRIORITY_LABELS[p])}
           </option>
         ))}
       </select>
@@ -55,7 +57,7 @@ export function FilterBar({ value, onChange, tags }: Props) {
         onChange={(e) => onChange({ ...value, tagId: e.target.value || undefined })}
         className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
       >
-        <option value="">すべてのタグ</option>
+        <option value="">{t("すべてのタグ")}</option>
         {tags.map((t) => (
           <option key={t.id} value={t.id}>
             #{t.name}
@@ -67,7 +69,7 @@ export function FilterBar({ value, onChange, tags }: Props) {
           onClick={() => onChange({ search: "" })}
           className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
         >
-          クリア
+          {t("クリア")}
         </button>
       )}
     </div>

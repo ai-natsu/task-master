@@ -4,6 +4,7 @@ import { PRIORITIES, PRIORITY_LABELS } from "../types";
 import { useCreateTag, useTags } from "../api/tags";
 import { useStatuses } from "../api/statuses";
 import { TagPill } from "./Badges";
+import { useT } from "../i18n";
 
 export interface TaskFormValue {
   title: string;
@@ -37,6 +38,7 @@ const empty: TaskFormValue = {
 };
 
 export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, onClose }: Props) {
+  const t = useT();
   const [value, setValue] = useState<TaskFormValue>({ ...empty, ...initial });
   const [newTagName, setNewTagName] = useState("");
   const { data: tags = [] } = useTags();
@@ -66,34 +68,34 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-5 shadow-xl dark:bg-slate-800">
-        <h3 className="text-base font-semibold">{mode === "create" ? "タスクを作成" : "タスクを編集"}</h3>
+        <h3 className="text-base font-semibold">{mode === "create" ? t("タスクを作成") : t("タスクを編集")}</h3>
 
         <div className="mt-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-500">タイトル</label>
+            <label className="block text-xs font-medium text-slate-500">{t("タイトル")}</label>
             <input
               autoFocus
               value={value.title}
               onChange={(e) => setValue((v) => ({ ...v, title: e.target.value }))}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-              placeholder="タスク名を入力"
+              placeholder={t("タスク名を入力")}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-500">詳細</label>
+            <label className="block text-xs font-medium text-slate-500">{t("詳細")}</label>
             <textarea
               value={value.description}
               onChange={(e) => setValue((v) => ({ ...v, description: e.target.value }))}
               rows={3}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-              placeholder="詳細（任意）"
+              placeholder={t("詳細（任意）")}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-500">ステータス</label>
+              <label className="block text-xs font-medium text-slate-500">{t("ステータス")}</label>
               <select
                 value={value.status || statuses[0]?.id || ""}
                 onChange={(e) => setValue((v) => ({ ...v, status: e.target.value }))}
@@ -107,7 +109,7 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500">優先度</label>
+              <label className="block text-xs font-medium text-slate-500">{t("優先度")}</label>
               <select
                 value={value.priority}
                 onChange={(e) => setValue((v) => ({ ...v, priority: e.target.value as Priority }))}
@@ -115,7 +117,7 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
-                    {PRIORITY_LABELS[p]}
+                    {t(PRIORITY_LABELS[p])}
                   </option>
                 ))}
               </select>
@@ -124,7 +126,7 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-500">開始日</label>
+              <label className="block text-xs font-medium text-slate-500">{t("開始日")}</label>
               <input
                 type="date"
                 value={value.startDate}
@@ -133,7 +135,7 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500">期限</label>
+              <label className="block text-xs font-medium text-slate-500">{t("期限")}</label>
               <input
                 type="date"
                 value={value.dueDate}
@@ -144,13 +146,13 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-500">親タスク</label>
+            <label className="block text-xs font-medium text-slate-500">{t("親タスク")}</label>
             <select
               value={value.parentId ?? ""}
               onChange={(e) => setValue((v) => ({ ...v, parentId: e.target.value || null }))}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
             >
-              <option value="">なし（最上位）</option>
+              <option value="">{t("なし（最上位）")}</option>
               {parentOptions.map((p) => (
                 <option key={p.id} value={p.id}>
                   {"　".repeat(p.depth)}
@@ -161,7 +163,7 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-500">タグ</label>
+            <label className="block text-xs font-medium text-slate-500">{t("タグ")}</label>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {tags.map((tag) => (
                 <button
@@ -178,14 +180,14 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreateTag()}
-                placeholder="新しいタグ"
+                placeholder={t("新しいタグ")}
                 className="flex-1 rounded-lg border border-slate-300 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
               />
               <button
                 onClick={handleCreateTag}
                 className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600"
               >
-                追加
+                {t("追加")}
               </button>
             </div>
           </div>
@@ -196,13 +198,13 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
             onClick={onClose}
             className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700"
           >
-            キャンセル
+            {t("キャンセル")}
           </button>
           <button
             onClick={() => value.title.trim() && onSubmit(value)}
             className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
           >
-            {mode === "create" ? "作成" : "保存"}
+            {mode === "create" ? t("作成") : t("保存")}
           </button>
         </div>
       </div>

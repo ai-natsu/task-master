@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-TaskMaster — a full-stack task management app with projects (archivable), unlimited-depth subtasks, tags, priorities, start/due dates, search/filter, drag-and-drop reordering, tree/kanban/Gantt views, and a stats dashboard. All UI text is in Japanese.
+TaskMaster — a full-stack task management app with projects (archivable), unlimited-depth subtasks, tags, priorities, start/due dates, search/filter, drag-and-drop reordering, tree/kanban/Gantt views, and a stats dashboard. UI text is Japanese by default with an English option (see below).
 
 ## Commands
 
@@ -56,5 +56,7 @@ Windows note: Node.js was installed via winget; if a shell doesn't see `node`/`n
 - `src/components/GanttChart.tsx` — day-grid Gantt (bars span `startDate`→`dueDate`, single-day bar if only one is set); third view mode in `ProjectView` alongside tree and kanban
 - `src/pages/ProjectView.tsx` — when no filters (search/status/priority/tag) are active it renders the unfiltered task list (needed so the tree stays intact); as soon as a filter is active it switches to the server-filtered flat list instead, since filtering by matching descendants only doesn't make sense as a tree
 - `src/pages/Dashboard.tsx` — cross-project overview (global stats, overdue/upcoming lists, project cards)
+
+**i18n** — `client/src/i18n/`: `t("日本語の原文")` keyed by the Japanese source text (`useT()` hook inside components); English strings live in `en.ts` and a missing key falls back to the Japanese text. `LanguageProvider` (in `main.tsx`) holds the language and persists it to `localStorage` (`taskmaster.language`); the switcher is on the Settings page. `i18n.test.ts` fails if any `t("…")` key in the source is missing from `en.ts`. User-entered data (status/tag/project names) is not translated.
 
 Ports: server 3001, client 5173 (Vite proxies `/api/*` to the server — see `client/vite.config.ts`).

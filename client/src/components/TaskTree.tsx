@@ -13,6 +13,7 @@ import { buildTaskTree, type TaskTreeNode } from "../utils/tree";
 import { TaskNode } from "./TaskNode";
 import { useReorderTasks } from "../api/tasks";
 import { planTreeDrag } from "../utils/dnd";
+import { useT } from "../i18n";
 
 interface Props {
   tasks: Task[];
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function TaskTree({ tasks, onStatusChange, onEdit, onDelete, onAddSubtask }: Props) {
+  const t = useT();
   const tree = useMemo(() => buildTaskTree(tasks), [tasks]);
   const reorder = useReorderTasks();
 
@@ -37,7 +39,7 @@ export function TaskTree({ tasks, onStatusChange, onEdit, onDelete, onAddSubtask
   if (tree.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-400 dark:border-slate-700">
-        タスクがありません。「新しいタスク」から追加してください。
+        {t("タスクがありません。「新しいタスク」から追加してください。")}
       </div>
     );
   }

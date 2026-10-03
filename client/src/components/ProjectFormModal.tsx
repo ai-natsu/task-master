@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Project } from "../types";
+import { useT } from "../i18n";
 
 const COLORS = ["#6366f1", "#22c55e", "#ef4444", "#f59e0b", "#0ea5e9", "#a855f7", "#ec4899"];
 
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function ProjectFormModal({ open, mode, initial, onSubmit, onClose }: Props) {
+  const t = useT();
   const [value, setValue] = useState<ProjectFormValue>({
     name: initial?.name ?? "",
     description: initial?.description ?? "",
@@ -40,32 +42,32 @@ export function ProjectFormModal({ open, mode, initial, onSubmit, onClose }: Pro
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl dark:bg-slate-800">
         <h3 className="text-base font-semibold">
-          {mode === "create" ? "新しいプロジェクト" : "プロジェクトを編集"}
+          {mode === "create" ? t("新しいプロジェクト") : t("プロジェクトを編集")}
         </h3>
 
         <div className="mt-4 space-y-3">
           <div>
-            <label className="block text-xs font-medium text-slate-500">名前</label>
+            <label className="block text-xs font-medium text-slate-500">{t("名前")}</label>
             <input
               autoFocus
               value={value.name}
               onChange={(e) => setValue((v) => ({ ...v, name: e.target.value }))}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-              placeholder="プロジェクト名"
+              placeholder={t("プロジェクト名")}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500">説明</label>
+            <label className="block text-xs font-medium text-slate-500">{t("説明")}</label>
             <textarea
               value={value.description}
               onChange={(e) => setValue((v) => ({ ...v, description: e.target.value }))}
               rows={2}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-              placeholder="説明（任意）"
+              placeholder={t("説明（任意）")}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500">カラー</label>
+            <label className="block text-xs font-medium text-slate-500">{t("カラー")}</label>
             <div className="mt-1 flex gap-2">
               {COLORS.map((c) => (
                 <button
@@ -84,13 +86,13 @@ export function ProjectFormModal({ open, mode, initial, onSubmit, onClose }: Pro
             onClick={onClose}
             className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700"
           >
-            キャンセル
+            {t("キャンセル")}
           </button>
           <button
             onClick={() => value.name.trim() && onSubmit(value)}
             className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
           >
-            {mode === "create" ? "作成" : "保存"}
+            {mode === "create" ? t("作成") : t("保存")}
           </button>
         </div>
       </div>
