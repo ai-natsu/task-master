@@ -1,28 +1,29 @@
 """タスクツリー表示（旧 client/src/components/TaskTree.tsx + TaskNode.tsx の移植）。
 
 ttk.Treeview はネイティブに展開/折りたたみを持つため採用し、ドラッグ&ドロップは
-マウスイベントで検出して純粋関数 plan_tree_drag に委ねる（同じ親配下のみ並べ替え、
-という元実装の制約はそのまま）。
+マウスイベントで検出して純粋関数 plan_row_drop に委ねる（並べ替え・親の付け替え）。
 """
 
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import ttk
 
 import customtkinter as ctk
 
-from app.db.errors import CycleError
 from app.db.statuses import list_statuses
-from app.db.tasks import create_task, delete_task, list_tasks, move_task, reorder_tasks, update_task
-from app.i18n import t
-from app.logic.dnd import plan_tree_drag
+from app.db.tasks import create_task, delete_task, list_tasks, reorder_tasks, update_task
+from app.i18n import format_date, t
+from app.logic.dnd import plan_row_drop
 from app.logic.due import is_overdue
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
 from app.ui.widgets.badges import PRIORITY_COLORS, priority_label
 from app.ui.widgets.confirm_dialog import ask_confirm
+from app.ui.widgets.task_edit import edit_task
 from app.ui.widgets.task_form_dialog import ask_task_form
 
 _EMPTY_IID = "__empty__"
+_DRAG_THRESHOLD_PX = 5  # これ以下の動きはドラッグでなくクリック（編集）として扱う
+_DROP_EDGE = 0.25  # 行の上下この割合 = 兄弟として挿入、中央 = 子にする
 _TAGS_MAX_LEN = 14  # タグ列(幅160px)に収まる目安の文字数。超過分は"..."で省略する
 
 
@@ -45,6 +46,8 @@ class TaskTreeWidget(ctk.CTkFrame):
         self._status_labels: dict[str, str] = {}
         self._drag_id: str | None = None
         self._press_on_indicator = False
+        self._drag_moved = False
+        self._drag_start_y = 0
         self._hover_id: str | None = None
         self._grid_lines: list[tk.Frame] = []
         self._column_lines: list[tk.Frame] = []
@@ -97,6 +100,9 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.tree.tag_configure("overdue", foreground="#dc2626")
         self.tree.tag_configure("done", foreground="#94a3b8")
         self.tree.tag_configure("hover", background="#eef2ff")
+        self.tree.tag_configure("dropchild", background="#c7d2fe")
+        self._drop_line = tk.Frame(self.tree, bg=theme.ACCENT, height=3)
+        self._drop_child_id: str | None = None
 
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         hscrollbar = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
@@ -109,10 +115,13 @@ class TaskTreeWidget(ctk.CTkFrame):
         scrollbar.pack(side="right", fill="y")
 
         self.tree.bind("<ButtonPress-1>", self._on_press)
+        self.tree.bind("<B1-Motion>", self._on_drag_motion)
         self.tree.bind("<ButtonRelease-1>", self._on_release)
-        # ダブルクリックでは何もしない（既定の「展開/折りたたみの切替」も止める）。
-        # 編集はシングルクリック。
-        self.tree.bind("<Double-1>", lambda _e: "break")
+        # ダブルクリックでは何もしない（既定の「展開/折りたたみの切替」も止める）。編集は
+        # シングルクリック。Tk は最も具体的なバインドだけを実行するため、連続クリックの2回目
+        # でも通常の押下処理（_on_press）は実行しつつ、既定の切替だけを "break" で止める。
+        self.tree.bind("<Double-1>", self._on_repeat_press)
+        self.tree.bind("<Triple-1>", self._on_repeat_press)
         self.tree.bind("<Motion>", self._on_motion)
         self.tree.bind("<Leave>", lambda _e: self._set_hover(None))
         self.tree.bind("<Button-3>", self._on_right_click)
@@ -320,8 +329,8 @@ class TaskTreeWidget(ctk.CTkFrame):
                 values=(
                     status.label if status else task.status,
                     priority_label(task.priority),
-                    task.start_date[:10] if task.start_date else "",
-                    task.due_date[:10] if task.due_date else "",
+                    format_date(task.start_date),
+                    format_date(task.due_date),
                     _format_tags(task.tags),
                 ),
                 tags=tuple(tags),
@@ -329,12 +338,62 @@ class TaskTreeWidget(ctk.CTkFrame):
 
         self.after_idle(self._redraw_overlays)
 
-    # --- ドラッグ&ドロップ（同じ親配下のみ並べ替え） ------------------------
+    # --- ドラッグ&ドロップ（並べ替え・親の付け替え） ---------------------------
+    # クリック（編集）とドラッグは、しきい値（_DRAG_THRESHOLD_PX）で分ける：
+    # しきい値を超えて動いたらドラッグで、離しても編集は開かない。
     def _on_press(self, event) -> None:
         row_id = self.tree.identify_row(event.y)
         self._drag_id = row_id if row_id != _EMPTY_IID else None
+        self._drag_moved = False
+        self._drag_start_y = event.y
         # 展開/折りたたみの矢印を押したときは、編集を開かない
         self._press_on_indicator = "indicator" in self.tree.identify_element(event.x, event.y)
+
+    def _on_repeat_press(self, event) -> str:
+        self._on_press(event)
+        return "break"
+
+    def _drop_target(self, event) -> tuple[str, str] | None:
+        """ポインタ位置から (ドロップ先の行, 位置) を求める。位置は before / after / child。"""
+        row_id = self.tree.identify_row(event.y)
+        if not row_id or row_id == _EMPTY_IID or row_id == self._drag_id:
+            return None
+        bbox = self.tree.bbox(row_id)
+        if not bbox:
+            return None
+        _x, y, _w, h = bbox
+        frac = (event.y - y) / h
+        zone = "before" if frac < _DROP_EDGE else "after" if frac > 1 - _DROP_EDGE else "child"
+        return row_id, zone
+
+    def _on_drag_motion(self, event) -> None:
+        if not self._drag_id:
+            return
+        if not self._drag_moved:
+            if abs(event.y - self._drag_start_y) <= _DRAG_THRESHOLD_PX:
+                return
+            self._drag_moved = True
+        self._draw_drop_indicator(self._drop_target(event))
+
+    def _clear_drop_indicator(self) -> None:
+        self._drop_line.place_forget()
+        if self._drop_child_id is not None and self.tree.exists(self._drop_child_id):
+            tags = [x for x in self.tree.item(self._drop_child_id, "tags") if x != "dropchild"]
+            self.tree.item(self._drop_child_id, tags=tuple(tags))
+        self._drop_child_id = None
+
+    def _draw_drop_indicator(self, target: tuple[str, str] | None) -> None:
+        self._clear_drop_indicator()
+        if target is None:
+            return
+        row_id, zone = target
+        if zone == "child":
+            self._drop_child_id = row_id
+            self.tree.item(row_id, tags=(*self.tree.item(row_id, "tags"), "dropchild"))
+            return
+        _x, y, _w, h = self.tree.bbox(row_id)
+        line_y = y if zone == "before" else y + h
+        self._drop_line.place(x=0, y=line_y - 1, relwidth=1)
 
     # --- マウスオーバー（行を薄く強調） -----------------------------------------
     def _on_motion(self, event) -> None:
@@ -356,21 +415,33 @@ class TaskTreeWidget(ctk.CTkFrame):
         if not self._drag_id:
             return
         active_id, self._drag_id = self._drag_id, None
-        drop_id = self.tree.identify_row(event.y)
-        if drop_id == active_id and not self._press_on_indicator:
-            # 同じ行で押して離した＝シングルクリック → 編集を開く
+        moved, self._drag_moved = self._drag_moved, False
+        target = self._drop_target_for(event, active_id) if moved else None
+        self._clear_drop_indicator()
+
+        if not moved:
+            # しきい値内＝シングルクリック → 編集を開く
             task = self._tasks_by_id.get(active_id)
-            if task:
+            if task and not self._press_on_indicator:
                 self._edit(task)
             return
-        if not drop_id or drop_id == active_id or drop_id == _EMPTY_IID:
+        if target is None:
             return
 
-        plan = plan_tree_drag(list(self._tasks_by_id.values()), active_id, drop_id)
+        drop_id, zone = target
+        tasks = list_tasks(self.app.conn, project_id=self.project_id)
+        plan = plan_row_drop(tasks, active_id, drop_id, zone)
         if plan.get("reorder"):
             reorder_tasks(self.app.conn, plan["reorder"])
             self.refresh()
             self.on_change()
+
+    def _drop_target_for(self, event, active_id: str) -> tuple[str, str] | None:
+        self._drag_id = active_id  # _drop_target は自分自身を除外するために参照する
+        try:
+            return self._drop_target(event)
+        finally:
+            self._drag_id = None
 
     # --- 右クリックメニュー -------------------------------------------------
     def _on_right_click(self, event) -> None:
@@ -413,22 +484,9 @@ class TaskTreeWidget(ctk.CTkFrame):
             self.on_change()
 
     def _edit(self, task) -> None:
-        result = ask_task_form(self.app, self.app.conn, self.project_id, task=task)
-        if not result:
-            return
-        new_parent_id = result.pop("parent_id")
-        update_task(self.app.conn, task.id, **result)
-        if new_parent_id != task.parent_id:
-            try:
-                move_task(self.app.conn, task.id, parent_id=new_parent_id)
-            except CycleError:
-                messagebox.showerror(
-                    t("エラー"),
-                    t("タスクを自分自身またはその配下には移動できません。"),
-                    parent=self,
-                )
-        self.refresh()
-        self.on_change()
+        if edit_task(self, self.app, self.project_id, task):
+            self.refresh()
+            self.on_change()
 
     def _delete(self, task) -> None:
         message = t("「{title}」を削除しますか？配下のサブタスクも削除されます。").format(

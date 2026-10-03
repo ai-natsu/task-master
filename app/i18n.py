@@ -39,3 +39,18 @@ def t(text: str) -> str:
     if table is None:
         return text
     return table.get(text, text)
+
+
+def format_date(value: str | None) -> str:
+    """期限・開始日・祝日の表示形式。日本語は「2026年10月05日」、英語は「2026-10-05」。
+
+    保存形式（先頭10文字の YYYY-MM-DD）はそのままで、表示だけを言語に合わせる。
+    日付として解釈できない値は、そのまま返す。
+    """
+    if not value:
+        return ""
+    day = value[:10]
+    parts = day.split("-")
+    if _current_language != "ja" or len(parts) != 3 or not all(p.isdigit() for p in parts):
+        return day
+    return f"{parts[0]}年{parts[1]}月{parts[2]}日"

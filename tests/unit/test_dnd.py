@@ -1,4 +1,4 @@
-from app.logic.dnd import plan_kanban_drag, plan_row_drop, plan_tree_drag
+from app.logic.dnd import plan_kanban_drag, plan_row_drop
 from tests.factories import make_task
 
 
@@ -42,30 +42,6 @@ def test_c5_drop_on_empty_column_appends_to_end():
 def test_c6_over_none_is_noop():
     tasks = _kanban_tasks()
     assert plan_kanban_drag(tasks, "t1", None) == {}
-
-
-def _tree_tasks():
-    return [
-        make_task(id="a", parent_id=None, order=0),
-        make_task(id="b", parent_id=None, order=1),
-        make_task(id="c1", parent_id="a", order=0),
-    ]
-
-
-def test_c1_reorders_within_same_parent():
-    tasks = _tree_tasks()
-    plan = plan_tree_drag(tasks, "b", "a")
-    assert plan["reorder"] == [{"id": "b", "order": 0}, {"id": "a", "order": 1}]
-
-
-def test_c2_cross_parent_drag_is_noop():
-    tasks = _tree_tasks()
-    assert plan_tree_drag(tasks, "c1", "b") == {}
-
-
-def test_c2b_dropping_on_itself_is_noop():
-    tasks = _tree_tasks()
-    assert plan_tree_drag(tasks, "a", "a") == {}
 
 
 def _row_tasks():
