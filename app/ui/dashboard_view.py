@@ -11,6 +11,7 @@ from app.i18n import format_date, t
 from app.logic.due import is_due_soon, is_overdue
 from app.ui import theme
 from app.ui.widgets.badges import priority_badge
+from app.ui.widgets.ellipsis import EllipsisLabel
 from app.ui.widgets.stats_cards import render_breakdown_panels
 
 
@@ -74,22 +75,27 @@ class DashboardView(ctk.CTkScrollableFrame):
                 anchor="w"
             )
         for project in projects:
-            ctk.CTkButton(
-                self,
-                text=t("●  {name}    {count} 件").format(
-                    name=project.name, count=project.task_count
-                ),
-                fg_color=theme.CARD_BG,
-                text_color=theme.TEXT_PRIMARY,
-                hover_color=("#eef2ff", "#312e81"),
-                border_width=1,
-                border_color=theme.CARD_BORDER,
-                corner_radius=10,
-                anchor="w",
-                height=48,
-                font=ctk.CTkFont(size=13, weight="bold"),
-                command=lambda pid=project.id: self.app.navigate("project", project_id=pid),
-            ).pack(fill="x", pady=4)
+            card = ctk.CTkFrame(
+                self, fg_color=theme.CARD_BG, border_width=1, border_color=theme.CARD_BORDER,
+                corner_radius=10, height=48, cursor="hand2",
+            )
+            card.pack(fill="x", pady=4)
+            card.pack_propagate(False)
+            count_label = ctk.CTkLabel(
+                card, text=t("{count} 件").format(count=project.task_count),
+                text_color=theme.TEXT_MUTED, font=ctk.CTkFont(size=13),
+            )
+            count_label.pack(side="right", padx=(8, 16))
+            name_label = EllipsisLabel(
+                card, text="●  " + project.name, font=ctk.CTkFont(size=13, weight="bold"),
+                text_color=theme.TEXT_PRIMARY, padding=8,
+            )
+            name_label.pack(side="left", fill="x", expand=True, padx=(16, 0))
+            for widget in (card, name_label, count_label):
+                widget.bind(
+                    "<Button-1>",
+                    lambda _e, pid=project.id: self.app.navigate("project", project_id=pid),
+                )
 
     def _stat_card(self, parent, label, value, accent=None):
         card = ctk.CTkFrame(
@@ -132,14 +138,14 @@ class DashboardView(ctk.CTkScrollableFrame):
             project_box.pack(side="left", padx=(0, 10))
             project_box.pack_propagate(False)
             if project is not None:
-                ctk.CTkLabel(
-                    project_box, text=f"●  {project.name}", anchor="w",
+                EllipsisLabel(
+                    project_box, text=f"●  {project.name}",
                     text_color=project.color, font=ctk.CTkFont(size=12, weight="bold"),
-                ).pack(anchor="w")
+                ).pack(fill="x")
 
-            ctk.CTkLabel(
-                row, text=task.title, anchor="w", text_color=theme.TEXT_PRIMARY,
-                font=ctk.CTkFont(weight="bold"),
+            EllipsisLabel(
+                row, text=task.title, text_color=theme.TEXT_PRIMARY,
+                font=ctk.CTkFont(weight="bold"), padding=8,
             ).pack(side="left", fill="x", expand=True)
 
             due = format_date(task.due_date)

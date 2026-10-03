@@ -5,6 +5,7 @@ ttk.Treeview はネイティブに展開/折りたたみを持つため採用し
 """
 
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import ttk
 
 import customtkinter as ctk
@@ -18,19 +19,15 @@ from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
 from app.ui.widgets.badges import PRIORITY_COLORS, priority_label
 from app.ui.widgets.confirm_dialog import ask_confirm
+from app.ui.widgets.ellipsis import ellipsize
 from app.ui.widgets.task_edit import create_task_via_form, edit_task
 
 _EMPTY_IID = "__empty__"
+_TREE_INDENT_PX = 20  # ttk.Treeview の既定のインデント幅（階層1段ぶん）
+_TREE_TEXT_MARGIN_PX = 12  # 展開矢印・余白ぶん
 _DRAG_THRESHOLD_PX = 5  # これ以下の動きはドラッグでなくクリック（編集）として扱う
 _DROP_EDGE = 0.25  # 行の上下この割合 = 兄弟として挿入、中央 = 子にする
-_TAGS_MAX_LEN = 14  # タグ列(幅160px)に収まる目安の文字数。超過分は"..."で省略する
-
-
-def _format_tags(tags) -> str:
-    joined = ", ".join(tag.name for tag in tags)
-    if len(joined) <= _TAGS_MAX_LEN:
-        return joined
-    return joined[:_TAGS_MAX_LEN] + "..."
+_DATE_COLUMN_WIDTH = 128  # 「2026年10月05日」が収まる幅
 
 
 class TaskTreeWidget(ctk.CTkFrame):
@@ -41,6 +38,9 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.on_change = on_change or (lambda: None)
         self.filters = filters or {}
         self._tasks_by_id: dict = {}
+        # タスク列の幅に収まらないタイトルを「...」で省略するために、幅を測る
+        self._title_font = tkfont.Font(root=self, family=theme.FONT_FAMILY, size=11)
+        self._title_width_applied: tuple[int, int] | None = None
         self._statuses_by_id: dict = {}
         self._status_labels: dict[str, str] = {}
         self._drag_id: str | None = None
@@ -92,8 +92,8 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.tree.column("#0", width=320, stretch=True)
         self.tree.column("status", width=100, anchor="center")
         self.tree.column("priority", width=70, anchor="center")
-        self.tree.column("start", width=90, anchor="center")
-        self.tree.column("due", width=90, anchor="center")
+        self.tree.column("start", width=_DATE_COLUMN_WIDTH, anchor="center")
+        self.tree.column("due", width=_DATE_COLUMN_WIDTH, anchor="center")
         self.tree.column("tags", width=160)
 
         self.tree.tag_configure("overdue", foreground="#dc2626")
@@ -167,7 +167,32 @@ class TaskTreeWidget(ctk.CTkFrame):
         _collect()
         return item_ids
 
+    def _apply_title_ellipsis(self, force: bool = False) -> None:
+        """タスク列の幅に収まらないタイトルを「...」に置き換える（列幅や階層の深さに応じて）。"""
+        width = int(self.tree.column("#0", "width"))
+        tags_width = int(self.tree.column("tags", "width"))
+        if not force and (width, tags_width) == self._title_width_applied:
+            return
+        self._title_width_applied = (width, tags_width)
+        for iid, task in self._tasks_by_id.items():
+            if not self.tree.exists(iid):
+                continue
+            depth, parent = 0, self.tree.parent(iid)
+            while parent:
+                depth += 1
+                parent = self.tree.parent(parent)
+            available = width - (depth + 1) * _TREE_INDENT_PX - _TREE_TEXT_MARGIN_PX
+            shown = ellipsize(task.title, self._title_font, available)
+            if self.tree.item(iid, "text") != shown:
+                self.tree.item(iid, text=shown)
+            # タグ列も、列の幅に合わせて「...」で省略する（全タグ名をカンマ区切りにしたものを切る）
+            tags_text = ", ".join(tag.name for tag in task.tags)
+            tags_shown = ellipsize(tags_text, self._title_font, tags_width - 16)
+            if self.tree.set(iid, "tags") != tags_shown:
+                self.tree.set(iid, "tags", tags_shown)
+
     def _redraw_overlays(self) -> None:
+        self._apply_title_ellipsis()
         self._draw_grid_lines()
         self._draw_cell_overlays()
         self._draw_column_lines()
@@ -330,11 +355,12 @@ class TaskTreeWidget(ctk.CTkFrame):
                     priority_label(task.priority),
                     format_date(task.start_date),
                     format_date(task.due_date),
-                    _format_tags(task.tags),
+                    ", ".join(tag.name for tag in task.tags),
                 ),
                 tags=tuple(tags),
             )
 
+        self._apply_title_ellipsis(force=True)
         self.after_idle(self._redraw_overlays)
 
     # --- ドラッグ&ドロップ（並べ替え・親の付け替え） ---------------------------
@@ -411,6 +437,7 @@ class TaskTreeWidget(ctk.CTkFrame):
             self.tree.item(row_id, tags=tuple(tags))
 
     def _on_release(self, event) -> None:
+        self.after_idle(self._apply_title_ellipsis)  # 列幅を変えた直後に引き直す
         if not self._drag_id:
             return
         active_id, self._drag_id = self._drag_id, None

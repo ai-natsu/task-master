@@ -2,16 +2,16 @@
 
 import customtkinter as ctk
 
-from app.db.projects import delete_project, list_projects, update_project
-from app.db.tasks import list_tasks
+from app.db.projects import list_projects
 from app.i18n import t
 from app.ui import theme
-from app.ui.widgets.confirm_dialog import ask_confirm
-from app.ui.widgets.project_form_dialog import ask_project_form
+from app.ui.widgets.ellipsis import ellipsize
 
 _NAV_FONT_SIZE = 15
 _NAV_HEIGHT = 44
 _NAV_CORNER = 10
+# プロジェクト名ボタンに使える文字の幅（サイドバー幅272pxから余白・●・ボタン内側の余白を引いた値）
+_PROJECT_LABEL_WIDTH = 190
 
 
 class Sidebar(ctk.CTkFrame):
@@ -26,6 +26,8 @@ class Sidebar(ctk.CTkFrame):
         )
         self.app = app
         self.grid_propagate(False)
+        # 中身を pack しているので、長いプロジェクト名で横幅が広がらないよう pack 側も固定する
+        self.pack_propagate(False)
 
         logo_row = ctk.CTkFrame(self, fg_color="transparent")
         logo_row.pack(anchor="w", padx=20, pady=(24, 16))
@@ -96,9 +98,14 @@ class Sidebar(ctk.CTkFrame):
                 row, text="●", text_color=project.color, width=20, font=ctk.CTkFont(size=16)
             ).pack(side="left")
 
+            count_text = f" ({project.task_count})"
+            name_font = ctk.CTkFont(size=13)
+            name_text = ellipsize(
+                project.name, name_font, _PROJECT_LABEL_WIDTH - name_font.measure(count_text)
+            )
             label = ctk.CTkButton(
                 row,
-                text=f"{project.name} ({project.task_count})",
+                text=name_text + count_text,
                 height=36,
                 corner_radius=8,
                 font=ctk.CTkFont(size=13),
@@ -109,53 +116,6 @@ class Sidebar(ctk.CTkFrame):
                 command=lambda pid=project.id: self.app.navigate("project", project_id=pid),
             )
             label.pack(side="left", fill="x", expand=True)
-
-            ctk.CTkButton(
-                row,
-                text="✎",
-                width=36,
-                height=36,
-                corner_radius=8,
-                font=ctk.CTkFont(size=20, weight="bold"),
-                fg_color="transparent",
-                text_color=("gray30", "gray70"),
-                hover_color=("gray85", "gray25"),
-                command=lambda p=project: self._edit(p),
-            ).pack(side="left")
-            ctk.CTkButton(
-                row,
-                text="✕",
-                width=36,
-                height=36,
-                corner_radius=8,
-                font=ctk.CTkFont(size=20, weight="bold"),
-                fg_color="transparent",
-                text_color="#9f6b6b",
-                hover_color=("#f3e8e8", "#4a3636"),
-                command=lambda p=project: self._delete(p),
-            ).pack(side="left")
-
-    def _edit(self, project) -> None:
-        result = ask_project_form(
-            self.app,
-            initial={
-                "name": project.name,
-                "description": project.description,
-                "color": project.color,
-            },
-            on_save=lambda r: update_project(self.app.conn, project.id, **r),
-        )
-        if result:
-            self.app.refresh_current_view()
-
-    def _delete(self, project) -> None:
-        task_count = len(list_tasks(self.app.conn, project_id=project.id))
-        message = t("「{name}」を削除しますか？配下の{count}件のタスクも削除されます。").format(
-            name=project.name, count=task_count
-        )
-        if ask_confirm(self.app, t("プロジェクトを削除"), message):
-            delete_project(self.app.conn, project.id)
-            self.app.refresh_current_view()
 
     def set_active(self, route: str) -> None:
         for r, btn in self.nav_buttons.items():
