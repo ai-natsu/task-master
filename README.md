@@ -282,7 +282,7 @@ npm start          # サーバーを起動する（http://localhost:3001）
 | `node` が見つからない（`node -v` でエラー） | Node.js をインストールする（3.1.2）。インストール後は、ターミナルを開き直す |
 | `EADDRINUSE`（ポートが使用中） | 3.2.5 の手順で、3001 番を使っているプログラムを止める、またはポートを変える |
 | 画面は出るが、エラーが出る・一覧が表示されない | 3.2.6 の手順で、サーバーとデータベースを確認する |
-| `Environment variable not found: DATABASE_URL` | `server/.env` が無い。`server/.env.example` をコピーして作る |
+| `Environment variable not found: DATABASE_URL` | 環境設定のファイル `server/.env` が無い。**起動スクリプト（`start.cmd` など）で起動すれば、自動で作られる**。手動で起動した場合は、`server` フォルダの中の `.env.example` をコピーして、コピーの名前を `.env` に変える（コマンドで作る場合は 3.1.5） |
 | ソースを更新したのに、画面が変わらない | `npm run build` を実行してから、起動し直す |
 | サンプルデータを入れたい | `cd server && npm run seed`（既存のデータは全削除される） |
 
