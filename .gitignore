@@ -55,5 +55,6 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Claude Code local (machine-specific) settings
-.claude/settings.local.json
+# Claude Code（設定・エージェント・スキル・開発者向けメモ）はリポジトリに含めない
+.claude/
+CLAUDE.md
