@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
 import {
   taskCreateSchema as createSchema,
@@ -14,10 +15,12 @@ const taskInclude = {
   tags: { include: { tag: true } },
 } as const;
 
-function serialize(task: any) {
+type TaskWithTags = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
+
+function serialize(task: TaskWithTags) {
   return {
     ...task,
-    tags: task.tags?.map((t: any) => t.tag) ?? [],
+    tags: task.tags.map((t) => t.tag),
   };
 }
 
@@ -41,7 +44,7 @@ router.get("/", async (req, res) => {
     string | undefined
   >;
 
-  const where: any = {};
+  const where: Prisma.TaskWhereInput = {};
   if (projectId) where.projectId = projectId;
   else where.project = { archived: false };
   if (status) where.status = status;

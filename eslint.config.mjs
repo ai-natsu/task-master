@@ -36,6 +36,8 @@ export default tseslint.config(
     languageOptions: { parserOptions: { projectService: true } },
     rules: {
       "@typescript-eslint/no-floating-promises": "error", // await 漏れ
+      // `_` 始まりの未使用引数は許可（Express のエラー処理ミドルウェアは 4 引数が必須）
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       // Promise の誤用検出。arguments/attributes の void 期待チェックは無効化:
       // Express 4 の async ハンドラと JSX の onClick={async} が一律で誤反応するため
       // （前者は各ルートの try/catch、後者は React の設計慣行でカバーされる領域）
@@ -76,6 +78,12 @@ export default tseslint.config(
     ...c,
     files: ["**/*.config.ts", "e2e/**/*.ts", "client/playwright/**/*.{ts,tsx}"],
   })),
+
+  // ── scripts/（Node で動かす補助スクリプト）──────────────
+  {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: { globals: { console: "readonly", process: "readonly", fetch: "readonly" } },
+  },
 
   // ── 共通の品質ルール ──────────────────────────────
   {

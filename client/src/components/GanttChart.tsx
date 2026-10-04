@@ -68,10 +68,11 @@ export function GanttChart({ tasks, onEdit, onChangeDates, onRowDrop }: Props) {
 
   const rows = useMemo(() => flattenNodes(buildTaskTree(tasks)), [tasks]);
 
-  const today = startOfDay(new Date());
+  const todayMs = startOfDay(new Date()).getTime();
+  const today = useMemo(() => new Date(todayMs), [todayMs]);
   const { days, rangeStart } = useMemo(
     () => computeRange(rows.map((r) => r.node), today),
-    [rows, today.getTime()]
+    [rows, today]
   );
   const todayOffset = differenceInCalendarDays(today, rangeStart);
   const months = useMemo(() => computeMonths(days, t("yyyy年M月")), [days, t]);

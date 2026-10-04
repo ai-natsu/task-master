@@ -14,9 +14,9 @@ export function useStatuses() {
 function useInvalidateStatuses() {
   const qc = useQueryClient();
   return () => {
-    qc.invalidateQueries({ queryKey: ["statuses"] });
-    qc.invalidateQueries({ queryKey: ["tasks"] });
-    qc.invalidateQueries({ queryKey: ["stats"] });
+    void qc.invalidateQueries({ queryKey: ["statuses"] });
+    void qc.invalidateQueries({ queryKey: ["tasks"] });
+    void qc.invalidateQueries({ queryKey: ["stats"] });
   };
 }
 

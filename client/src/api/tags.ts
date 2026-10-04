@@ -25,8 +25,8 @@ export function useDeleteTag(opts?: MutationOpts) {
     meta: inlineMeta(opts),
     mutationFn: (id: string) => api.delete(`/tags/${id}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tags"] });
-      qc.invalidateQueries({ queryKey: ["tasks"] });
+      void qc.invalidateQueries({ queryKey: ["tags"] });
+      void qc.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 }
@@ -38,8 +38,8 @@ export function useUpdateTag(opts?: MutationOpts) {
     mutationFn: ({ id, ...data }: { id: string; name?: string; color?: string }) =>
       api.patch<Tag>(`/tags/${id}`, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tags"] });
-      qc.invalidateQueries({ queryKey: ["tasks"] });
+      void qc.invalidateQueries({ queryKey: ["tags"] });
+      void qc.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 }

@@ -34,7 +34,6 @@ export function ProjectView() {
 
   const tasksToShow = filtersActive ? filteredTasks ?? [] : allTasks;
 
-  const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const reorderTasks = useReorderTasks();
   // フォーム（モーダル）からの保存は、失敗をモーダル内に表示する（inline）

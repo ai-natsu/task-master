@@ -3,7 +3,7 @@ import { buildTaskTree, descendantIds, flattenWithDepth, flattenNodes, countAll 
 import { makeTask } from "../test/factories";
 
 describe("buildTaskTree", () => {
-  it("U-1: nests children under parents, each level sorted by order", async () => {
+  it("U-1: nests children under parents, each level sorted by order", () => {
     const tasks = [
       makeTask({ id: "a", order: 1 }),
       makeTask({ id: "b", order: 0 }),

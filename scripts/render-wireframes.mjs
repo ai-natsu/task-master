@@ -9,7 +9,7 @@
 // 実行:
 //   node scripts/render-wireframes.mjs
 // 出力: docs/images/wf-*.png（docs/SCREEN_DESIGN.md 内の ```mermaid``` を上から順に対応）
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, mkdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { chromium } from "@playwright/test";
