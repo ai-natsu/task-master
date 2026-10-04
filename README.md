@@ -202,7 +202,7 @@ git checkout develop/v1
 
 #### 3.1.4 ターミナルの開き方
 
-以降のコマンドは、**ソースコードのフォルダ（`package.json` と `README.md` があるフォルダ）でターミナルを開いて**実行する。
+以降のコマンドは、**クローンしたリポジトリのルートディレクトリ**（`package.json` と `README.md` があるフォルダ。ZIP でダウンロードした場合は、解凍したフォルダ）で、ターミナルを開いて実行する。
 
 - **Windows：** エクスプローラーでそのフォルダを開き、アドレスバーに `powershell` と入力して Enter を押す。または、フォルダの何もない所を右クリックして「ターミナルで開く」を選ぶ。
 - **Mac：** Finder でそのフォルダを右クリックし、「フォルダに新規ターミナル」を選ぶ（または、ターミナルを開いて `cd フォルダのパス` を実行する）。
@@ -359,7 +359,7 @@ npm start          # サーバーを起動する（http://localhost:3001）
 
 ブラウザもサーバーも使わない、速いテスト。server の API（結合）と、client の関数・ロジック（単体）を検証する。
 
-1. ソースコードのフォルダでターミナルを開く（3.1.4）。
+1. クローンしたリポジトリのルートディレクトリで、ターミナルを開く（3.1.4）。
 2. 次を実行する。
 
 ```bash
@@ -434,7 +434,7 @@ npm run check
 ## 6. ディレクトリ構成
 
 ```
-/（リポジトリのルート。npm workspaces）
+/（クローンしたリポジトリのルートディレクトリ。npm workspaces）
 ├─ package.json / eslint.config.mjs / playwright.config.ts   # 全体の設定
 ├─ start.cmd / start.command / start.sh   # 起動スクリプト（Windows / Mac / Linux）
 ├─ server/                 # API（Express + Prisma + SQLite）
