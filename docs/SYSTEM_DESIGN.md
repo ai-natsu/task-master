@@ -104,8 +104,10 @@ graph LR
 
 | 項目 | 設計 |
 |---|---|
-| 実行環境 | Windows 単一マシン（Node.js LTS） |
-| プロセス | Vite dev server（:5173）と Express（:3001、tsx watch）の 2 プロセス |
+| 実行環境 | Windows / Mac / Linux の単一マシン（Node.js 18 以上、LTS 推奨） |
+| プロセス（開発） | Vite dev server（:5173）と Express（:3001、tsx watch）の 2 プロセス |
+| プロセス（本番・個人利用） | Express（:3001）の **1 プロセス**。ビルド済みの画面（`client/dist`）と API を同じサーバーから配信する（`createApp({ staticDir })`）。`/api` 以外のパスは `index.html` を返し、画面側のルーティングに任せる。別途 Web サーバーは不要 |
+| 起動方法（本番・個人利用） | 起動スクリプト（Windows `start.cmd`、Mac `start.command`、Linux `start.sh`）。依存パッケージのインストール・DB の作成・ビルド・起動・ブラウザの自動オープンを行う。手動では `npm run build` → `npm start` |
 | ネットワーク | すべて `localhost` 内に閉じる。外部公開しない |
 | ポート | 5173（クライアント）/ 3001（API）。`client/vite.config.ts` で `/api/*` を 3001 へプロキシする |
 | DNS/TLS | 使用しない（http://localhost のみ） |

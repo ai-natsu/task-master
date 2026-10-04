@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import express, { type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import projectsRouter from "./routes/projects.js";
@@ -8,7 +9,12 @@ import statusesRouter from "./routes/statuses.js";
 import holidaysRouter from "./routes/holidays.js";
 import { MSG, sendError } from "./errors.js";
 
-export function createApp() {
+export interface AppOptions {
+  /** ビルド済みの画面（client/dist）のフォルダ。指定すると、API と同じサーバーから画面も配信する（本番用）。 */
+  staticDir?: string;
+}
+
+export function createApp(options: AppOptions = {}) {
   const app = express();
 
   app.use(cors());
@@ -22,6 +28,13 @@ export function createApp() {
   app.use("/api/holidays", holidaysRouter);
 
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+  // 本番：ビルド済みの画面を配信する。/api 以外のパス（/projects/xxx など）は、画面側のルーティングに任せるため index.html を返す
+  if (options.staticDir) {
+    const indexHtml = join(options.staticDir, "index.html");
+    app.use(express.static(options.staticDir));
+    app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(indexHtml));
+  }
 
   // 想定外のエラー（本文の JSON が不正、処理中の例外など）も、共通のエラー形式で返す
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
