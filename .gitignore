@@ -81,11 +81,39 @@ pnpm-debug.log*
 tmp/
 .temp/
 
-# OS / editor
+# OS 固有のファイル
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*~
+.directory
+.fuse_hidden*
+.Trash-*
+
+# IDE・エディタ固有のファイル
 .vscode/
 .idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+.fleet/
+.history/
+*.swp
+*.swo
+*.bak
+*.tmp
+*.sakura-backup
 
 # Claude Code（設定・エージェント・スキル・開発者向けメモ）はリポジトリに含めない
 .claude/
