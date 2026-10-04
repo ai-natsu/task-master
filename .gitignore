@@ -28,10 +28,27 @@ htmlcov/
 .ipynb_checkpoints/
 pip-log.txt
 
-# Env & secrets
+# Env & secrets（環境変数・認証情報・鍵・証明書は、リポジトリに含めない）
 .env
 .env.*
 !.env.example
+*.local
+secrets/
+*.secret
+*.secrets
+credentials*.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+.npmrc
+.pypirc
+.netrc
 
 # Database
 *.db
