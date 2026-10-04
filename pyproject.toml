@@ -18,6 +18,17 @@ dev = [
     "nuitka>=2.4",
 ]
 
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# パッケージは app だけ。tests・packaging・docs などを、自動で検出して取り込まないようにする
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["db/schema.sql", "assets/*"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
