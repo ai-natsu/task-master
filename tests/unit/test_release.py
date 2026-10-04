@@ -76,3 +76,55 @@ def test_sample_holiday_csv_can_be_imported_by_the_app(release):
     assert len(rows) == 18
     assert ("2026-01-01", "元日") in rows
     assert all(date.startswith("2026-") for date, _name in rows)
+
+
+@pytest.fixture
+def fake_app(tmp_path):
+    """Nuitka が作る TaskMaster.app の代わり（中に実行ファイルがあるフォルダ）。"""
+    macos = tmp_path / "TaskMaster.app" / "Contents" / "MacOS"
+    macos.mkdir(parents=True)
+    (macos / "TaskMaster").write_bytes(b"fake-mach-o")
+    return tmp_path / "TaskMaster.app"
+
+
+def test_mac_release_folder_has_the_app_and_the_documents(release, fake_app, tmp_path):
+    folder = release.stage_release_mac(fake_app, tmp_path / "stage", "2.0.0")
+    names = sorted(p.name for p in folder.iterdir())
+    assert names == [
+        "LICENSE.txt",
+        "README.txt",
+        "THIRD_PARTY_NOTICES.txt",
+        "TaskMaster.app",
+        "holidays_sample.csv",
+    ]
+    assert (folder / "TaskMaster.app" / "Contents" / "MacOS" / "TaskMaster").exists()
+
+
+def test_mac_readme_has_version_data_location_and_gatekeeper_note(release, fake_app, tmp_path):
+    folder = release.stage_release_mac(fake_app, tmp_path / "stage", "2.0.0")
+    text = (folder / "README.txt").read_bytes().decode("utf-8-sig")
+    assert "TaskMaster 2.0.0（Mac 版）" in text
+    assert "~/Library/Application Support/TaskMaster/taskmaster.db" in text
+    assert "開く" in text  # 初回に「開発元を検証できません」と出たときの開き方
+    assert "\r\n" in text  # メモ帳・テキストエディットで読める
+
+
+def test_missing_mac_app_is_a_clear_error(release, tmp_path):
+    with pytest.raises(FileNotFoundError):
+        release.stage_release_mac(tmp_path / "none.app", tmp_path / "stage", "2.0.0")
+    with pytest.raises(FileNotFoundError):
+        release.find_mac_app(tmp_path)
+
+
+def test_build_exe_command_differs_by_platform():
+    spec = importlib.util.spec_from_file_location(
+        "build_exe", RELEASE_PY.parent / "build_exe.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    windows = " ".join(module.build_command())
+    assert "--onefile" in windows and "--zig" in windows or module.IS_MAC
+    module.IS_MAC = True
+    mac = " ".join(module.build_command())
+    assert "--macos-create-app-bundle" in mac and "icon.icns" in mac
+    assert "--zig" not in mac and "--windows-icon" not in mac

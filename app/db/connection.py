@@ -33,6 +33,8 @@ _PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
 
 def _onefile_parent_dir() -> Path | None:
+    if sys.platform != "win32":
+        return None  # 以下は Windows の API。Mac は onefile ではなく、.app として配布する
     pid_str = os.environ.get("NUITKA_ONEFILE_PARENT")
     if not pid_str:
         return None
@@ -55,6 +57,11 @@ def _onefile_parent_dir() -> Path | None:
 
 
 def get_app_dir() -> Path:
+    if sys.platform == "darwin" and "__compiled__" in globals():
+        # Mac：.app の中には書き込めない（署名も壊れる）ので、利用者のフォルダに保存する
+        data_dir = Path.home() / "Library" / "Application Support" / "TaskMaster"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return data_dir
     onefile_parent_dir = _onefile_parent_dir()
     if onefile_parent_dir is not None:
         return onefile_parent_dir

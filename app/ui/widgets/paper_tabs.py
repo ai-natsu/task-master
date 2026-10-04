@@ -50,7 +50,7 @@ class PaperTabs(tk.Canvas):
     def __init__(self, master, values: list[tuple[str, str]], command, font=None, **kwargs):
         self._values = values
         self._command = command
-        self._font = font or tkfont.Font(family="Yu Gothic UI", size=12)
+        self._font = font or tkfont.Font(family=theme.FONT_FAMILY, size=12)
         self._current = values[0][0] if values else None
         self._images: dict[tuple[str, bool], ImageTk.PhotoImage] = {}
         self._tab_bounds: list[tuple[int, int, str]] = []

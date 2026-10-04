@@ -17,6 +17,7 @@ from app.logic.dnd import plan_row_drop
 from app.logic.due import is_overdue
 from app.logic.tree import build_task_tree, flatten_nodes
 from app.ui import theme
+from app.ui.platform_utils import bind_right_click
 from app.ui.widgets.badges import PRIORITY_COLORS, priority_label
 from app.ui.widgets.confirm_dialog import ask_confirm
 from app.ui.widgets.ellipsis import ellipsize
@@ -123,7 +124,7 @@ class TaskTreeWidget(ctk.CTkFrame):
         self.tree.bind("<Triple-1>", self._on_repeat_press)
         self.tree.bind("<Motion>", self._on_motion)
         self.tree.bind("<Leave>", lambda _e: self._set_hover(None))
-        self.tree.bind("<Button-3>", self._on_right_click)
+        bind_right_click(self.tree, self._on_right_click)
         self.tree.bind("<Configure>", lambda _e: self._redraw_overlays())
         self.tree.bind("<<TreeviewOpen>>", lambda _e: self.after_idle(self._redraw_overlays))
         self.tree.bind("<<TreeviewClose>>", lambda _e: self.after_idle(self._redraw_overlays))

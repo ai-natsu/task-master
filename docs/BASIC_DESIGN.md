@@ -576,7 +576,7 @@ index: projectId / parentId / status / priority / dueDate
 | セキュリティ | ローカル単一ユーザー前提。認証・通信の考慮は対象外 |
 | データの保存 | `taskmaster.db` を exe と同じフォルダ（開発時はリポジトリ直下）に生成。配布物には含まれない |
 | 可用性 | ローカル実行のみ。サーバー公開・複数人の同時利用は対象外 |
-| 対応 OS | Windows。Mac は近日対応予定 |
+| 対応 OS | Windows、Mac |
 
 ---
 
@@ -589,7 +589,7 @@ index: projectId / parentId / status / priority / dueDate
 | データ量 | 個人〜小規模データ量を想定。複数人での同時利用は想定していない |
 | 日付基準 | 期限超過・期限が近い・ガント範囲はローカル日付（実行 PC）基準で計算 |
 | タスク登録・編集画面の項目配置 | 現状は縦一列の並びで改善要望あり（対応方針は未確定、着手前に具体案を確認する） |
-| 対応 OS | Windows のみ。Mac 版は近日対応予定（ビルドは GitHub Actions を想定、動作確認は未実施） |
+| 対応 OS | Windows、Mac（Mac 版は GitHub Actions でビルド。実機での動作確認は、これから） |
 
 ---
 

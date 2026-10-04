@@ -9,7 +9,7 @@ from tkinter import ttk
 
 import customtkinter as ctk
 
-from app.ui import theme
+from app.ui import platform_utils, theme
 from app.ui.dashboard_view import DashboardView
 from app.ui.errors import show_error
 from app.ui.project_view import ProjectView
@@ -66,6 +66,8 @@ class AppWindow(ctk.CTk):
             pass  # ダイアログすら出せない状態（終了処理中など）では何もしない
 
     def _set_icon(self) -> None:
+        if not platform_utils.IS_WINDOWS:
+            return  # .ico は Windows 用。Mac はアプリ本体（.app）のアイコンを使う
         icon_path = Path(__file__).resolve().parent.parent / "assets" / "icon.ico"
         if icon_path.exists():
             try:

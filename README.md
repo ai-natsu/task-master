@@ -38,8 +38,9 @@
   - [6.3 E2E テスト](#63-e2e-テスト)
   - [6.4 静的解析（ruff）](#64-静的解析ruff)
 - [7. ビルド手順](#7-ビルド手順)
-  - [7.1 exe を作る](#71-exe-を作る)
-  - [7.2 配布用の zip を作る](#72-配布用の-zip-を作る)
+  - [7.1 exe を作る（Windows）](#71-exe-を作るwindows)
+  - [7.2 配布用の zip を作る（Windows）](#72-配布用の-zip-を作るwindows)
+  - [7.3 アプリ（TaskMaster.app）を作る（Mac）](#73-アプリtaskmasterappを作るmac)
 - [8. ディレクトリ構成](#8-ディレクトリ構成)
 - [9. 設計書](#9-設計書)
 - [10. ライセンス](#10-ライセンス)
@@ -47,8 +48,6 @@
   - [10.2 商業ライセンス（企業・組織での本格運用・有料）](#102-商業ライセンス企業組織での本格運用有料)
 
 ## 1. 画面説明
-
-詳しい仕様は [基本設計書](docs/BASIC_DESIGN.md)、クリック・ドラッグ・マウスオーバーなどの操作は [操作仕様書](docs/OPERATION_SPEC.md) を参照。
 
 ### 1.1 共通レイアウト
 
@@ -113,35 +112,49 @@
 | 項目 | 採用技術 |
 |---|---|
 | 言語 | Python 3.11 以上 |
-| 画面 | CustomTkinter（Tk）。ツリーは `ttk.Treeview`、ガントチャートは `tk.Canvas` |
+| 画面 | CustomTkinter（Tk） |
 | データベース | SQLite（標準ライブラリの `sqlite3`。ファイルは `taskmaster.db`） |
-| 主なライブラリ | customtkinter、charset-normalizer（CSV の文字コード判定）、Pillow |
+| 主なライブラリ | customtkinter、charset-normalizer、Pillow |
 | テスト | pytest（単体・結合・UI 部品・E2E） |
 | 静的解析 | ruff |
-| 配布 | Nuitka（Python を含む単一の `TaskMaster.exe` を作る） |
+| 配布 | Nuitka |
 
 ### 2.2 動作要件
 
-- Windows（Mac は近日対応予定）
-- 画面を開ける環境（ディスプレイ）
-- 配布版（`TaskMaster.exe`）は、Python などのインストールが不要。ソースから動かす場合は、Python 3.11 以上が必要（4 章）。
+- Windows 10 / 11、または Mac（macOS 12 以降）
+- 配布版は、Python などのインストールが不要。ソースから動かす場合は、Python 3.11 以上が必要（4 章）。
 
 ## 3. 配布とデータの保存場所
 
 ### 3.1 配布方式
-- 配布は **zip**。解凍すると `TaskMaster/` フォルダができ、その中の `TaskMaster.exe` をダブルクリックするだけで起動する（インストール不要）。
-- zip の中身：`TaskMaster.exe`、利用者向けの `README.txt`（起動方法・データの保存場所・バックアップ方法）、`THIRD_PARTY_NOTICES.txt`（利用ライブラリのライセンス表記）、祝日 CSV の例 `holidays_sample.csv`。
-- 対応 OS は **Windows**。Mac 版は近日対応予定。
+
+- 配布は **zip**。OS ごとに、別の zip がある。
+  - **Windows：** 解凍すると `TaskMaster/` フォルダができ、その中の `TaskMaster.exe` をダブルクリックするだけで起動する（インストール不要）。
+  - **Mac：** 解凍すると `TaskMaster/` フォルダができ、その中の `TaskMaster.app` をダブルクリックするだけで起動する（インストール不要）。
+- zip の中身：
+  - `TaskMaster.exe`（Windows）／ `TaskMaster.app`（Mac）
+  - `README.txt`（利用者向け。起動方法・データの保存場所・バックアップ方法）
+  - `LICENSE.txt`（TaskMaster のライセンス）
+  - `THIRD_PARTY_NOTICES.txt`（利用ライブラリのライセンス表記）
+  - `holidays_sample.csv`（祝日 CSV の例）
 
 ### 3.2 データの保存場所
-- **データは `TaskMaster.exe` と同じフォルダの `taskmaster.db` に保存されます。**（初回起動時に自動で作成される。配布物には含まれない）
+
+データは、`taskmaster.db` に保存される。初回起動時に、次の場所に自動で作成される。
+
+| OS | 保存場所 |
+|---|---|
+| Windows | `TaskMaster.exe` と同じフォルダ |
+| Mac | `~/Library/Application Support/TaskMaster/`（Finder で「移動」→「フォルダへ移動…」に、このパスを入力すると開ける） |
+
 - バックアップや別の PC への移行は、アプリを終了してから `taskmaster.db` をコピーするだけでよい。
-- `taskmaster.db` を削除するとデータがすべて消える。アプリを入れ替えるときは、`taskmaster.db` を残したまま `TaskMaster.exe` だけを差し替える。
-- Program Files など書き込みできない場所には置かないこと（データを保存できず起動に失敗する）。ドキュメントやデスクトップなど、書き込める場所に置く。
+- `taskmaster.db` を削除するとデータがすべて消える。
+- アプリを入れ替えるときは、Windows は `taskmaster.db` を残したまま `TaskMaster.exe` だけを差し替える。Mac は `TaskMaster.app` だけを差し替える（データは別の場所にあるので、消えない）。
+- （Windows）`Program Files` など書き込みできない場所には置かないこと（データを保存できず起動に失敗する）。
 
 ## 4. 始め方（開発者向け）
 
-ソースコードから動かす方法を示す。配布版（`TaskMaster.exe`）を使う場合は、この章は不要（3 章を参照）。
+ソースコードから動かす方法を示す。配布版を使う場合は、この章は不要（3 章を参照）。
 
 ### 4.1 インストール手順
 
@@ -149,10 +162,12 @@
 
 | ソフト | 内容 | 備考 |
 |---|---|---|
-| Python 3.11 以上（Windows） | TaskMaster を動かすための実行環境 | **pip（ライブラリの管理ツール）と、画面の部品（Tk）は、Python に同梱される**ので、別にインストールする必要はない |
+| Python 3.11 以上（Windows / Mac） | TaskMaster を動かすための実行環境 | **pip（ライブラリの管理ツール）と、画面の部品（Tk）は、Python に同梱される**ので、別にインストールする必要はない |
 | Git（任意） | ソースコードの取得に使う | ZIP でダウンロードする場合は不要 |
 
-#### 4.1.2 Python のインストール（Windows）
+#### 4.1.2 Python のインストール
+
+**Windows**
 
 1. https://www.python.org/downloads/ を開き、「Download Python 3.x」のボタンから、Windows 用のインストーラーをダウンロードする。
 2. ダウンロードしたファイルを実行する。最初の画面で、**「Add python.exe to PATH」に必ずチェックを入れて**から、「Install Now」を押す。
@@ -173,7 +188,11 @@ python --version      # 例：Python 3.12.7
 pip --version
 ```
 
-Mac 版は、近日対応予定。
+**Mac**
+
+1. https://www.python.org/downloads/ から、macOS 用のインストーラー（`.pkg`）をダウンロードして実行する（Tk も入る）。
+2. または、Homebrew を使っている場合：`brew install python@3.12 python-tk@3.12`
+3. インストール後は、**ターミナルを開き直す**。確認は、`python3 --version` と `pip3 --version`（Mac では、`python` の代わりに `python3`、`pip` の代わりに `pip3` と入力する）。
 
 #### 4.1.3 ソースコードの入手
 
@@ -193,7 +212,8 @@ git checkout develop/v2
 
 以降のコマンドは、**クローンしたリポジトリのルートディレクトリ**（`pyproject.toml` と `README.md` があるフォルダ。ZIP でダウンロードした場合は、解凍したフォルダ）で、ターミナルを開いて実行する。
 
-エクスプローラーでそのフォルダを開き、アドレスバーに `powershell` と入力して Enter を押す。または、フォルダの何もない所を右クリックして「ターミナルで開く」を選ぶ。
+- **Windows：** エクスプローラーでそのフォルダを開き、アドレスバーに `powershell` と入力して Enter を押す。または、フォルダの何もない所を右クリックして「ターミナルで開く」を選ぶ。
+- **Mac：** Finder でそのフォルダを右クリックし、「フォルダに新規ターミナル」を選ぶ（または、ターミナルを開いて `cd フォルダのパス` を実行する）。
 
 #### 4.1.5 ライブラリのインストール（初回だけ）
 
@@ -201,14 +221,15 @@ git checkout develop/v2
 
 ```bash
 cd <リポジトリのルートフォルダ>
-python -m venv .venv                 # 仮想環境（この README の手順専用の、Python のライブラリ置き場）を作る
-.venv\Scripts\activate               # 仮想環境を有効にする（PowerShell / コマンドプロンプト）
+python -m venv .venv                 # 仮想環境（この README の手順専用の、Python のライブラリ置き場）を作る（Mac は python3）
+.venv\Scripts\activate               # Windows：仮想環境を有効にする（PowerShell / コマンドプロンプト）
+source .venv/bin/activate            # Mac：仮想環境を有効にする
 pip install -e .                     # TaskMaster と、必要なライブラリをインストールする
 ```
 
 テストやビルドも行う場合は、最後の行を `pip install -e .[dev]` にする（pytest・ruff・Nuitka などの開発用ツールも入る）。
 
-仮想環境を有効にすると、行頭に `(.venv)` と表示される。**新しくターミナルを開いたときは、コマンドを実行する前に、仮想環境を有効にする**（`.venv\Scripts\activate`）。
+仮想環境を有効にすると、行頭に `(.venv)` と表示される。**新しくターミナルを開いたときは、コマンドを実行する前に、仮想環境を有効にする**（Windows は `.venv\Scripts\activate`、Mac は `source .venv/bin/activate`）。
 
 ### 4.2 起動手順
 
@@ -218,7 +239,8 @@ pip install -e .                     # TaskMaster と、必要なライブラリ
 
 ```bash
 cd <リポジトリのルートフォルダ>
-.venv\Scripts\activate
+.venv\Scripts\activate               # Windows
+source .venv/bin/activate            # Mac
 python -m app.main
 ```
 
@@ -231,13 +253,14 @@ TaskMaster のウィンドウを閉じる。
 #### 4.2.3 初期のデータとサンプルデータ
 
 - **初期のデータベースは空**である（プロジェクト・タスク・タグ・祝日は 0 件）。ステータス（未着手・進行中・完了・取下げ）の 4 件だけが、起動時に自動で入る（ステータスが 1 件も無いときだけ）。
-- 配布版（`TaskMaster.exe`）も、初回起動時に同じ状態のデータベースを作る。
+- 配布版も、初回起動時に同じ状態のデータベースを作る。
 
 サンプルデータを入れたい場合は、以下のコマンドを実行する（既存のデータは全削除される。実際のデータが入っているデータベースでは実行しない）。
 
 ```bash
 cd <リポジトリのルートフォルダ>
-.venv\Scripts\activate
+.venv\Scripts\activate               # Windows
+source .venv/bin/activate            # Mac
 python seed.py
 ```
 
@@ -248,10 +271,10 @@ python seed.py
 
 | 症状 | 対処 |
 |---|---|
-| Python が見つからない（`python --version` でエラーになる） | Python をインストールする（4.1.2）。**「Add python.exe to PATH」にチェックを入れる**。インストール後は、ターミナルを開き直す |
+| Python が見つからない（`python --version`（Mac は `python3 --version`）でエラーになる） | Python をインストールする（4.1.2）。Windows は、インストーラーの **「Add python.exe to PATH」にチェックを入れる**。インストール後は、ターミナルを開き直す |
 | `ModuleNotFoundError` | ライブラリが入っていない、または仮想環境が有効でない。4.1.5 の手順で仮想環境を有効にして、`pip install -e .` を実行する |
-| ウィンドウが開かない・文字が化ける | Python 3.11 以上か、Windows か確認する。リモート接続など、画面を表示できない環境では動かない |
-| データを初期状態に戻したい | TaskMaster を終了してから、エクスプローラーで、リポジトリ直下（配布版は `TaskMaster.exe` と同じフォルダ）の `taskmaster.db` を削除する。次に起動すると、空のデータベースが作られる |
+| ウィンドウが開かない・文字が化ける | Python 3.11 以上か、Windows または Mac か確認する。リモート接続など、画面を表示できない環境では動かない |
+| データを初期状態に戻したい | TaskMaster を終了してから、`taskmaster.db` を削除する。場所は、ソースから動かしている場合はリポジトリ直下、配布版は 3.2 の表のとおり。次に起動すると、空のデータベースが作られる |
 | サンプルデータを入れたい | 4.2.3 のコマンドを実行する（既存のデータは全削除される） |
 
 #### 4.2.5 起動しても、エラーが出る・データが表示されないとき
@@ -260,14 +283,14 @@ python seed.py
 
 **手順 1：データベースのファイルがあるか確認する**
 
-1. エクスプローラーで、データベースのファイル **`taskmaster.db`** がある場所を開く。ソースから動かしている場合は**リポジトリのルートフォルダ**、配布版は **`TaskMaster.exe` と同じフォルダ**である。
+1. ファイルを見るアプリ（Windows はエクスプローラー、Mac は Finder）で、データベースのファイル **`taskmaster.db`** がある場所を開く。ソースから動かしている場合は**リポジトリのルートフォルダ**、配布版は 3.2 の表の場所である。
 2. `taskmaster.db` があるか確認する。
    - **ある場合：** 手順 3 に進む。
    - **ない場合：** データベースがまだ作られていない。アプリを**もう一度起動する**と、自動で作られる。作られない場合は、手順 2 に進む。
 
-**手順 2：書き込める場所に置いているか確認する**
+**手順 2：書き込める場所に置いているか確認する（Windows）**
 
-配布版を `Program Files` など、書き込みできない場所に置くと、データベースを作れず、起動に失敗する。**デスクトップやドキュメントなど、書き込めるフォルダ**に、`TaskMaster.exe` を移して、もう一度起動する。
+**（Windows のみ）** 配布版を `Program Files` など、書き込みできない場所に置くと、データベースを作れず、起動に失敗する。書き込めるフォルダに `TaskMaster.exe` を移して、もう一度起動する。
 
 **手順 3：エラーではなく、データが空なだけでないか確認する**
 
@@ -350,7 +373,8 @@ python seed.py
 
 ```bash
 cd <リポジトリのルートフォルダ>
-.venv\Scripts\activate
+.venv\Scripts\activate               # Windows
+source .venv/bin/activate            # Mac
 python -m pytest -m "not gui and not e2e"
 ```
 
@@ -372,7 +396,8 @@ python -m pytest -m "not gui and not e2e"
 
 ```bash
 cd <リポジトリのルートフォルダ>
-.venv\Scripts\activate
+.venv\Scripts\activate               # Windows
+source .venv/bin/activate            # Mac
 python -m pytest tests/gui
 ```
 
@@ -387,7 +412,8 @@ python -m pytest tests/gui
 
 ```bash
 cd <リポジトリのルートフォルダ>
-.venv\Scripts\activate
+.venv\Scripts\activate               # Windows
+source .venv/bin/activate            # Mac
 python -m pytest tests/e2e
 ```
 
@@ -402,7 +428,8 @@ E2E は、一時ファイルのデータベースを使い、`taskmaster.db` に
 
 ```bash
 cd <リポジトリのルートフォルダ>
-.venv\Scripts\activate
+.venv\Scripts\activate               # Windows
+source .venv/bin/activate            # Mac
 python -m ruff check .
 ```
 
@@ -410,26 +437,28 @@ python -m ruff check .
 
 ## 7. ビルド手順
 
-配布用の `TaskMaster.exe` と、配布用の zip を作る。
+配布用のアプリと zip の作り方を示す。Windows 用は 7.1・7.2、Mac 用は 7.3。
 
 **実行する場所：** クローンしたリポジトリのルートディレクトリ（4.1.4）で、仮想環境を有効にして実行する。開発用のツール（Nuitka）が必要なので、`pip install -e .[dev]`（4.1.5）が済んでいること。
 
-### 7.1 exe を作る
+### 7.1 exe を作る（Windows）
 
 ```bash
 cd <リポジトリのルートフォルダ>
-.venv\Scripts\activate
+.venv\Scripts\activate               # Windows
+source .venv/bin/activate            # Mac
 python packaging/build_exe.py
 ```
 
 - 出力：`packaging/dist/TaskMaster.exe`（Git には含まれない）。
 - 初回は、C コンパイラ（zig）を自動でダウンロードするため、数分かかる。
 
-### 7.2 配布用の zip を作る
+### 7.2 配布用の zip を作る（Windows）
 
 ```bash
 cd <リポジトリのルートフォルダ>
-.venv\Scripts\activate
+.venv\Scripts\activate               # Windows
+source .venv/bin/activate            # Mac
 python packaging/build_zip.py
 ```
 
@@ -438,6 +467,15 @@ python packaging/build_zip.py
 - ビルド済みの exe を使い、zip だけ作り直す場合は、`python packaging/build_zip.py --skip-build`。
 
 詳細は、[システム設計書](docs/SYSTEM_DESIGN.md) を参照。
+
+### 7.3 アプリ（TaskMaster.app）を作る（Mac）
+
+Mac 用のアプリは、**Mac 上でしか作れない**（Windows からは作れない）。GitHub の macOS 環境で、自動で作る。
+
+1. GitHub のリポジトリのページで、「Actions」→「Build macOS app」→「Run workflow」を押す（`v` から始まるタグ、例：`v2.0.0` を push しても動く）。
+2. 終わると、その実行の画面の下の「Artifacts」に、`TaskMaster-mac`（`TaskMaster-<版>-mac.zip`）ができる。ダウンロードして使う。
+
+手元の Mac で作る場合は、4.1 のインストールの後に、`python3 packaging/build_zip.py` を実行する（出力：`packaging/dist/TaskMaster-<版>-mac.zip`）。
 
 ## 8. ディレクトリ構成
 
@@ -457,7 +495,7 @@ python packaging/build_zip.py
 │  ├─ integration/       # 結合テスト（データ層 + SQLite）
 │  ├─ gui/               # UI 部品のテスト
 │  └─ e2e/               # 画面遷移の E2E
-├─ packaging/            # exe・配布 zip の作成（build_exe.py / build_zip.py など）
+├─ packaging/            # exe・.app・配布 zip の作成（build_exe.py / build_zip.py など）
 ├─ docs/                 # 設計書
 ├─ seed.py               # サンプルデータの投入（既存データを全削除する）
 └─ pyproject.toml        # プロジェクト設定（依存ライブラリ、ruff、pytest）

@@ -9,6 +9,7 @@
 
 import argparse
 import importlib.util
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -29,7 +30,8 @@ def main() -> None:
 
     if not args.skip_build:
         _load("build_exe").main()
-    zip_path = _load("release").build_release()
+    release = _load("release")
+    zip_path = release.build_release_mac() if sys.platform == "darwin" else release.build_release()
     print(f"作成しました: {zip_path}")
 
 
