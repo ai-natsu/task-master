@@ -155,6 +155,12 @@ TRANSLATIONS: dict[str, str] = {
     ),
     "タグが既に存在します": "Tag already exists",
     "{field}を入力してください": "{field} is required.",
+    "入力内容を確認してください（{field}は1〜{max}文字）": (
+        "Please check your input ({field} must be 1-{max} characters)"
+    ),
+    "入力内容を確認してください（{field}は{max}文字以内）": (
+        "Please check your input ({field} must be {max} characters or fewer)"
+    ),
     "プロジェクトをアーカイブ": "Archive project",
     "プロジェクトを復元": "Restore project",
     (

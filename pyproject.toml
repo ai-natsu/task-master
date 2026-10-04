@@ -27,3 +27,7 @@ select = ["E", "F", "I", "UP"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+markers = [
+    "gui: Tk の画面部品を実際に描画して検証するテスト（tests/gui）。画面を開けない環境ではスキップ",
+    "e2e: アプリ全体を実際に動かして、画面遷移・操作を検証するテスト（tests/e2e）。画面を開けない環境ではスキップ",
+]

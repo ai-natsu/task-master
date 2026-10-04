@@ -4,6 +4,7 @@ import sqlite3
 
 from app.db.connection import generate_id, now_iso
 from app.db.errors import CycleError, NotFoundError, ValidationError
+from app.db.validation import check_text
 from app.models import Tag, Task
 
 _UNSET = object()
@@ -115,6 +116,8 @@ def create_task(
     due_date: str | None = None,
     tag_ids: list[str] | None = None,
 ) -> Task:
+    check_text(title, "タイトル", "task_title")
+    check_text(description, "詳細", "task_description", required=False)
     if parent_id is not None:
         parent = conn.execute('SELECT id FROM "Task" WHERE id = ?', (parent_id,)).fetchone()
         if parent is None:
@@ -172,6 +175,9 @@ def update_task(
     due_date: object = _UNSET,
     tag_ids: list[str] | None = None,
 ) -> Task:
+    check_text(title, "タイトル", "task_title")
+    if isinstance(description, str):
+        check_text(description, "詳細", "task_description", required=False)
     if get_task(conn, task_id) is None:
         raise NotFoundError("タスクが見つかりません")
 

@@ -32,6 +32,7 @@ from app.ui.widgets.calendar_style import (
     apply_weekend_holiday_styles,
 )
 from app.ui.widgets.confirm_dialog import ask_confirm
+from app.ui.widgets.limits import limit_entry
 
 
 class SettingsView(ctk.CTkScrollableFrame):
@@ -91,6 +92,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         )
         self.new_color_btn.pack(side="left", padx=(0, 8))
         self.new_label_entry = ctk.CTkEntry(add_row, placeholder_text=t("新しいステータス名"))
+        limit_entry(self.new_label_entry, "status_label")
         self.new_label_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self.new_label_entry.bind("<Return>", lambda _e: self._add_status())
         ctk.CTkButton(add_row, text=t("追加"), width=60, command=self._add_status).pack(
@@ -145,6 +147,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         self.new_holiday_name_entry = ctk.CTkEntry(
             holiday_add_row, placeholder_text=t("新しい祝日名")
         )
+        limit_entry(self.new_holiday_name_entry, "holiday_name")
         self.new_holiday_name_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self.new_holiday_name_entry.bind("<Return>", lambda _e: self._add_holiday())
         ctk.CTkButton(
@@ -191,6 +194,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         )
         self.new_tag_color_btn.pack(side="left", padx=(0, 8))
         self.new_tag_entry = ctk.CTkEntry(tag_add_row, placeholder_text=t("新しいタグ名"))
+        limit_entry(self.new_tag_entry, "tag_name")
         self.new_tag_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
         self.new_tag_entry.bind("<Return>", lambda _e: self._add_tag())
         ctk.CTkButton(tag_add_row, text=t("追加"), width=60, command=self._add_tag).pack(
@@ -247,6 +251,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         row.color_btn.pack(side="left", padx=(0, 8))
 
         row.entry = ctk.CTkEntry(row)
+        limit_entry(row.entry, "status_label")
         row.entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
         row.entry.bind("<Return>", lambda _e: self._rename(status_id, row.entry))
         row.entry.bind("<FocusOut>", lambda _e: self._rename(status_id, row.entry))
@@ -357,6 +362,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         row.date_label.pack(side="left")
 
         row.name_entry = ctk.CTkEntry(row)
+        limit_entry(row.name_entry, "holiday_name")
         row.name_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
         row.name_entry.bind("<Return>", lambda _e: self._rename_holiday(holiday_id, row.name_entry))
         row.name_entry.bind(
@@ -452,6 +458,7 @@ class SettingsView(ctk.CTkScrollableFrame):
         row.color_btn.pack(side="left", padx=(0, 8))
 
         row.entry = ctk.CTkEntry(row)
+        limit_entry(row.entry, "tag_name")
         row.entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
         row.entry.bind("<Return>", lambda _e: self._rename_tag(tag_id, row.entry))
         row.entry.bind("<FocusOut>", lambda _e: self._rename_tag(tag_id, row.entry))

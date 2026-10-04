@@ -13,6 +13,7 @@ from charset_normalizer import from_bytes as detect_charset
 
 from app.db.connection import generate_id
 from app.db.errors import NotFoundError, ValidationError
+from app.db.validation import check_text
 from app.models import Holiday
 
 
@@ -27,6 +28,7 @@ def list_holidays(conn: sqlite3.Connection) -> list[Holiday]:
 
 def upsert_holiday(conn: sqlite3.Connection, date: str, name: str) -> Holiday:
     """日付が一致する行があれば名称を更新、無ければ新規作成する。"""
+    check_text(name, "名称", "holiday_name")
     with conn:
         conn.execute(
             """
@@ -89,6 +91,8 @@ def parse_holiday_csv(raw_bytes: bytes) -> list[tuple[str, str]]:
 
 
 def bulk_upsert_holidays(conn: sqlite3.Connection, rows: list[tuple[str, str]]) -> int:
+    for _date, name in rows:
+        check_text(name, "名称", "holiday_name")
     with conn:
         conn.executemany(
             """

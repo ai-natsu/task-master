@@ -4,6 +4,7 @@ import sqlite3
 
 from app.db.connection import generate_id
 from app.db.errors import ConflictError, NotFoundError
+from app.db.validation import check_text
 from app.models import Tag
 
 
@@ -17,6 +18,7 @@ def list_tags(conn: sqlite3.Connection) -> list[Tag]:
 
 
 def create_tag(conn: sqlite3.Connection, name: str, color: str | None = None) -> Tag:
+    check_text(name, "名前", "tag_name")
     tag_id = generate_id()
     try:
         with conn:
@@ -33,6 +35,7 @@ def create_tag(conn: sqlite3.Connection, name: str, color: str | None = None) ->
 def update_tag(
     conn: sqlite3.Connection, tag_id: str, name: str | None = None, color: str | None = None
 ) -> Tag:
+    check_text(name, "名前", "tag_name")
     row = conn.execute('SELECT * FROM "Tag" WHERE id = ?', (tag_id,)).fetchone()
     if row is None:
         raise NotFoundError("タグが見つかりません")
