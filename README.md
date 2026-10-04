@@ -8,7 +8,6 @@
 - [技術要件](#技術要件)
 - [始め方](#始め方)
 - [使い方](#使い方)
-- [テスト](#テスト)
 - [ディレクトリ構成](#ディレクトリ構成)
 - [設計書](#設計書)
 
@@ -238,29 +237,6 @@ cd server && npm start                       # API サーバーを起動（node 
 - プロジェクト詳細画面右上の「統計を表示」で、そのプロジェクトに絞った完了率・期限超過件数などを表示
 - サイドバーの「ダッシュボード」では、全プロジェクト横断の統計と、期限超過／期限が近いタスクの一覧を確認できる
 
-## テスト
-
-単体・結合は **Vitest**、UI 部品は **Playwright CT**（Component Testing）、E2E は **Playwright**。3 つのスクリプトは分離している。詳細な方針とケース一覧は [docs/TEST_DESIGN.md](docs/TEST_DESIGN.md)。
-
-```bash
-npm test           # Vitest（server の単体・結合 + client の関数・ロジックの単体）
-npm run test:ct    # Playwright CT（UI 部品を実際のブラウザで描画して検証）
-npm run test:e2e   # Playwright E2E（専用 DB で、サーバーと画面を自動で起動する）
-```
-
-| 種類 | 場所 | 内容 |
-|---|---|---|
-| 単体テスト（client） | `client/src/` 内、対象のソースの隣（`*.test.ts`） | `utils/`（ツリー・ドラッグ判定・期限・ガントなど）、`i18n`、フォーム値の変換 |
-| UI 部品テスト（client） | `client/src/components/` 内、対象のソースの隣（`*.test.tsx`） | Playwright CT。バッジ・フィルタ・統計・フォーム・確認ダイアログの表示と操作、入力値のチェック（必須・文字数の上限）（API は `page.route` で固定値に差し替える） |
-| 単体テスト（server） | `server/tests/unit/` | zod スキーマの境界値 |
-| 結合テスト（server） | `server/tests/integration/` | Supertest で API を検証（専用 DB `server/test.db` を各テスト前にリセット）。循環参照・統計（isDone 駆動）・アーカイブ除外・ステータス削除制約・エラー応答・配線（`app.test.ts`） |
-| E2E | `e2e/`（ルート直下） | Playwright。専用 DB `server/e2e.db` で、プロジェクト作成→サブタスク、カンバンのドラッグ、ステータス追加/削除制約、アーカイブ/復元（確認ダイアログ） |
-
-- E2E と UI 部品テストは、初回のみ `npx playwright install chromium` が必要。
-- 拡張子で振り分ける：`*.test.ts` は Vitest、`*.test.tsx` は Playwright CT、`*.spec.ts`（`e2e/`）は E2E。
-- いずれのテストも開発用 `dev.db` には触れない。
-- テスト用の共通部品：server は `server/tests/helpers/`（DB の初期化・テストデータ作成）、client は `client/src/test/`（`factories.ts`、CT 用の `ct.ts`）。
-
 ## ディレクトリ構成
 
 ```
@@ -300,5 +276,5 @@ npm run test:e2e   # Playwright E2E（専用 DB で、サーバーと画面を�
 | [画面設計書](docs/SCREEN_DESIGN.md) | 画面のレイアウトと項目 |
 | [操作仕様書](docs/OPERATION_SPEC.md) | クリック・ドラッグ・マウスオーバーの操作 |
 | [システム設計書](docs/SYSTEM_DESIGN.md) | アーキテクチャ・構成・セキュリティ・運用 |
-| [テスト設計書](docs/TEST_DESIGN.md) | テストの方針・種類・ケース |
+| [テスト設計書](docs/TEST_DESIGN.md) | **テストの実行方法**・種類と置き場所・方針・ケース |
 | [静的解析](docs/STATIC_ANALYSIS.md) | ESLint の方針・設定 |

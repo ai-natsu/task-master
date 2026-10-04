@@ -26,6 +26,19 @@ npm run test:e2e   # Playwright E2E（server/e2e.db を自動初期化して起�
 
 初回のみ `npx playwright install chromium` が必要。ユニットは `server/test.db`、E2E は `server/e2e.db` を使い、開発用 `dev.db` には触れない。
 
+**テストの種類と置き場所**
+
+| 種類 | 場所 | 内容 |
+|---|---|---|
+| 単体テスト（client） | `client/src/` 内、対象のソースの隣（`*.test.ts`） | `utils/`（ツリー・ドラッグ判定・期限・ガントなど）、`i18n`、フォーム値の変換 |
+| UI 部品テスト（client） | `client/src/components/` 内、対象のソースの隣（`*.test.tsx`） | Playwright CT。バッジ・フィルタ・統計・フォーム・確認ダイアログの表示と操作、入力値のチェック（必須・文字数の上限）。API は `page.route` で固定値に差し替える |
+| 単体テスト（server） | `server/tests/unit/` | zod スキーマの境界値 |
+| 結合テスト（server） | `server/tests/integration/` | Supertest で API を検証（専用 DB `server/test.db` を各テスト前にリセット）。循環参照・統計（isDone 駆動）・アーカイブ除外・ステータス削除制約・エラー応答・配線（`app.test.ts`） |
+| E2E | `e2e/`（ルート直下） | Playwright。専用 DB `server/e2e.db` で、画面遷移（画面遷移表 No.1〜12）、プロジェクト作成→サブタスク、カンバンのドラッグ、ステータス追加/削除制約、アーカイブ/復元（確認ダイアログ）、言語の保持 |
+
+- **拡張子で振り分ける**：`*.test.ts` は Vitest、`*.test.tsx` は Playwright CT、`*.spec.ts`（`e2e/`）は E2E。
+- **テスト用の共通部品**：server は `server/tests/helpers/`（DB の初期化・テストデータ作成）、client は `client/src/test/`（`factories.ts`、CT 用の `ct.ts`）。
+
 <a id="sec-1"></a>
 
 ## 1. テスト方針
@@ -39,7 +52,7 @@ npm run test:e2e   # Playwright E2E（server/e2e.db を自動初期化して起�
 |---|---|---|---|
 | ユニット（純粋関数） | `client/src/utils/{tree,dnd,gantt}.ts`、`server/src/schemas.ts` — 副作用のないロジック | 変換・計算・検証規則の正しさを高速に検証 | [§3](#sec-3) |
 | API 統合 | `server/src/routes/*.ts` + Prisma + テスト用 SQLite（`server/tests/integration/`） | DB の挙動込みでしか守れないもの（制約・カスケード・集計・配線）を検証 | [§2](#sec-2) |
-| コンポーネント | `client/src/components`・`pages` | API をモックし、描画とユーザー操作を検証 | [§4](#sec-4) |
+| UI 部品（Playwright CT） | `client/src/components`・`pages` | 実ブラウザで部品を描画し、API を固定値に差し替えて、表示とユーザー操作・入力チェックを検証 | [§4](#sec-4) |
 | E2E | 実サーバー + 実ブラウザ | 主要フローが通しで動くことを検証 | [§5](#sec-5) |
 
 各レイヤーをどの順で固めるか（回帰が致命的な箇所の優先度）は [§6 優先度と網羅の考え方](#sec-6) にまとめる。

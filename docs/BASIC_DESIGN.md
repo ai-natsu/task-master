@@ -33,7 +33,7 @@ TaskMaster のクライアント（React SPA）・サーバー（Express API）�
 | `docs/OPERATION_SPEC.md` | 操作仕様（クリック・ドラッグ・マウスオーバー。V1/V2 共通） |
 | `docs/SCREEN_DESIGN.md` | 画面設計詳細（レイアウト・入出力項目一覧・画面アクション定義） |
 | `docs/SYSTEM_DESIGN.md` | システム方式・非機能設計（アーキテクチャ／インフラ／セキュリティ／性能／運用。フェーズ1・2の段階設計） |
-| `docs/TEST_DESIGN.md` | テスト方針・ケース |
+| `docs/TEST_DESIGN.md` | テストの実行方法・種類と置き場所・方針・ケース |
 | `docs/STATIC_ANALYSIS.md` | 静的解析の方針 |
 | `README.md` | 全体像・始め方（インストール手順・起動手順） |
 
