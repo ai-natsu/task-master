@@ -34,7 +34,13 @@ packaging/dist/
 *.db-journal
 
 # Logs
+logs/
 *.log
+
+# Caches（ツールが自動で作る一時ファイル）
+.cache/
+tmp/
+.temp/
 
 # OS / editor
 .DS_Store
