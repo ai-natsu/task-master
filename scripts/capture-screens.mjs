@@ -37,7 +37,7 @@ const run = async () => {
   // SCR-01 ダッシュボード
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
   await page.getByText("ダッシュボード", { exact: true }).first().waitFor();
-  await shot(page, "scr-01-dashboard");
+  await shot(page, "scr-01-dashboard", { fullPage: true });
 
   // COM-01 サイドバー（左カラムだけを切り出し）
   await shot(page, "com-01-sidebar", { clip: { x: 0, y: 0, width: 224, height: 860 } });
@@ -82,10 +82,22 @@ const run = async () => {
   await shot(page, "com-02-confirm-dialog");
   await page.getByRole("button", { name: "キャンセル" }).click();
 
-  // SCR-04 設定
+  // COM-03 エラーダイアログ（ステータス変更の保存を 500 で失敗させて表示する。DB は変更されない）
+  await page.route("**/api/tasks/*", (route) =>
+    route.request().method() === "PATCH"
+      ? route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "予期しないエラーが発生しました。もう一度お試しください" }) })
+      : route.continue()
+  );
+  await page.locator("[data-row-id] select").first().selectOption({ index: 1 });
+  await page.getByRole("alertdialog").waitFor();
+  await shot(page, "com-03-error-dialog");
+  await page.getByRole("button", { name: "OK" }).click();
+  await page.unroute("**/api/tasks/*");
+
+  // SCR-04 設定（ステータス・祝日・タグ・言語の全体）
   await page.goto(`${BASE}/settings`, { waitUntil: "networkidle" });
   await page.getByText("ステータス設定", { exact: true }).waitFor();
-  await shot(page, "scr-04-settings");
+  await shot(page, "scr-04-settings", { fullPage: true });
 
   await browser.close();
   console.log("done →", OUT);

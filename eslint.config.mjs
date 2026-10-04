@@ -84,6 +84,11 @@ export default tseslint.config(
     files: ["scripts/**/*.mjs"],
     languageOptions: { globals: { console: "readonly", process: "readonly", fetch: "readonly" } },
   },
+  // scripts/wireframes/（ブラウザで開く図の部品）
+  {
+    files: ["scripts/wireframes/*.js"],
+    languageOptions: { globals: { window: "readonly", document: "readonly" } },
+  },
 
   // ── 共通の品質ルール ──────────────────────────────
   {

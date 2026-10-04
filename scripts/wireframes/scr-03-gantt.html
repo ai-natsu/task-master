@@ -1,0 +1,49 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+.g { border:1px solid #cbd5e1; border-radius:10px; background:#fff; margin-top:14px; position:relative }
+.gh { display:flex; border-bottom:1px solid #e2e8f0; font-size:10px; color:#94a3b8 }
+.lab { width:200px; flex-shrink:0; border-right:1px solid #e2e8f0; background:#fff; padding:6px 10px; position:relative }
+.gr { display:flex; height:34px; border-bottom:1px solid #f1f5f9; position:relative }
+.gr .lab { display:flex; align-items:center; gap:6px; padding:0 10px; font-size:11.5px }
+.cells { position:relative; display:flex }
+.cell { width:25px; flex-shrink:0; text-align:center; padding:4px 0; border-right:1px solid rgba(148,163,184,.18) }
+.sun { background:#fef2f2; color:#f87171 } .sat { background:#eff6ff; color:#60a5fa } .today { background:#fef3c7; color:#b45309; font-weight:700 }
+.gbar { position:absolute; top:9px; height:15px; border-radius:999px; box-shadow:0 1px 2px rgba(0,0,0,.2) }
+.tline { position:absolute; top:0; bottom:0; width:1px; background:rgba(251,191,36,.9) }
+</style></head><body>
+<div class="frame" id="frame">
+  <div data-comp="titlebar" data-text="プロジェクト詳細・ガント  ( /projects/:id )"></div>
+  <div class="app">
+    <div data-comp="sidebar" data-active="pj"></div>
+    <div class="main">
+      <div data-comp="pv-top" data-tab="gantt"></div>
+      <div class="g" id="g"></div>
+      <div class="note" style="margin-top:6px">※ 表示範囲は、全タスクの開始日・期限と今日を含み、前に 3 日・後ろに 7 日の余白を足す。日付のあるタスクがないときは、今日から 14 日間（余白を含む）。</div>
+    </div>
+  </div>
+  <div class="legend">バーは、開始日〜期限（片方だけなら 1 日分、両方なしなら非表示）。バー中央のドラッグ＝日程の移動、両端（約 6px）のドラッグ＝期間の変更。バー・タスク名のダブルクリックで編集（SCR-06）。タスク名のドラッグで、並べ替え・親の付け替え（落とし先はツリーと同じ）。土曜は青、日曜・祝日は赤、今日は黄色。</div>
+</div>
+<script>
+const days = [];
+for (let i = 0; i < 18; i++) days.push(new Date(2026, 8, 28 + i));
+const hol = { "2026-10-12": "スポーツの日" };
+const key = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const cls = (d) => (key(d) === "2026-10-05" ? "today" : d.getDay() === 0 || hol[key(d)] ? "sun" : d.getDay() === 6 ? "sat" : "");
+const tasks = [
+  [0, "仕様の確定", "#3b82f6", 0, 11, false], [1, "要件の洗い出し", "#10b981", 0, 3, true], [1, "レビュー会の実施", "#f59e0b", 3, 7, false],
+  [2, "資料の事前配布", "#64748b", 4, 4, false], [0, "デモ環境の準備", "#64748b", 7, 17, false], [0, "社内告知文の作成", "#64748b", -1, -1, false],
+];
+const W = 25;
+let h = `<div class="gh"><div class="lab"><i class="id" style="top:2px">0351</i>　　　タスク</div><div style="display:flex;position:relative"><i class="id" style="left:4px;top:1px">0352</i><div style="width:${W * 3}px;padding:6px 8px;border-right:1px solid #e2e8f0;white-space:nowrap">2026年9月</div><div style="width:${W * 15}px;padding:6px 8px">2026年10月</div></div></div>`;
+h += `<div class="gh"><div class="lab" style="padding:0"></div><div style="display:flex;position:relative"><i class="id" style="left:4px">0353</i>${days.map((d) => `<div class="cell ${cls(d)}">${d.getDate()}</div>`).join("")}</div></div>`;
+h += `<div style="position:relative">`;
+tasks.forEach(([depth, name, color, s, e, done], i) => {
+  const cells = days.map((d) => `<div class="cell" style="padding:0;background:${cls(d) === "sun" ? "rgba(254,226,226,.6)" : cls(d) === "sat" ? "rgba(219,234,254,.6)" : "transparent"}"></div>`).join("");
+  const bar = s >= 0 ? `<div class="gbar" style="left:${s * W + 2}px;width:${(e - s + 1) * W - 4}px;background:${color};${done ? "opacity:.5" : ""}">${i === 2 ? '<i class="id" style="top:-9px;left:-2px">0354</i>' : ""}</div>` : "";
+  const tl = `<div class="tline" style="left:${7 * W + 12}px">${i === 0 ? '<i class="id" style="left:-10px;top:2px">0355</i>' : ""}</div>`;
+  h += `<div class="gr"><div class="lab" style="padding-left:${10 + depth * 14}px"><span class="dot" style="background:${color}"></span><span class="trunc" style="${done ? "text-decoration:line-through;color:#94a3b8" : ""}">${name}</span></div><div class="cells">${cells}${bar}${tl}</div></div>`;
+});
+h += `</div><div style="padding:6px 10px;font-size:10px;color:#94a3b8;border-top:1px solid #e2e8f0;position:relative"><i class="id" style="top:-6px;left:4px">0356</i>バーは開始日〜期限の期間を表します（片方のみ設定の場合は1日分）。…（操作の説明文を表示）</div>`;
+document.getElementById("g").innerHTML = h;
+</script>
+<script src="common.js"></script></body></html>

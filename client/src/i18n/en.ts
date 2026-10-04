@@ -33,8 +33,8 @@ export const en: Record<string, string> = {
   "期限が近いタスク": "Upcoming Tasks",
   "予定されているタスクはありません": "No upcoming tasks",
   "{count} 件のタスク": "{count} tasks",
-  "まだプロジェクトがありません。サイドバーから作成してください。":
-    "No projects yet. Create one from the sidebar.",
+  "まだプロジェクトがありません。「プロジェクト一覧」から作成してください。":
+    "No projects yet. Create one from the Projects page.",
 
   // 統計
   "タスク総数": "Total tasks",

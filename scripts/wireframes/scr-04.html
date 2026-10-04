@@ -1,0 +1,60 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+.sec { margin-top:16px; position:relative }
+.sec h2 { font-size:12px; font-weight:700; color:#0f172a }
+.sec p { font-size:10px; color:#64748b; margin:3px 0 8px }
+.r { display:flex; align-items:center; gap:8px; margin-bottom:6px }
+.box { background:#fff; border:1px solid #cbd5e1; border-radius:8px; padding:8px 10px; position:relative }
+.sw { width:24px; height:24px; border:1px solid #94a3b8; border-radius:6px; flex-shrink:0; position:relative }
+.upd { display:flex; flex-direction:column; font-size:8px; color:#94a3b8; line-height:1.1; position:relative }
+.dash { border:1.5px dashed #cbd5e1; border-radius:8px; padding:8px 10px; background:#fff; position:relative }
+</style></head><body>
+<div class="frame" id="frame">
+  <div data-comp="titlebar" data-text="設定  ( /settings )"></div>
+  <div class="app">
+    <div data-comp="sidebar" data-active="settings"></div>
+    <div class="main"><div style="max-width:640px">
+      <h1 style="margin-bottom:0">設定</h1>
+
+      <div class="sec"><h2>ステータス設定</h2>
+        <p>タスクのステータスを追加・変更できます。「完了として扱う」を付けたステータスは、完了率の計算や期限超過の判定で完了済みとして扱われます。タスクで使用中のステータスは削除できません。</p>
+        <div class="box r" style="margin-bottom:6px"><i class="id">0401</i>
+          <span class="upd"><i class="id" style="position:static;display:inline-block;margin-bottom:2px">0402</i>▲<br>▼</span>
+          <span class="sw" style="background:#64748b"><i class="id">0403</i></span>
+          <span class="input" style="flex:1"><i class="id">0404</i>未着手</span>
+          <span class="row" style="gap:4px;color:#64748b;position:relative"><i class="id">0405</i>☐ 完了として扱う</span>
+          <span class="btn sm red"><i class="id">0406</i>削除</span></div>
+        <div class="box r"><span class="upd">▲<br>▼</span><span class="sw" style="background:#10b981"></span><span class="input" style="flex:1">完了</span><span class="row" style="gap:4px;color:#64748b">☑ 完了として扱う</span><span class="btn sm red">削除</span></div>
+        <div class="dash r" style="margin-top:8px"><span class="sw" style="background:#f59e0b"><i class="id">0407</i></span><span class="input" style="flex:1"><i class="id">0408</i>新しいステータス名（例: レビュー中）</span><span class="btn primary"><i class="id">0409</i>追加</span></div>
+        <div class="errtxt" style="position:relative"><i class="id" style="top:0">0440</i>　　　このステータスは 3 件のタスクで使用中のため削除できません（節の下に赤字）</div>
+      </div>
+
+      <div class="sec"><h2>祝日</h2>
+        <p>祝日を登録します。ガントチャート等での休日表示に使われます。日付が同じ行はCSV取り込み時に更新されます。</p>
+        <div class="box" style="padding:6px 10px"><i class="id">0410</i>
+          <div class="r small muted" style="margin:0 0 4px"><span style="width:100px">日付</span><span>名称</span></div>
+          <div class="r"><span style="width:100px">2026年10月12日</span><span class="input" style="flex:1">スポーツの日</span><span class="btn sm red">削除</span></div>
+          <div class="r" style="margin:0"><span style="width:100px">2026年11月03日</span><span class="input" style="flex:1">文化の日</span><span class="btn sm red">削除</span></div></div>
+        <div class="dash r" style="margin-top:8px"><span class="input" style="width:130px"><i class="id">0411</i>2026/10/05</span><span class="input" style="flex:1">新しい祝日名</span><span class="btn primary">追加</span></div>
+        <div class="r" style="margin-top:8px"><span class="btn primary" style="background:#6366f1"><i class="id">0412</i>CSVから読み込む</span><span class="small muted" style="position:relative"><i class="id" style="top:-6px">0413</i>　　　3 件を登録・更新しました（失敗時は赤字）</span></div>
+        <div class="errtxt" style="position:relative"><i class="id" style="top:0">0414</i>　　　日付を入力してください（節の下に赤字）</div>
+      </div>
+
+      <div class="sec"><h2>タグ</h2>
+        <p>タグを管理します。プロジェクトを問わず全体で共有されます。新しいタグの作成もここから行えます。</p>
+        <div class="box" style="padding:6px 10px"><i class="id">0420</i>
+          <div class="r"><span class="sw" style="background:#8b5cf6;width:22px;height:22px"></span><span class="input" style="flex:1">設計</span><span class="btn sm red">削除 → COM-02<i class="id r">0422</i></span></div>
+          <div class="r" style="margin:0"><span class="sw" style="background:#0ea5e9;width:22px;height:22px"></span><span class="input" style="flex:1">会議</span><span class="btn sm red">削除</span></div></div>
+        <div class="dash r" style="margin-top:8px"><span class="sw" style="background:#6366f1;width:22px;height:22px"><i class="id">0421</i></span><span class="input" style="flex:1">新しいタグ名</span><span class="btn primary">追加</span></div>
+        <div class="errtxt" style="position:relative"><i class="id" style="top:0">0423</i>　　　タグが既に存在します（節の下に赤字）</div>
+      </div>
+
+      <div class="sec"><h2>言語 / Language</h2>
+        <p>表示言語を切り替えます。この設定はこのブラウザに保存されます。</p>
+        <span class="select" style="width:160px"><i class="id">0430</i>日本語</span>
+      </div>
+    </div></div>
+  </div>
+  <div class="legend">節は、上から ステータス → 祝日 → タグ → 言語。名前・名称の入力欄は、入力欄を離れるか Enter で保存する（空・未変更なら元に戻す）。色・「完了として扱う」は、変更すると即時に保存する。失敗は、操作した節の下に赤字で表示する。</div>
+</div>
+<script src="common.js"></script></body></html>

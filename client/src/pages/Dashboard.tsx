@@ -109,7 +109,7 @@ export function Dashboard() {
             </Link>
           ))}
           {projects.length === 0 && (
-            <p className="text-sm text-slate-400">{t("まだプロジェクトがありません。サイドバーから作成してください。")}</p>
+            <p className="text-sm text-slate-400">{t("まだプロジェクトがありません。「プロジェクト一覧」から作成してください。")}</p>
           )}
         </div>
       </div>
