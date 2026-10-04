@@ -39,11 +39,11 @@ pip-log.txt
 server/prisma/*.db
 
 # Test artifacts
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/client/playwright/.cache/
+# テスト・検証のレポート（Playwright の結果・HTML レポート、カバレッジ）はリポジトリに含めない
+test-results/
+playwright-report/
+blob-report/
+**/playwright/.cache/
 **/coverage/
 
 # Logs
