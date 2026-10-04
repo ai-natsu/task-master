@@ -6,6 +6,28 @@ dist/
 build/
 *.tsbuildinfo
 
+# Python（一般的な設定）
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
+pip-log.txt
+
 # Env & secrets
 .env
 .env.*
