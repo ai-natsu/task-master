@@ -22,6 +22,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
+      - name: Check the Homebrew cask (style)
+        run: |
+          brew tap-new --no-git local/check >/dev/null 2>&1 || true
+          cp Casks/taskmaster.rb "$(brew --repository local/check)/Casks/taskmaster.rb" 2>/dev/null || mkdir -p "$(brew --repository local/check)/Casks" && cp Casks/taskmaster.rb "$(brew --repository local/check)/Casks/"
+          brew style --cask local/check/taskmaster
+
       - name: Test (unit and integration)
         run: python -m pytest -q -m "not gui and not e2e"
 

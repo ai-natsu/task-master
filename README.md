@@ -153,19 +153,61 @@
 
 ## 4. 始め方（利用者向け）
 
-配布版（zip）を使う場合の手順。Python などのインストールは不要。
+配布版を使う場合の手順。Python などのインストールは不要。
 
 ### 4.1 インストール手順
 
-1. 配布の zip を解凍する（Windows 用は `TaskMaster-<版>-win64.zip`、Mac 用は `TaskMaster-<版>-mac.zip`）。`TaskMaster/` フォルダができる。
+**Windows**
+
+1. 配布の zip（`TaskMaster-<版>-win64.zip`）を解凍する。`TaskMaster/` フォルダができる。
 2. `TaskMaster/` フォルダを、**任意の場所**に置く。
+
+**Mac（zip を使う場合）**
+
+1. 配布の zip（`TaskMaster-<版>-mac.zip`）を解凍する。`TaskMaster/` フォルダができる。
+2. `TaskMaster/` フォルダを、**任意の場所**に置く。
+
+**Mac（Homebrew の Cask を使う場合）**
+
+[Homebrew](https://brew.sh/)（Mac のパッケージ管理ツール）が入っていること。ターミナルで、次のコマンドを実行する（どのフォルダで実行してもよい）。
+
+```bash
+brew tap ai-natsu/task-master https://github.com/ai-natsu/task-master
+brew install --cask taskmaster
+```
+
+`TaskMaster.app` が、「アプリケーション」フォルダ（`/Applications`）にインストールされる。
+
+| やりたいこと | コマンド |
+|---|---|
+| 新しい版にする | `brew upgrade --cask taskmaster` |
+| アンインストールする（データは残る） | `brew uninstall --cask taskmaster` |
+| アンインストールし、データも消す | `brew uninstall --zap --cask taskmaster` |
 
 ### 4.2 起動手順
 
 - **Windows：** `TaskMaster/` フォルダの中の `TaskMaster.exe` をダブルクリックする。
-- **Mac：** `TaskMaster/` フォルダの中の `TaskMaster.app` をダブルクリックする。
+- **Mac（zip）：** `TaskMaster/` フォルダの中の `TaskMaster.app` をダブルクリックする。
+- **Mac（Homebrew）：** 「アプリケーション」フォルダの `TaskMaster.app` を、ダブルクリックする（Launchpad からも開ける）。
 
 終了するときは、ウィンドウを閉じる。データの保存場所は、3.2 を参照。
+
+#### 4.2.1 Mac で警告が出るとき
+
+**Mac では、初回の起動で、警告が表示される。** 「"TaskMaster" は、開発元を検証できないため開けません」「"TaskMaster" は悪質なソフトウェアかどうかを Apple が確認できません」などである。TaskMaster のアプリに、Apple の署名・公証をしていないために出る警告で、故障や、ウイルスではない。次の手順で、1 回だけ許可すれば、2 回目からは、警告が出ない。
+
+- **macOS 15（Sequoia）以降：**
+  1. `TaskMaster.app` をダブルクリックして、警告が出たら、「完了」を押す。
+  2. 「システム設定」→「プライバシーとセキュリティ」を開き、下の方の「"TaskMaster" は、…ブロックされました」の横の「このまま開く」を押す。
+  3. 確認の画面で、「開く」を押す（パスワードや Touch ID を求められることがある）。
+- **macOS 14 以前：** `TaskMaster.app` を右クリック（Control を押しながらクリック）→「開く」→ 確認の画面で「開く」。
+- **コマンドで許可する場合：** 次のコマンドを実行する（Homebrew の Cask でも、同じ）。
+
+```bash
+xattr -dr com.apple.quarantine /Applications/TaskMaster.app
+```
+
+（`/Applications/TaskMaster.app` は、アプリを置いた場所に変える。）
 
 ## 5. 始め方（開発者向け）
 
@@ -469,6 +511,7 @@ python -m ruff check .
 │  ├─ gui/               # UI 部品のテスト
 │  └─ e2e/               # 画面遷移の E2E
 ├─ packaging/            # exe・.app・配布 zip の作成（build_exe.py / build_zip.py など）
+├─ Casks/                # Homebrew の Cask（Mac 用のインストールの定義：taskmaster.rb）
 ├─ docs/                 # 設計書
 ├─ seed.py               # サンプルデータの投入（既存データを全削除する）
 └─ pyproject.toml        # プロジェクト設定（依存ライブラリ、ruff、pytest）
