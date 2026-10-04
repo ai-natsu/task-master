@@ -1,12 +1,24 @@
-# Python
+# Python（一般的な設定）
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.eggs/
 .venv/
 venv/
-*.egg-info/
+env/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
+pip-log.txt
 
 # Nuitka build output
 packaging/dist/
