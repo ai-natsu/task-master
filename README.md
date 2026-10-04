@@ -334,23 +334,26 @@ cd server && npm start                       # API サーバーを起動（node 
 
 ## テスト
 
-ユニット/統合は **Vitest**、E2E は **Playwright**。スクリプトは分離している。詳細な方針とケース一覧は [docs/TEST_DESIGN.md](docs/TEST_DESIGN.md)。
+単体・結合は **Vitest**、UI 部品は **Playwright CT**（Component Testing）、E2E は **Playwright**。3 つのスクリプトは分離している。詳細な方針とケース一覧は [docs/TEST_DESIGN.md](docs/TEST_DESIGN.md)。
 
 ```bash
-npm test           # Vitest（server の単体・結合 + client の単体・部品）
+npm test           # Vitest（server の単体・結合 + client の関数・ロジックの単体）
+npm run test:ct    # Playwright CT（UI 部品を実際のブラウザで描画して検証）
 npm run test:e2e   # Playwright E2E（専用 DB で、サーバーと画面を自動で起動する）
 ```
 
 | 種類 | 場所 | 内容 |
 |---|---|---|
-| 単体テスト（client） | `client/src/` 内、対象のソースの隣（`*.test.ts(x)`） | `utils/`（ツリー・ドラッグ判定・期限・ガントなど）、`i18n`、フォーム部品の描画と入力検証 |
+| 単体テスト（client） | `client/src/` 内、対象のソースの隣（`*.test.ts`） | `utils/`（ツリー・ドラッグ判定・期限・ガントなど）、`i18n`、フォーム値の変換 |
+| UI 部品テスト（client） | `client/src/components/` 内、対象のソースの隣（`*.test.tsx`） | Playwright CT。バッジ・フィルタ・統計・フォーム・確認ダイアログの表示と操作（API は `page.route` で固定値に差し替える） |
 | 単体テスト（server） | `server/tests/unit/` | zod スキーマの境界値 |
 | 結合テスト（server） | `server/tests/integration/` | Supertest で API を検証（専用 DB `server/test.db` を各テスト前にリセット）。循環参照・統計（isDone 駆動）・アーカイブ除外・ステータス削除制約・エラー応答・配線（`app.test.ts`） |
 | E2E | `e2e/`（ルート直下） | Playwright。専用 DB `server/e2e.db` で、プロジェクト作成→サブタスク、カンバンのドラッグ、ステータス追加/削除制約、アーカイブ/復元（確認ダイアログ） |
 
-- E2E は、初回のみ `npx playwright install chromium` が必要。
+- E2E と UI 部品テストは、初回のみ `npx playwright install chromium` が必要。
+- 拡張子で振り分ける：`*.test.ts` は Vitest、`*.test.tsx` は Playwright CT、`*.spec.ts`（`e2e/`）は E2E。
 - いずれのテストも開発用 `dev.db` には触れない。
-- server のテスト用の共通部品（DB の初期化・テストデータ作成）は `server/tests/helpers/`、client は `client/src/test/`。
+- テスト用の共通部品：server は `server/tests/helpers/`（DB の初期化・テストデータ作成）、client は `client/src/test/`（`factories.ts`、CT 用の `ct.ts`）。
 
 ## ディレクトリ構成
 
@@ -370,11 +373,12 @@ npm run test:e2e   # Playwright E2E（専用 DB で、サーバーと画面を�
 │  └─ tsconfig.json / tsconfig.build.json / vitest.config.ts
 ├─ client/                 # 画面（Vite + React + Tailwind）
 │  ├─ index.html / public/ # 起動の入口 / 静的ファイル（アイコン）
-│  ├─ src/                 # 本番コード ＋ 単体テスト（*.test.ts(x) は対象の隣）
+│  ├─ playwright/          # Playwright CT のブラウザ側の入口（index.html / index.tsx）
+│  ├─ src/                 # 本番コード ＋ テスト（*.test.ts は Vitest、*.test.tsx は Playwright CT。対象の隣）
 │  │  ├─ api/ components/ pages/ i18n/ utils/ types/
 │  │  ├─ main.tsx / App.tsx / index.css
 │  │  └─ test/             # テスト用の共通部品
-│  └─ vite.config.ts / vitest.config.ts / tailwind.config.js
+│  └─ vite.config.ts / vitest.config.ts / playwright-ct.config.ts / tailwind.config.js
 ├─ e2e/                    # E2E（Playwright）
 ├─ docs/                   # 設計書（要件・基本設計・画面設計・テスト設計など）
 └─ scripts/                # 補助スクリプト（画面キャプチャなど）

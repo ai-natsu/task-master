@@ -19,6 +19,7 @@ export default tseslint.config(
       "test-results/**",
       "server/prisma/migrations/**",
       ".claude/**",
+      "**/playwright/.cache/**",
     ],
   },
 
@@ -73,7 +74,7 @@ export default tseslint.config(
   // ── src 外の TS（vite.config.ts / playwright.config.ts 等）は型情報なしで ──
   ...tseslint.configs.recommended.map((c) => ({
     ...c,
-    files: ["**/*.config.ts", "e2e/**/*.ts", "**/vitest.config.ts"],
+    files: ["**/*.config.ts", "e2e/**/*.ts", "client/playwright/**/*.{ts,tsx}"],
   })),
 
   // ── 共通の品質ルール ──────────────────────────────

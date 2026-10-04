@@ -19,7 +19,8 @@
 ## 実行方法
 
 ```bash
-npm test           # = test:unit（Vitest: server 78 + client 55）
+npm test           # = test:unit（Vitest: server の単体・結合 + client の関数・ロジック）
+npm run test:ct    # Playwright CT（UI 部品を実際のブラウザで描画して検証）
 npm run test:e2e   # Playwright E2E（server/e2e.db を自動初期化して起動）
 ```
 
@@ -47,13 +48,13 @@ npm run test:e2e   # Playwright E2E（server/e2e.db を自動初期化して起�
 
 | テスト種別 | ツール | 実行スクリプト |
 |---|---|---|
-| ユニット / 統合 / コンポーネント | **Vitest** | `npm test`（＝ `test:unit`） |
+| 単体 / 統合（関数・ロジック・API） | **Vitest** | `npm test`（＝ `test:unit`） |
 | サーバー API の HTTP 検証 | Vitest + **Supertest** | 同上 |
-| クライアント コンポーネント | Vitest + React Testing Library + jsdom（API は `vi.mock`） | 同上 |
+| クライアント UI 部品 | **Playwright CT**（実ブラウザで描画。API は `page.route` で固定値に差し替え） | `npm run test:ct` |
 | E2E（ブラウザ通し） | **Playwright** | `npm run test:e2e` |
 
-**ユニット系（Vitest）と E2E（Playwright）はスクリプトを完全に分離する。**
-Vitest はブラウザを起動せず高速にロジックを検証、Playwright は実サーバー＋実ブラウザで主要フローを検証する。CI では「Vitest（速い・常時）」→「Playwright（重い・マージ前）」の順で段階実行する想定。
+**単体系（Vitest）・UI 部品（Playwright CT）・E2E（Playwright）の 3 つは、スクリプトを完全に分離する。**
+Vitest はブラウザを起動せず高速にロジックを検証、Playwright CT は部品を実ブラウザで描画して表示と操作を検証、Playwright E2E は実サーバー＋実ブラウザで主要フローを検証する。CI では「Vitest（速い・常時）」→「CT」→「E2E（重い・マージ前）」の順で段階実行する想定。
 
 ### スクリプト構成
 
@@ -65,6 +66,7 @@ npm workspaces（`server` / `client`）を活かし、ユニットは各ワー�
   "scripts": {
     "test": "npm run test:unit",
     "test:unit": "npm run test --workspace=server && npm run test --workspace=client",
+    "test:ct": "npm run test:ct --workspace=client",
     "test:coverage": "npm run test:coverage --workspace=server && npm run test:coverage --workspace=client",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
@@ -87,7 +89,7 @@ npm workspaces（`server` / `client`）を活かし、ユニットは各ワー�
 
 ```
 task-master/
-├─ package.json                # test / test:unit / test:coverage / test:e2e
+├─ package.json                # test / test:unit / test:ct / test:coverage / test:e2e
 ├─ playwright.config.ts        # E2E 設定（webServer で server+client を自動起動）
 ├─ e2e/                        # Playwright（ユニットとディレクトリごと分離）
 │  ├─ global-setup.ts          # e2e.db を作り直して migrate + seed
@@ -113,17 +115,20 @@ task-master/
 │        ├─ setup.ts           # test.db を作り直して migrate、各テスト前に全行削除
 │        └─ factories.ts       # seedStatuses / makeProject / makeTask
 └─ client/
-   ├─ vitest.config.ts         # environment: "jsdom"、Vite 設定を継承
+   ├─ vitest.config.ts         # environment: "node"。include は src/**/*.test.ts（関数・ロジックのみ）
+   ├─ playwright-ct.config.ts  # UI 部品テスト（Playwright CT）。testMatch は src/**/*.test.tsx
+   ├─ playwright/              # CT のブラウザ側の入口（index.html / index.tsx：CSS と React Query を用意）
    └─ src/
-      ├─ test/setup.ts         # RTL matchers 登録 / 各テスト後に cleanup
       ├─ test/factories.ts     # makeTask
-      ├─ utils/tree.test.ts    # 純粋関数ユニット
-      ├─ utils/dnd.test.ts     # ドラッグ判定ロジック
-      ├─ utils/gantt.test.ts   # ガントの日付グリッド計算
-      └─ components/*.test.tsx # コンポーネント
+      ├─ test/ct.ts            # CT 用：API（ステータス・タグ）を固定値に差し替える mockApi
+      ├─ utils/*.test.ts       # 純粋関数ユニット（tree / dnd / due / gantt / holidayCsv / tags / date）
+      ├─ i18n/i18n.test.ts     # 英語辞書の漏れの検査
+      └─ components/
+         ├─ taskToFormValue.test.ts  # フォーム値の変換（Vitest）
+         └─ *.test.tsx         # UI 部品（Playwright CT：Badges / FilterBar / StatsCards / TaskFormModal / ProjectFormModal・ConfirmDialog）
 ```
 
-- **切り分けの境界**: `e2e/` 配下＝Playwright、それ以外＝Vitest。Vitest の `include` は、server は `tests/` 配下、client は `src/` 配下に限定し、Playwright の `testDir` は `e2e/` に限定して、互いを拾わないようにする。
+- **切り分けの境界（3 層）**: Vitest＝関数・ロジックと API（server は `tests/`、client は `src/**/*.test.ts`）、Playwright CT＝UI 部品（`client/src/**/*.test.tsx`）、Playwright E2E＝システム全体（`e2e/`）。各設定の `include` / `testMatch` / `testDir` を限定し、互いを拾わないようにする。拡張子（`.test.ts` / `.test.tsx` / `.spec.ts`）でも見分けられる。
 - **置き場所の規則**: server のテストは `server/tests/`（`src/` には本番コードだけを置く）。client の単体テストは、対象のソースの隣に `*.test.ts(x)` で置く（Vite は読み込まれないファイルを出力に含めない）。本番ビルドにテストが混ざらないよう、server の本番ビルドは `tsconfig.build.json`（`src` のみ）を使う。
 - **テスト用 DB**: サーバー Vitest は `vitest.config.ts` の `test.env` で `DATABASE_URL`（`test.db`）を注入する。`db.ts` が PrismaClient を生成する前に値が確定している必要があるため、`.env` 読み込みではなくこの方式を採る。Playwright は `playwright.config.ts` の `webServer.env` で `e2e.db` を指定する。いずれも開発用 `dev.db` に触れない。
 
@@ -478,7 +483,8 @@ zod スキーマ自体の網羅的な検証は**単体テストに寄せてい�
 
 | テスト種別 | 目的（何を担保するか） | 使用ツール |
 |---|---|---|
-| **UT** | 隔離してロジック/表示を検証する | Vitest（＋ React Testing Library / jsdom） |
+| **UT** | 隔離してロジックを検証する | Vitest |
+| **UI 部品** | 部品の表示・操作を実ブラウザで検証する | Playwright CT |
 | **統合** | API を HTTP ＋ 実 DB で通して検証する | Vitest + Supertest |
 | **E2E** | 実ブラウザで UI→API→DB を通しで検証する | Playwright |
 | **(間接)** | 専用テストは持たず、他の経路でカバーする | （上記のいずれかに相乗り） |

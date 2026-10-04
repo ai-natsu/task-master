@@ -1,26 +1,24 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { test, expect } from "@playwright/experimental-ct-react";
 import { PriorityBadge, StatusBadge, TagList, TagPill } from "./Badges";
 import type { StatusDef, Tag } from "../types";
 
-describe("PriorityBadge", () => {
-  it("V-1a: 優先度に対応する日本語ラベルを表示する", () => {
-    render(<PriorityBadge priority="URGENT" />);
-    expect(screen.getByText("緊急")).toBeInTheDocument();
+test.describe("PriorityBadge", () => {
+  test("V-1a: 優先度に対応する日本語ラベルを表示する", async ({ mount }) => {
+    const component = await mount(<PriorityBadge priority="URGENT" />);
+    await expect(component).toHaveText("緊急");
   });
 
-  it("V-1b: 全ての優先度がラベルに対応している", () => {
+  test("V-1b: 全ての優先度がラベルに対応している", async ({ mount }) => {
     const expected = { LOW: "低", MEDIUM: "中", HIGH: "高", URGENT: "緊急" } as const;
     for (const [priority, label] of Object.entries(expected)) {
-      const { unmount } = render(<PriorityBadge priority={priority as keyof typeof expected} />);
-      expect(screen.getByText(label), priority).toBeInTheDocument();
-      unmount();
+      const component = await mount(<PriorityBadge priority={priority as keyof typeof expected} />);
+      await expect(component, priority).toHaveText(label);
+      await component.unmount();
     }
   });
 });
 
-describe("StatusBadge", () => {
+test.describe("StatusBadge", () => {
   const status: StatusDef = {
     id: "IN_PROGRESS",
     label: "進行中",
@@ -29,40 +27,41 @@ describe("StatusBadge", () => {
     isDone: false,
   };
 
-  it("V-1c: ステータスのラベルを表示する", () => {
-    render(<StatusBadge status={status} />);
-    expect(screen.getByText("進行中")).toBeInTheDocument();
+  test("V-1c: ステータスのラベルを表示する", async ({ mount }) => {
+    const component = await mount(<StatusBadge status={status} />);
+    await expect(component).toHaveText("進行中");
   });
 
-  it("V-1d: ステータスの色が文字色と背景に反映される", () => {
-    render(<StatusBadge status={status} />);
-    // Colors are data-driven (not Tailwind classes), so they must be inline styles.
-    expect(screen.getByText("進行中")).toHaveStyle({ color: "#6366f1" });
+  test("V-1d: ステータスの色が文字色に反映される", async ({ mount }) => {
+    const component = await mount(<StatusBadge status={status} />);
+    // 色はデータ由来（Tailwind のクラスではない）ので、インラインスタイルで指定されている
+    await expect(component).toHaveCSS("color", "rgb(99, 102, 241)");
   });
 });
 
-describe("TagPill", () => {
+test.describe("TagPill", () => {
   const tag: Tag = { id: "t1", name: "backend", color: "#0ea5e9" };
 
-  it("V-1e: タグ名を表示する（V2 と同じく # は付けない）", () => {
-    render(<TagPill tag={tag} />);
-    expect(screen.getByText("backend")).toBeInTheDocument();
+  test("V-1e: タグ名を表示する（V2 と同じく # は付けない）", async ({ mount }) => {
+    const component = await mount(<TagPill tag={tag} />);
+    await expect(component).toContainText("backend");
+    await expect(component).not.toContainText("#");
   });
 
-  it("V-1f: onRemove 未指定なら削除ボタンを表示しない", () => {
-    render(<TagPill tag={tag} />);
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  test("V-1f: onRemove 未指定なら削除ボタンを表示しない", async ({ mount }) => {
+    const component = await mount(<TagPill tag={tag} />);
+    await expect(component.getByRole("button")).toHaveCount(0);
   });
 
-  it("V-1g: onRemove 指定時は削除ボタンを表示し、クリックで呼ばれる", async () => {
-    const onRemove = vi.fn();
-    render(<TagPill tag={tag} onRemove={onRemove} />);
-    await userEvent.click(screen.getByRole("button"));
-    expect(onRemove).toHaveBeenCalledOnce();
+  test("V-1g: onRemove 指定時は削除ボタンを表示し、クリックで呼ばれる", async ({ mount }) => {
+    let removed = 0;
+    const component = await mount(<TagPill tag={tag} onRemove={() => (removed += 1)} />);
+    await component.getByRole("button").click();
+    await expect.poll(() => removed).toBe(1);
   });
 });
 
-describe("TagList", () => {
+test.describe("TagList", () => {
   const tags: Tag[] = [
     { id: "t1", name: "alphabet", color: "#0ea5e9" },
     { id: "t2", name: "b", color: "#22c55e" },
@@ -70,18 +69,17 @@ describe("TagList", () => {
     { id: "t4", name: "delta", color: "#f59e0b" },
   ];
 
-  it("V-1f: 先頭2件を4文字までで表示し、残りは「...」のピルにまとめる", () => {
-    render(<TagList tags={tags} />);
-    expect(screen.getByText("alph...")).toBeInTheDocument();
-    expect(screen.getByText("b")).toBeInTheDocument();
-    expect(screen.queryByText("gamma")).not.toBeInTheDocument();
-    const more = screen.getByText("...");
-    expect(more).toHaveAttribute("title", "gamma, delta");
+  test("V-1h: 先頭2件を4文字までで表示し、残りは「...」のピルにまとめる", async ({ mount }) => {
+    const component = await mount(<TagList tags={tags} />);
+    await expect(component.getByText("alph...")).toBeVisible();
+    await expect(component.getByText("b", { exact: true })).toBeVisible();
+    await expect(component.getByText("gamma")).toHaveCount(0);
+    await expect(component.getByText("...", { exact: true })).toHaveAttribute("title", "gamma, delta");
   });
 
-  it("V-1g: 省略したタグ名はマウスオーバー（title）で全体を確認できる", () => {
-    render(<TagList tags={tags.slice(0, 1)} />);
-    expect(screen.getByText("alph...")).toHaveAttribute("title", "alphabet");
-    expect(screen.queryByText("...")).not.toBeInTheDocument();
+  test("V-1i: 省略したタグ名はマウスオーバー（title）で全体を確認できる", async ({ mount }) => {
+    const component = await mount(<TagList tags={tags.slice(0, 1)} />);
+    await expect(component.getByText("alph...")).toHaveAttribute("title", "alphabet");
+    await expect(component.getByText("...", { exact: true })).toHaveCount(0);
   });
 });

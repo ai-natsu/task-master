@@ -1,24 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { test, expect } from "@playwright/experimental-ct-react";
 import { StatsCards } from "./StatsCards";
+import { mockApi } from "../test/ct";
 import type { Stats } from "../types";
-
-// Mock the statuses hook so StatsCards has a known set of statuses.
-vi.mock("../api/statuses", () => ({
-  useStatuses: () => ({
-    data: [
-      { id: "TODO", label: "未着手", color: "#64748b", order: 0, isDone: false },
-      { id: "DONE", label: "完了", color: "#10b981", order: 1, isDone: true },
-    ],
-  }),
-}));
-
-function wrapper({ children }: { children: ReactNode }) {
-  const qc = new QueryClient();
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-}
 
 const stats: Stats = {
   total: 10,
@@ -30,23 +13,27 @@ const stats: Stats = {
   completionRate: 40,
 };
 
-describe("StatsCards", () => {
-  beforeEach(() => {
-    render(<StatsCards stats={stats} />, { wrapper });
-  });
+test.beforeEach(async ({ page }) => {
+  await mockApi(page); // ステータスの一覧を固定する
+});
 
-  it("V-2: renders priority rows in descending order (緊急→高→中→低)", () => {
-    const priorityCard = screen.getByText("優先度別").closest("div")!;
-    // Leaf spans only (the badge labels), to avoid double-counting wrapper spans.
-    const labels = Array.from(priorityCard.querySelectorAll("span"))
-      .filter((s) => s.children.length === 0)
-      .map((s) => s.textContent)
-      .filter((t) => ["緊急", "高", "中", "低"].includes(t ?? ""));
+test.describe("StatsCards", () => {
+  test("V-2: 優先度の行を、緊急→高→中→低の順に表示する", async ({ mount }) => {
+    const component = await mount(<StatsCards stats={stats} />);
+    const labels = await component.getByText("優先度別").evaluate((title) => {
+      const card = title.closest("div");
+      // 子要素を持たない span（バッジの文字）だけを数える
+      return Array.from(card?.querySelectorAll("span") ?? [])
+        .filter((s) => s.children.length === 0)
+        .map((s) => s.textContent ?? "")
+        .filter((t) => ["緊急", "高", "中", "低"].includes(t));
+    });
     expect(labels).toEqual(["緊急", "高", "中", "低"]);
   });
 
-  it("shows completion rate and totals", () => {
-    expect(screen.getByText("40%")).toBeInTheDocument();
-    expect(screen.getByText("タスク総数")).toBeInTheDocument();
+  test("V-2b: 完了率とタスク総数を表示する", async ({ mount }) => {
+    const component = await mount(<StatsCards stats={stats} />);
+    await expect(component.getByText("40%")).toBeVisible();
+    await expect(component.getByText("タスク総数")).toBeVisible();
   });
 });

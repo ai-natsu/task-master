@@ -5,9 +5,9 @@ export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
-    environment: "jsdom",
-    setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}"],
+    environment: "node",
+    // 関数・ロジックの単体テストだけ（*.test.ts）。UI 部品のテスト（*.test.tsx）は Playwright CT が受け持つ。
+    include: ["src/**/*.test.ts"],
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],

@@ -43,6 +43,7 @@ server/prisma/*.db
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/client/playwright/.cache/
 **/coverage/
 
 # Logs

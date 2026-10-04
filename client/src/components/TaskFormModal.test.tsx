@@ -1,172 +1,120 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { TaskFormModal, taskToFormValue } from "./TaskFormModal";
-import { makeTask } from "../test/factories";
-
-vi.mock("../api/tags", () => ({
-  useTags: () => ({ data: [{ id: "tag1", name: "backend", color: "#0ea5e9" }] }),
-  useCreateTag: () => ({ mutateAsync: vi.fn() }),
-}));
-
-vi.mock("../api/statuses", () => ({
-  useStatuses: () => ({
-    data: [
-      { id: "TODO", label: "未着手", color: "#64748b", order: 0, isDone: false },
-      { id: "DONE", label: "完了", color: "#10b981", order: 1, isDone: true },
-    ],
-  }),
-}));
+import { test, expect } from "@playwright/experimental-ct-react";
+import { TaskFormModal, type TaskFormValue } from "./TaskFormModal";
+import { mockApi } from "../test/ct";
 
 const parentOptions = [{ id: "p-task", title: "親タスク", depth: 0 }];
 
-function setup(props: Partial<Parameters<typeof TaskFormModal>[0]> = {}) {
-  const onSubmit = vi.fn();
-  const onClose = vi.fn();
-  render(
+test.beforeEach(async ({ page }) => {
+  await mockApi(page); // ステータス・タグの一覧を固定する
+});
+
+/** フォームを開き、送信・閉じる操作の記録を返す。 */
+async function setup(
+  mount: Parameters<Parameters<typeof test>[2]>[0]["mount"],
+  props: Partial<Parameters<typeof TaskFormModal>[0]> = {}
+) {
+  const submitted: TaskFormValue[] = [];
+  const closed: number[] = [];
+  const component = await mount(
     <TaskFormModal
       open
       mode="create"
       parentOptions={parentOptions}
-      onSubmit={onSubmit}
-      onClose={onClose}
+      onSubmit={(v) => {
+        submitted.push(v);
+      }}
+      onClose={() => closed.push(1)}
       {...props}
     />
   );
-  return { onSubmit, onClose };
+  return { component, submitted, closed };
 }
 
-describe("TaskFormModal", () => {
-  it("V-4a: open=false なら何も描画しない", () => {
-    const onSubmit = vi.fn();
-    render(
-      <TaskFormModal
-        open={false}
-        mode="create"
-        parentOptions={parentOptions}
-        onSubmit={onSubmit}
-        onClose={vi.fn()}
-      />
+test.describe("TaskFormModal", () => {
+  test("V-4a: open=false なら何も描画しない", async ({ mount }) => {
+    const component = await mount(
+      <TaskFormModal open={false} mode="create" parentOptions={parentOptions} onSubmit={() => undefined} onClose={() => undefined} />
     );
-    expect(screen.queryByPlaceholderText("タスク名を入力")).not.toBeInTheDocument();
+    await expect(component.getByPlaceholder("タスク名を入力")).toHaveCount(0);
   });
 
-  it("V-4b: title が空のまま送信しても onSubmit は呼ばれず、必須の赤字を表示する", async () => {
-    const { onSubmit } = setup();
-    await userEvent.click(screen.getByRole("button", { name: "作成" }));
-    expect(onSubmit).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent("タイトルを入力してください");
+  test("V-4b: title が空のまま送信しても onSubmit は呼ばれず、必須の赤字を表示する", async ({ mount, page }) => {
+    const { submitted } = await setup(mount);
+    await page.getByRole("button", { name: "作成" }).click();
+    await expect(page.getByRole("alert")).toHaveText("タイトルを入力してください");
+    expect(submitted).toHaveLength(0);
   });
 
-  it("V-4c: title が空白のみでも onSubmit は呼ばれず、必須の赤字を表示する", async () => {
-    const { onSubmit } = setup();
-    await userEvent.type(screen.getByPlaceholderText("タスク名を入力"), "   ");
-    await userEvent.click(screen.getByRole("button", { name: "作成" }));
-    expect(onSubmit).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent("タイトルを入力してください");
+  test("V-4c: title が空白のみでも onSubmit は呼ばれず、必須の赤字を表示する", async ({ mount, page }) => {
+    const { submitted } = await setup(mount);
+    await page.getByPlaceholder("タスク名を入力").fill("   ");
+    await page.getByRole("button", { name: "作成" }).click();
+    await expect(page.getByRole("alert")).toHaveText("タイトルを入力してください");
+    expect(submitted).toHaveLength(0);
   });
 
-  it("V-4c2: 赤字は入力し直すと消える", async () => {
-    setup();
-    await userEvent.click(screen.getByRole("button", { name: "作成" }));
-    expect(screen.getByRole("alert")).toBeInTheDocument();
-    await userEvent.type(screen.getByPlaceholderText("タスク名を入力"), "a");
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  test("V-4c2: 赤字は入力し直すと消える", async ({ mount, page }) => {
+    await setup(mount);
+    await page.getByRole("button", { name: "作成" }).click();
+    await expect(page.getByRole("alert")).toBeVisible();
+    await page.getByPlaceholder("タスク名を入力").pressSequentially("a");
+    await expect(page.getByRole("alert")).toHaveCount(0);
   });
 
-  it("V-4d: title があれば onSubmit が入力値付きで呼ばれる", async () => {
-    const { onSubmit } = setup();
-    await userEvent.type(screen.getByPlaceholderText("タスク名を入力"), "新しいタスク");
-    await userEvent.click(screen.getByRole("button", { name: "作成" }));
-
-    expect(onSubmit).toHaveBeenCalledOnce();
-    expect(onSubmit.mock.calls[0][0]).toMatchObject({ title: "新しいタスク" });
+  test("V-4d: title があれば onSubmit が入力値付きで呼ばれる", async ({ mount, page }) => {
+    const { submitted } = await setup(mount);
+    await page.getByPlaceholder("タスク名を入力").fill("新しいタスク");
+    await page.getByRole("button", { name: "作成" }).click();
+    await expect.poll(() => submitted.length).toBe(1);
+    expect(submitted[0]).toMatchObject({ title: "新しいタスク" });
   });
 
-  it("V-4e: 開始日・期限・優先度・親タスクが送信値に含まれる", async () => {
-    const { onSubmit } = setup();
-    await userEvent.type(screen.getByPlaceholderText("タスク名を入力"), "t");
+  test("V-4e: 開始日・期限・優先度・親タスクが送信値に含まれる", async ({ mount, page }) => {
+    const { submitted } = await setup(mount);
+    await page.getByPlaceholder("タスク名を入力").fill("t");
 
-    const dates = screen.getAllByDisplayValue("");
-    // 開始日 / 期限（type=date）
-    const dateInputs = document.querySelectorAll('input[type="date"]');
-    await userEvent.type(dateInputs[0] as HTMLElement, "2026-07-10");
-    await userEvent.type(dateInputs[1] as HTMLElement, "2026-07-20");
+    const dates = page.locator('input[type="date"]'); // 開始日 / 期限
+    await dates.nth(0).fill("2026-07-10");
+    await dates.nth(1).fill("2026-07-20");
 
-    const selects = document.querySelectorAll("select");
-    await userEvent.selectOptions(selects[1] as HTMLElement, "HIGH"); // 優先度
-    await userEvent.selectOptions(selects[2] as HTMLElement, "p-task"); // 親タスク
+    const selects = page.locator("select");
+    await selects.nth(1).selectOption("HIGH"); // 優先度
+    await selects.nth(2).selectOption("p-task"); // 親タスク
 
-    await userEvent.click(screen.getByRole("button", { name: "作成" }));
-
-    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+    await page.getByRole("button", { name: "作成" }).click();
+    await expect.poll(() => submitted.length).toBe(1);
+    expect(submitted[0]).toMatchObject({
       title: "t",
       startDate: "2026-07-10",
       dueDate: "2026-07-20",
       priority: "HIGH",
       parentId: "p-task",
     });
-    expect(dates.length).toBeGreaterThan(0);
   });
 
-  it("V-4f: タグをクリックすると tagIds に含まれる", async () => {
-    const { onSubmit } = setup();
-    await userEvent.type(screen.getByPlaceholderText("タスク名を入力"), "t");
-    await userEvent.click(screen.getByText("backend"));
-    await userEvent.click(screen.getByRole("button", { name: "作成" }));
-
-    expect(onSubmit.mock.calls[0][0]).toMatchObject({ tagIds: ["tag1"] });
+  test("V-4f: タグをクリックすると tagIds に含まれる", async ({ mount, page }) => {
+    const { submitted } = await setup(mount);
+    await page.getByPlaceholder("タスク名を入力").fill("t");
+    await page.getByText("backend").click();
+    await page.getByRole("button", { name: "作成" }).click();
+    await expect.poll(() => submitted.length).toBe(1);
+    expect(submitted[0]).toMatchObject({ tagIds: ["tag1"] });
   });
 
-  it("V-4g: mode=edit ならボタンが「保存」になる", () => {
-    setup({ mode: "edit" });
-    expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+  test("V-4g: mode=edit ならボタンが「保存」になる", async ({ mount, page }) => {
+    await setup(mount, { mode: "edit" });
+    await expect(page.getByRole("button", { name: "保存" })).toBeVisible();
   });
 
-  it("V-4h: キャンセルで onClose が呼ばれ、onSubmit は呼ばれない", async () => {
-    const { onSubmit, onClose } = setup();
-    await userEvent.click(screen.getByRole("button", { name: "キャンセル" }));
-    expect(onClose).toHaveBeenCalledOnce();
-    expect(onSubmit).not.toHaveBeenCalled();
+  test("V-4h: キャンセルで onClose が呼ばれ、onSubmit は呼ばれない", async ({ mount, page }) => {
+    const { submitted, closed } = await setup(mount);
+    await page.getByRole("button", { name: "キャンセル" }).click();
+    await expect.poll(() => closed.length).toBe(1);
+    expect(submitted).toHaveLength(0);
   });
 
-  it("V-4i: initial の値がフォームに反映される", () => {
-    setup({ initial: { title: "既存タスク", priority: "URGENT" } });
-    expect(screen.getByDisplayValue("既存タスク")).toBeInTheDocument();
-  });
-});
-
-describe("taskToFormValue", () => {
-  it("V-4j: Task をフォーム値へ変換する（日付は YYYY-MM-DD に切り出す）", () => {
-    const task = makeTask({
-      title: "タスク",
-      description: null,
-      status: "DONE",
-      priority: "HIGH",
-      startDate: "2026-07-10T00:00:00.000Z",
-      dueDate: "2026-07-20T00:00:00.000Z",
-      parentId: "parent-1",
-      tags: [{ id: "tag1", name: "backend", color: "#0ea5e9" }],
-    });
-
-    expect(taskToFormValue(task)).toEqual({
-      title: "タスク",
-      description: "",
-      status: "DONE",
-      priority: "HIGH",
-      startDate: "2026-07-10",
-      dueDate: "2026-07-20",
-      tagIds: ["tag1"],
-      parentId: "parent-1",
-    });
-  });
-
-  it("V-4k: 日付が未設定なら空文字になる", () => {
-    const task = makeTask({ startDate: null, dueDate: null });
-    expect(taskToFormValue(task)).toMatchObject({ startDate: "", dueDate: "" });
-  });
-
-  it("V-4l: undefined を渡すと undefined を返す", () => {
-    expect(taskToFormValue(undefined)).toBeUndefined();
+  test("V-4i: initial の値がフォームに反映される", async ({ mount, page }) => {
+    await setup(mount, { initial: { title: "既存タスク", priority: "URGENT" } });
+    await expect(page.getByPlaceholder("タスク名を入力")).toHaveValue("既存タスク");
   });
 });

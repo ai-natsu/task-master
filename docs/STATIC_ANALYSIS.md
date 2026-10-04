@@ -49,7 +49,7 @@ CI にも lint・整形・セキュリティ走査のステップが無かった
     `checksVoidReturn.{arguments,attributes}` は無効）
   - server: `eslint-plugin-security`（`detect-object-injection` は誤検知が多く無効）
   - client: `react-hooks`、`no-unsanitized`（XSS）
-  - テスト（`*.test.ts(x)` / `e2e/` / `server/tests/` / `client/src/test/`）: `any` 系ルールを緩和
+  - テスト（`*.test.ts(x)` / `e2e/` / `server/tests/` / `client/src/test/` / `client/playwright/`）: `any` 系ルールを緩和
     （Supertest の `res.body` 等が構造上 `any` を返すため）
 - コマンド: `npm run lint` / `npm run lint:fix` / `npm run check`（= `eslint .`）
 - 3層運用:
