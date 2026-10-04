@@ -8,7 +8,7 @@
 - [技術要件](#技術要件)
 - [データベース定義](#データベース定義)
 - [API仕様](#api仕様)
-- [セットアップ](#セットアップ)
+- [起動方法](#起動方法)
 - [使い方](#使い方)
 - [テスト](#テスト)
 - [ディレクトリ構成](#ディレクトリ構成)
@@ -205,25 +205,75 @@ Task と Tag の多対多を表す join モデル。`taskId` + `tagId` の複合
 | PATCH/DELETE | `/api/statuses/:id` | ステータス更新・削除（使用中/最後の1件は409） |
 | GET | `/api/stats` | 集計（`projectId`省略で全体集計） |
 
-## セットアップ
+## 起動方法
+
+### 前提
+
+- Node.js（LTS 推奨）と npm
+- Windows / Mac / Linux（Windows では PowerShell または Git Bash）
+
+### 初回だけ行う準備
+
+リポジトリのルートで実行する。
 
 ```bash
-npm install                # ルートで一度実行（server / client 両方のワークスペース分）
-
-# server/ ディレクトリで
-npx prisma migrate dev --name init   # 初回のみ：DB作成
-npm run seed                          # 任意：サンプルデータ投入（既存データは全削除される）
-
-# ルートに戻って
-npm run dev:server         # http://localhost:3001
-npm run dev:client         # http://localhost:5173  ← ブラウザではこちらを開く
+npm install                                  # server / client 両方の依存関係をインストール
+cp server/.env.example server/.env           # 環境設定を作る（Windows の PowerShell は Copy-Item）
+cd server
+npx prisma migrate deploy                    # データベース（server/prisma/dev.db）を作る
+npm run seed                                 # 任意：サンプルデータを入れる（既存データは全削除される）
+cd ..
 ```
 
-本番ビルド：`npm run build`（server / client を順にビルド）
+`server/.env` の内容（初期値のままでよい）:
+
+| 項目 | 初期値 | 意味 |
+|---|---|---|
+| `DATABASE_URL` | `file:./dev.db` | データベースのファイル（SQLite。`server/prisma/` からの相対パス） |
+| `PORT` | `3001` | API サーバーのポート |
+
+### 起動する（開発用）
+
+ターミナルを 2 つ開き、それぞれで実行する。
+
+| ターミナル | コマンド | 起動するもの |
+|---|---|---|
+| ① | `npm run dev:server` | API サーバー（http://localhost:3001） |
+| ② | `npm run dev:client` | 画面（http://localhost:5173） |
+
+ブラウザで **http://localhost:5173** を開く。画面からの `/api` へのアクセスは、自動で 3001 番に転送される。
+
+起動の確認:
+
+- `http://localhost:3001/api/health` を開いて `{"ok":true}` と表示されれば、API サーバーは動いている。
+- ターミナルの表示が `Server listening on http://localhost:3001` なら、サーバーの起動は成功している。
+
+### 停止する
+
+それぞれのターミナルで `Ctrl + C`。
+
+### 本番用にビルドして動かす
+
+```bash
+npm run build                                # server/dist/ と client/dist/ を作る
+cd server && npm start                       # API サーバーを起動（node dist/index.js、3001 番）
+```
+
+- `client/dist/` は静的ファイル（HTML・JS・CSS）。配信用の Web サーバー（nginx など）で公開し、`/api/*` を API サーバーへ転送する。
+- 本番ビルドに、テストコードは含まれない（`server/tsconfig.build.json` は `src/` だけを出力する）。
+
+### うまくいかないとき
+
+| 症状 | 対処 |
+|---|---|
+| `EADDRINUSE`（ポートが使用中） | 3001 または 5173 を使っているプログラムを止める。`server/.env` の `PORT` を変える場合は、`client/vite.config.ts` の proxy の転送先も合わせる |
+| 画面は出るが一覧が空 / API エラー | API サーバー（①）が起動しているか確認する。`npx prisma migrate deploy` を実行したか確認する |
+| `Environment variable not found: DATABASE_URL` | `server/.env` が無い。`server/.env.example` をコピーして作る |
+| サンプルデータを入れ直したい | `cd server && npm run seed`（既存データは全削除される） |
 
 ## 使い方
 
-セットアップ後、`http://localhost:5173` をブラウザで開く。`npm run seed` を実行済みなら、サンプルのプロジェクト・タスクが入った状態で確認できる。
+起動後、`http://localhost:5173` をブラウザで開く。`npm run seed` を実行済みなら、サンプルのプロジェクト・タスクが入った状態で確認できる。
 
 ### 1. プロジェクトを作る・アーカイブする
 
@@ -287,35 +337,47 @@ npm run dev:client         # http://localhost:5173  ← ブラウザではこち
 ユニット/統合は **Vitest**、E2E は **Playwright**。スクリプトは分離している。詳細な方針とケース一覧は [docs/TEST_DESIGN.md](docs/TEST_DESIGN.md)。
 
 ```bash
-npm test           # Vitest（server: 78件 / client: 55件）
-npm run test:e2e   # Playwright E2E（5シナリオ）
+npm test           # Vitest（server の単体・結合 + client の単体・部品）
+npm run test:e2e   # Playwright E2E（専用 DB で、サーバーと画面を自動で起動する）
 ```
 
-- **Vitest（server）**: Supertest で各エンドポイントを検証。専用 DB `server/test.db` を各テスト前にリセット。循環参照検出・統計（isDone 駆動）・アーカイブ除外・ステータス削除制約を重点的にカバー。
-  - `validation.test.ts` … zod スキーマの境界値（上限ちょうど＝成功 / 上限超過＝400 を対で確認）。
-  - `app.test.ts` … 配線（health / 404 / CORS / JSON 解析 / ルーターのマウント）。他テストの通り道に乗らず、壊れても素通りしてしまうため専用テストで守る。
-- **Vitest（client）**: `utils/tree.ts` とドラッグ判定ロジック `utils/dnd.ts`（純関数に切り出し済み）、`StatsCards` の描画。
-- **Playwright**: `playwright.config.ts` の `webServer` が専用 DB `server/e2e.db` でサーバー/クライアントを自動起動。プロジェクト作成→サブタスク、カンバンのドラッグでのステータス変更＋永続化、ステータス追加/削除制約、アーカイブ/復元を検証。初回のみ `npx playwright install chromium` が必要。
+| 種類 | 場所 | 内容 |
+|---|---|---|
+| 単体テスト（client） | `client/src/` 内、対象のソースの隣（`*.test.ts(x)`） | `utils/`（ツリー・ドラッグ判定・期限・ガントなど）、`i18n`、フォーム部品の描画と入力検証 |
+| 単体テスト（server） | `server/tests/unit/` | zod スキーマの境界値 |
+| 結合テスト（server） | `server/tests/integration/` | Supertest で API を検証（専用 DB `server/test.db` を各テスト前にリセット）。循環参照・統計（isDone 駆動）・アーカイブ除外・ステータス削除制約・エラー応答・配線（`app.test.ts`） |
+| E2E | `e2e/`（ルート直下） | Playwright。専用 DB `server/e2e.db` で、プロジェクト作成→サブタスク、カンバンのドラッグ、ステータス追加/削除制約、アーカイブ/復元（確認ダイアログ） |
 
-いずれのテストも開発用 `dev.db` には触れない。
+- E2E は、初回のみ `npx playwright install chromium` が必要。
+- いずれのテストも開発用 `dev.db` には触れない。
+- server のテスト用の共通部品（DB の初期化・テストデータ作成）は `server/tests/helpers/`、client は `client/src/test/`。
 
 ## ディレクトリ構成
 
 ```
-server/
-  src/
-    index.ts        # Expressアプリ本体、ルーティング登録
-    db.ts            # PrismaClientシングルトン
-    constants.ts      # status / priority の許可値
-    routes/           # projects.ts / tasks.ts / tags.ts / stats.ts
-  prisma/
-    schema.prisma
-    seed.ts
-client/
-  src/
-    api/              # リソースごとのReact Queryフック（client.tsが共通fetchラッパー）
-    components/        # TaskTree / TaskNode / 各種モーダル・フィルタバー等
-    pages/             # Dashboard.tsx / ProjectView.tsx
-    utils/tree.ts      # フラットなTask[]をツリー構造に変換
-    types/             # 型定義・ラベル・カラー定数
+/（リポジトリのルート。npm workspaces）
+├─ package.json / eslint.config.mjs / playwright.config.ts   # 全体の設定
+├─ server/                 # API（Express + Prisma + SQLite）
+│  ├─ src/                 # 本番コードのみ
+│  │  ├─ index.ts / app.ts # 起動 / アプリ本体（createApp）
+│  │  ├─ db.ts / constants.ts / schemas.ts / errors.ts / dueRange.ts
+│  │  └─ routes/           # projects / tasks / statuses / tags / holidays / stats
+│  ├─ prisma/              # schema.prisma / migrations/ / seed.ts
+│  ├─ tests/
+│  │  ├─ unit/             # 単体テスト
+│  │  ├─ integration/      # 結合テスト（Supertest）
+│  │  └─ helpers/          # setup.ts / factories.ts
+│  └─ tsconfig.json / tsconfig.build.json / vitest.config.ts
+├─ client/                 # 画面（Vite + React + Tailwind）
+│  ├─ index.html / public/ # 起動の入口 / 静的ファイル（アイコン）
+│  ├─ src/                 # 本番コード ＋ 単体テスト（*.test.ts(x) は対象の隣）
+│  │  ├─ api/ components/ pages/ i18n/ utils/ types/
+│  │  ├─ main.tsx / App.tsx / index.css
+│  │  └─ test/             # テスト用の共通部品
+│  └─ vite.config.ts / vitest.config.ts / tailwind.config.js
+├─ e2e/                    # E2E（Playwright）
+├─ docs/                   # 設計書（要件・基本設計・画面設計・テスト設計など）
+└─ scripts/                # 補助スクリプト（画面キャプチャなど）
 ```
+
+本番ビルドの出力先（`server/dist/`、`client/dist/`）と、データベース（`server/*.db`）は Git に含めない。

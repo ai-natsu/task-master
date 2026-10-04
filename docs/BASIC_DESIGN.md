@@ -35,7 +35,7 @@ TaskMaster のクライアント（React SPA）・サーバー（Express API）�
 | `docs/SYSTEM_DESIGN.md` | システム方式・非機能設計（アーキテクチャ／インフラ／セキュリティ／性能／運用。フェーズ1・2の段階設計） |
 | `docs/TEST_DESIGN.md` | テスト方針・ケース |
 | `docs/STATIC_ANALYSIS.md` | 静的解析の方針 |
-| `README.md` | 全体像・セットアップ |
+| `README.md` | 全体像・起動方法 |
 
 ### 1.4 用語
 要件定義書 §3 に準拠（プロジェクト／タスク／サブタスク／ステータス／完了扱い(`isDone`)／優先度／タグ／アーカイブ）。
