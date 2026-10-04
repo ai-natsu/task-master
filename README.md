@@ -6,12 +6,11 @@
 
 - [画面要件](#画面要件)
 - [技術要件](#技術要件)
-- [データベース定義](#データベース定義)
-- [API仕様](#api仕様)
 - [起動方法](#起動方法)
 - [使い方](#使い方)
 - [テスト](#テスト)
 - [ディレクトリ構成](#ディレクトリ構成)
+- [設計書](#設計書)
 
 ## 画面要件
 
@@ -107,103 +106,6 @@
 
 - Node.js（LTS推奨）
 - npm workspaces 構成（ルート / `server` / `client`）
-
-## データベース定義
-
-Prisma schema: [server/prisma/schema.prisma](server/prisma/schema.prisma)
-
-### ER概要
-
-```
-Project 1───N Task ───N┐
-                 │      ├──N TaskTag N──┐
-                 ├─self (parentId)      │
-                 └──N─1 Status         Tag
-```
-
-### Project
-
-| カラム | 型 | 説明 |
-|---|---|---|
-| id | String (cuid) | 主キー |
-| name | String | プロジェクト名 |
-| description | String? | 説明（任意） |
-| color | String | 表示色（デフォルト `#6366f1`） |
-| archived | Boolean | アーカイブフラグ。trueのプロジェクトは各一覧・集計から除外される（デフォルト false） |
-| order | Int | サイドバーでの表示順 |
-| createdAt / updatedAt | DateTime | 自動管理 |
-
-### Task
-
-| カラム | 型 | 説明 |
-|---|---|---|
-| id | String (cuid) | 主キー |
-| title | String | タスク名 |
-| description | String? | 詳細（任意） |
-| status | String | `Status.id` への外部キー（`onDelete: Restrict` — 使用中ステータスは削除不可）。デフォルトの3件は `TODO` / `IN_PROGRESS` / `DONE`、追加分はcuid |
-| priority | String | `LOW` \| `MEDIUM` \| `HIGH` \| `URGENT` |
-| startDate | DateTime? | 開始日（任意、ガントチャートのバー始点） |
-| dueDate | DateTime? | 期限（任意） |
-| order | Int | 同一階層内での並び順 |
-| projectId | String | 所属プロジェクト（`onDelete: Cascade`） |
-| parentId | String? | 親タスクへの自己参照。`null` なら最上位タスク（`onDelete: Cascade`で親削除時に子孫も削除） |
-| createdAt / updatedAt | DateTime | 自動管理 |
-
-インデックス：`projectId` / `parentId` / `status` / `priority` / `dueDate`
-
-### Status
-
-ユーザーが設定画面で自由に追加・変更できるタスクのステータス。マイグレーションで `TODO`（未着手）/ `IN_PROGRESS`（進行中）/ `DONE`（完了、`isDone` が true）の3件が投入される。
-
-| カラム | 型 | 説明 |
-|---|---|---|
-| id | String (cuid) | 主キー（デフォルト3件のみ固定文字列） |
-| label | String | 表示名（例: 未着手、レビュー中） |
-| color | String | 表示色（デフォルト `#64748b`） |
-| order | Int | 表示順（カンバンの列順・プルダウンの並び順） |
-| isDone | Boolean | 完了扱いフラグ。完了率・期限超過・「完了した数」の集計に使われる |
-
-### Tag
-
-| カラム | 型 | 説明 |
-|---|---|---|
-| id | String (cuid) | 主キー |
-| name | String | タグ名（ユニーク） |
-| color | String | 表示色（デフォルト `#94a3b8`） |
-
-### Holiday
-
-| カラム | 型 | 説明 |
-|---|---|---|
-| id | String (cuid) | 主キー |
-| date | String | `YYYY-MM-DD`。ユニーク（CSV一括登録で一致する日付の行を上書き） |
-| name | String | 祝日名 |
-
-### TaskTag（中間テーブル）
-
-Task と Tag の多対多を表す join モデル。`taskId` + `tagId` の複合主キー。
-
-## API仕様
-
-すべて `/api` 配下。ベースURLは開発時 `http://localhost:3001`。
-
-| メソッド | パス | 概要 |
-|---|---|---|
-| GET | `/api/projects` | プロジェクト一覧（タスク件数付き）。デフォルトはアーカイブ除外、`?includeArchived=true` で全件 |
-| POST | `/api/projects` | プロジェクト作成 |
-| PATCH | `/api/projects/reorder` | 並び順の一括更新 |
-| GET/PATCH/DELETE | `/api/projects/:id` | 取得・更新・削除 |
-| GET | `/api/tasks` | タスク一覧（`projectId`/`status`/`priority`/`tagId`/`search`/`parentId` でフィルタ。`projectId`省略時はアーカイブ済みプロジェクトのタスクを除外） |
-| POST | `/api/tasks` | タスク作成 |
-| PATCH | `/api/tasks/reorder` | 並び順・親・所属プロジェクトの一括更新 |
-| GET/PATCH/DELETE | `/api/tasks/:id` | 取得・更新・削除 |
-| PATCH | `/api/tasks/:id/move` | 親タスク／プロジェクトの変更（循環参照を検知して拒否） |
-| GET/POST | `/api/tags` | タグ一覧・作成 |
-| DELETE | `/api/tags/:id` | タグ削除 |
-| GET/POST | `/api/statuses` | ステータス一覧・作成 |
-| PATCH | `/api/statuses/reorder` | ステータスの並び順一括更新 |
-| PATCH/DELETE | `/api/statuses/:id` | ステータス更新・削除（使用中/最後の1件は409） |
-| GET | `/api/stats` | 集計（`projectId`省略で全体集計） |
 
 ## 起動方法
 
@@ -385,3 +287,14 @@ npm run test:e2e   # Playwright E2E（専用 DB で、サーバーと画面を�
 ```
 
 本番ビルドの出力先（`server/dist/`、`client/dist/`）と、データベース（`server/*.db`）は Git に含めない。
+
+## 設計書
+
+| 文書 | 内容 |
+|---|---|
+| [基本設計書](docs/BASIC_DESIGN.md) | 機能・画面・**API 仕様（§5）**・**データ設計（§6、ER図・テーブル定義）**・共通設計（バリデーション・エラー処理など） |
+| [画面設計書](docs/SCREEN_DESIGN.md) | 画面のレイアウトと項目 |
+| [操作仕様書](docs/OPERATION_SPEC.md) | クリック・ドラッグ・マウスオーバーの操作 |
+| [システム設計書](docs/SYSTEM_DESIGN.md) | アーキテクチャ・構成・セキュリティ・運用 |
+| [テスト設計書](docs/TEST_DESIGN.md) | テストの方針・種類・ケース |
+| [静的解析](docs/STATIC_ANALYSIS.md) | ESLint の方針・設定 |

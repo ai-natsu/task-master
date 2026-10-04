@@ -279,7 +279,7 @@ flowchart LR
 ## 5. 外部インターフェース設計（API）
 
 ### 5.1 共通仕様
-- 形式：REST / JSON、ベースパス `/api`。
+- 形式：REST / JSON、ベースパス `/api`（開発時のベース URL は `http://localhost:3001`。画面からは Vite の proxy で転送される）。
 - 成功：取得/作成=200/201、削除=204。失敗：検証=400、未検出=404、制約違反（一意・削除制約）=409。
 - ボディは `express.json()` で解析。CORS 有効。
 
@@ -287,20 +287,20 @@ flowchart LR
 
 | API-ID | メソッド・パス | 概要 |
 |---|---|---|
-| API-P1 | GET `/api/projects` | 一覧（既定は非アーカイブ、`?includeArchived=true`で全件） |
+| API-P1 | GET `/api/projects` | 一覧（タスク件数付き。既定は非アーカイブ、`?includeArchived=true` で全件） |
 | API-P2 | POST `/api/projects` | 作成 |
 | API-P3 | GET `/api/projects/:id` | 単体取得 |
 | API-P4 | PATCH `/api/projects/:id` | 更新（アーカイブ切替含む） |
 | API-P5 | PATCH `/api/projects/reorder` | 並べ替え |
 | API-P6 | DELETE `/api/projects/:id` | 削除（タスク連鎖削除） |
-| API-T1 | GET `/api/tasks` | 一覧（`projectId`/`status`/`priority`/`parentId`/`search`） |
+| API-T1 | GET `/api/tasks` | 一覧（`projectId`/`status`/`priority`/`tagId`/`search`/`parentId` で絞り込み。`projectId` を省略すると、アーカイブ済みプロジェクトのタスクを除外） |
 | API-T2 | POST `/api/tasks` | 作成 |
 | API-T3 | GET `/api/tasks/:id` | 単体取得 |
 | API-T4 | PATCH `/api/tasks/:id` | 更新 |
-| API-T5 | PATCH `/api/tasks/:id/move` | 親の付け替え（循環参照拒否） |
-| API-T6 | PATCH `/api/tasks/reorder` | 並べ替え（1トランザクション） |
+| API-T5 | PATCH `/api/tasks/:id/move` | 親タスク／プロジェクトの変更（循環参照を検知して拒否） |
+| API-T6 | PATCH `/api/tasks/reorder` | 並び順・親・所属プロジェクトの一括更新（1トランザクション） |
 | API-T7 | DELETE `/api/tasks/:id` | 削除（子孫連鎖削除） |
-| API-S1〜5 | GET/POST/PATCH/DELETE `/api/statuses`, PATCH `/api/statuses/reorder` | ステータス管理 |
+| API-S1〜5 | GET/POST/PATCH/DELETE `/api/statuses`, PATCH `/api/statuses/reorder` | ステータス管理（使用中・最後の 1 件の削除は 409） |
 | API-G1〜3 | GET/POST `/api/tags`, DELETE `/api/tags/:id` | タグ管理（GET は付与件数 `_count.tasks` を含む） |
 | API-G4 | PATCH `/api/tags/:id` | タグの改名・色変更（名前が重複する場合は 409） |
 | API-ST | GET `/api/stats` | 統計（`?projectId`指定＝当該、未指定＝非アーカイブ横断） |
@@ -359,6 +359,8 @@ flowchart LR
 
 ## 6. データ設計
 
+データベースは SQLite（Prisma）。スキーマの定義は [server/prisma/schema.prisma](../server/prisma/schema.prisma)、変更履歴は `server/prisma/migrations/`。サンプルデータは `server/prisma/seed.ts`（`npm run seed`）で投入する。
+
 ### 6.1 ER図
 
 ```mermaid
@@ -380,19 +382,21 @@ erDiagram
 | name | String | × | − | 1〜200文字 |
 | description | String | ○ | − | ≤2000文字 |
 | color | String | × | #6366f1 | 表示色 |
-| archived | Boolean | × | false | アーカイブ状態 |
-| order | Int | × | 0 | 並び順 |
+| archived | Boolean | × | false | アーカイブ状態。true のプロジェクトは、各一覧・集計から除外される |
+| order | Int | × | 0 | サイドバーでの表示順 |
 | createdAt/updatedAt | DateTime | × | 自動 | 監査時刻 |
 
 **Status**
 
 | カラム | 型 | NULL | 既定 | 説明 |
 |---|---|---|---|---|
-| id | String | × | 自動※ | PK（初期3件は文字列id、追加はcuid） |
-| label | String | × | − | 1〜50文字 |
+| id | String | × | 自動※ | PK（初期の文字列idは `TODO` / `IN_PROGRESS` / `DONE` / `WITHDRAWN`、追加分はcuid） |
+| label | String | × | − | 1〜50文字。表示名（例：未着手、レビュー中） |
 | color | String | × | #64748b | 表示色 |
-| order | Int | × | 0 | 並び順 |
-| isDone | Boolean | × | false | 完了扱いフラグ |
+| order | Int | × | 0 | 表示順（カンバンの列順・プルダウンの並び順） |
+| isDone | Boolean | × | false | 完了扱いフラグ。完了率・期限超過・「完了した数」の集計に使われる |
+
+ステータスは、設定画面で自由に追加・変更できる。初期の 4 件は、マイグレーションで投入される。
 
 **Task**
 
@@ -401,12 +405,12 @@ erDiagram
 | id | String(cuid) | × | 自動 | PK |
 | title | String | × | − | 1〜300文字 |
 | description | String | ○ | − | ≤5000文字 |
-| status | String(FK→Status) | × | "TODO" | onDelete: Restrict |
+| status | String(FK→Status) | × | "TODO" | onDelete: Restrict（使用中のステータスは削除できない） |
 | priority | String | × | "MEDIUM" | 区分値 |
-| startDate/dueDate | DateTime | ○ | − | 期間 |
-| order | Int | × | 0 | 同階層の並び順 |
+| startDate/dueDate | DateTime | ○ | − | 開始日（ガントチャートのバーの始点）/ 期限 |
+| order | Int | × | 0 | 同じ階層内での並び順 |
 | projectId | String(FK→Project) | × | − | onDelete: Cascade |
-| parentId | String(FK→Task) | ○ | − | 自己参照, onDelete: Cascade |
+| parentId | String(FK→Task) | ○ | − | 親タスクへの自己参照。null なら最上位のタスク。onDelete: Cascade（親を削除すると子孫も削除される） |
 
 index: projectId / parentId / status / priority / dueDate
 
