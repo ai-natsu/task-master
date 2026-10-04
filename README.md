@@ -164,7 +164,7 @@ URL：`/settings`
 2. ダウンロードしたファイルを実行し、画面の指示に従って「Next」を押して進める（設定は、初期値のままでよい）。
 3. インストール後、**ターミナルを開き直す**（次の確認コマンドを認識させるため）。
 
-コマンドでインストールする場合（PowerShell）：
+コマンドでインストールする場合（PowerShell。**どのフォルダで実行してもよい**）：
 
 ```bash
 winget install OpenJS.NodeJS.LTS
@@ -181,7 +181,7 @@ winget install OpenJS.NodeJS.LTS
 
 **インストールの確認**
 
-ターミナルで次を実行し、バージョンが表示されればよい（Node.js は 18 以上、npm は Node.js に同梱のもの）。
+ターミナルで（**どのフォルダでもよい**）次を実行し、バージョンが表示されればよい（Node.js は 18 以上、npm は Node.js に同梱のもの）。
 
 ```bash
 node -v      # 例：v22.12.0
@@ -191,6 +191,8 @@ npm -v       # 例：10.9.0
 #### 3.1.3 ソースコードの入手
 
 どちらかの方法で、ソースコードを入手する。
+
+**実行する場所：** ソースコードを置きたいフォルダ（例：`C:\Users\あなたの名前\work`）でターミナルを開いて実行する。実行すると、そのフォルダの中に `task-master` フォルダができる。**この `task-master` フォルダが、以降の「クローンしたリポジトリのルートディレクトリ」である。**
 
 ```bash
 git clone https://github.com/ai-natsu/task-master.git
@@ -211,7 +213,10 @@ git checkout develop/v1
 
 > 次の 3.2.1 の起動スクリプト（`start.cmd` / `start.sh` / `start.command`）を使う場合、この手順は**自動で行われる**ので、飛ばしてよい。
 
+**実行する場所：** クローンしたリポジトリのルートディレクトリ（3.1.4）。次のコマンドの 1 行目で、そのフォルダに移動する。
+
 ```bash
+cd <リポジトリのルートフォルダ>
 npm install                                  # server / client 両方の依存パッケージをインストール
 cp server/.env.example server/.env           # 環境設定を作る（Windows の PowerShell は Copy-Item server\.env.example server\.env）
 cd server
@@ -243,9 +248,9 @@ cd server && npm run seed
 
 | 環境 | 操作 |
 |---|---|
-| Windows | `start.cmd` をダブルクリックする |
-| Mac | `start.command` を Finder でダブルクリックする（初回だけ、右クリック → 「開く」を選び、確認画面で「開く」を押す） |
-| Linux / ターミナル | `./start.sh` を実行する |
+| Windows | クローンしたリポジトリのルートディレクトリにある `start.cmd` をダブルクリックする |
+| Mac | クローンしたリポジトリのルートディレクトリにある `start.command` を Finder でダブルクリックする（初回だけ、右クリック → 「開く」を選び、確認画面で「開く」を押す） |
+| Linux / ターミナル | クローンしたリポジトリのルートディレクトリで、`./start.sh` を実行する |
 
 起動スクリプトは、必要な準備を**自動で**行う。
 
@@ -256,9 +261,10 @@ cd server && npm run seed
 
 ブラウザが自動で開かない場合は、**http://localhost:3001** を開く。
 
-スクリプトを使わずに、コマンドで起動する場合（3.1.5 の準備が済んでいること）：
+スクリプトを使わずに、コマンドで起動する場合（3.1.5 の準備が済んでいること）。**クローンしたリポジトリのルートディレクトリ**で実行する。
 
 ```bash
+cd <リポジトリのルートフォルダ>
 npm run build      # server/dist/ と client/dist/ を作る（ソースを更新したときも実行する）
 npm start          # サーバーを起動する（http://localhost:3001）
 ```
@@ -298,7 +304,7 @@ npm start          # サーバーを起動する（http://localhost:3001）
 
 手順 1 で解決しない場合は、ターミナルで次を実行する。
 
-*Windows（PowerShell またはコマンドプロンプト）*
+*Windows（PowerShell またはコマンドプロンプト。どのフォルダで実行してもよい）*
 
 ```bash
 netstat -ano | findstr :3001
@@ -310,7 +316,7 @@ netstat -ano | findstr :3001
 taskkill /PID 12345 /F
 ```
 
-*Mac / Linux*
+*Mac / Linux（どのフォルダで実行してもよい）*
 
 ```bash
 lsof -i :3001
@@ -417,25 +423,28 @@ kill 12345            # lsof の表示の PID（数字）を指定する
 
 テストは、**単体・結合（Vitest）**、**UI 部品（Playwright CT）**、**E2E（Playwright）**の 3 つに分かれていて、それぞれ別のコマンドで実行する。実行する前に、3.1 のインストール（`npm install`）が済んでいること。
 
+**実行する場所：** この章のコマンドは、特に記載がない限り、**クローンしたリポジトリのルートディレクトリ**（3.1.4）で実行する。各コマンドの前に、そのフォルダへ移動する `cd <リポジトリのルートフォルダ>` を書いている。
+
 詳細（種類・置き場所・方針・ケース）は、[テスト設計書](docs/TEST_DESIGN.md) を参照。
 
 ### 5.1 単体・結合テスト（Vitest）
 
 ブラウザもサーバーも使わない、速いテスト。server の API（結合）と、client の関数・ロジック（単体）を検証する。
 
-1. クローンしたリポジトリのルートディレクトリで、ターミナルを開く（3.1.4）。
-2. 次を実行する。
+1. ターミナルを開く（3.1.4）。
+2. 次のコマンドを実行する。1 行目は、クローンしたリポジトリのルートディレクトリへ移動するコマンドである（すでにそのフォルダでターミナルを開いている場合は、1 行目は不要）。
 
 ```bash
+cd <リポジトリのルートフォルダ>
 npm test
 ```
 
-| やりたいこと | コマンド |
+| やりたいこと | コマンド（特記がなければ、ルートディレクトリで実行する） |
 |---|---|
 | server だけ実行する | `npm run test --workspace=server` |
 | client だけ実行する | `npm run test --workspace=client` |
-| 1 ファイルだけ実行する（server） | `cd server` → `npx vitest run tests/integration/tasks.test.ts` |
-| 1 ファイルだけ実行する（client） | `cd client` → `npx vitest run src/utils/tree.test.ts` |
+| 1 ファイルだけ実行する（server） | ルートディレクトリから `cd server` で移動して、`npx vitest run tests/integration/tasks.test.ts`（終わったら `cd ..` でルートに戻る） |
+| 1 ファイルだけ実行する（client） | ルートディレクトリから `cd client` で移動して、`npx vitest run src/utils/tree.test.ts`（終わったら `cd ..` でルートに戻る） |
 | ファイルを変更するたびに自動で再実行する | `npm run test:watch --workspace=server`（client も同様） |
 | カバレッジ（網羅率）を出す | `npm run test:coverage` |
 
@@ -448,16 +457,18 @@ npm test
 1. **初回だけ**、テスト用のブラウザ（Chromium）をインストールする。
 
 ```bash
+cd <リポジトリのルートフォルダ>
 npx playwright install chromium
 ```
 
 2. 次を実行する。
 
 ```bash
+cd <リポジトリのルートフォルダ>
 npm run test:ct
 ```
 
-| やりたいこと | コマンド |
+| やりたいこと | コマンド（ルートディレクトリで実行する） |
 |---|---|
 | 1 ファイルだけ実行する | `npm run test:ct --workspace=client -- src/components/Badges.test.tsx` |
 | テスト名で絞り込む | `npm run test:ct --workspace=client -- -g "V-3a"` |
@@ -474,10 +485,11 @@ npm run test:ct
 3. 次を実行する。
 
 ```bash
+cd <リポジトリのルートフォルダ>
 npm run test:e2e
 ```
 
-| やりたいこと | コマンド |
+| やりたいこと | コマンド（ルートディレクトリで実行する） |
 |---|---|
 | 1 ファイルだけ実行する | `npx playwright test e2e/navigation.spec.ts` |
 | テスト名で絞り込む | `npx playwright test -g "E-7"` |
@@ -490,6 +502,7 @@ npm run test:e2e
 ### 5.4 静的解析（ESLint）
 
 ```bash
+cd <リポジトリのルートフォルダ>
 npm run check
 ```
 
