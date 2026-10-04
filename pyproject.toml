@@ -2,6 +2,8 @@
 name = "taskmaster"
 version = "2.0.0"
 description = "TaskMaster デスクトップ版（Python + CustomTkinter）"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "customtkinter>=5.2",
@@ -19,7 +21,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 # パッケージは app だけ。tests・packaging・docs などを、自動で検出して取り込まないようにする

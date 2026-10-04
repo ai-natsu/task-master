@@ -36,6 +36,7 @@ TaskMaster {version}（Windows 版）
 -----------------
 TaskMaster.exe           アプリ本体
 README.txt               この文書
+LICENSE.txt              TaskMaster のライセンス（AGPL-3.0）
 THIRD_PARTY_NOTICES.txt  利用しているライブラリのライセンス表記
 holidays_sample.csv      祝日の取り込み例（2026 年分）
 

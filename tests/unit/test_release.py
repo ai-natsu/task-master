@@ -31,6 +31,7 @@ def test_zip_unpacks_into_a_taskmaster_folder_with_everything_needed(release, fa
     with zipfile.ZipFile(zip_path) as zf:
         names = sorted(zf.namelist())
     assert names == [
+        "TaskMaster/LICENSE.txt",
         "TaskMaster/README.txt",
         "TaskMaster/THIRD_PARTY_NOTICES.txt",
         "TaskMaster/TaskMaster.exe",
