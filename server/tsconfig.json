@@ -1,15 +1,15 @@
 {
+  // 型チェック・ESLint 用（src と tests の両方）。本番ビルドは tsconfig.build.json（src のみ）。
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "outDir": "dist",
-    "rootDir": "src",
+    "noEmit": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["src"]
+  "include": ["src", "tests"]
 }

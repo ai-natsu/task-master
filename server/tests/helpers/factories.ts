@@ -1,4 +1,4 @@
-import { prisma } from "../db.js";
+import { prisma } from "../../src/db.js";
 
 export const DEFAULT_STATUSES = [
   { id: "TODO", label: "未着手", color: "#64748b", order: 0, isDone: false },

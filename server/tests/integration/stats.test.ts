@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
-import "../test/setup.js";
-import { createApp } from "../app.js";
-import { prisma } from "../db.js";
-import { makeProject, makeTask, seedStatuses } from "../test/factories.js";
+import "../helpers/setup.js";
+import { createApp } from "../../src/app.js";
+import { prisma } from "../../src/db.js";
+import { makeProject, makeTask, seedStatuses } from "../helpers/factories.js";
 
 const app = createApp();
 

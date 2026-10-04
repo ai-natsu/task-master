@@ -6,7 +6,7 @@ import {
   taskReorderSchema,
   tagCreateSchema,
   statusCreateSchema,
-} from "./schemas.js";
+} from "../../src/schemas.js";
 
 // Pure unit tests: the schemas are called directly, with no HTTP, Express or
 // database involved. Each limit is pinned with a pair (max passes, max+1

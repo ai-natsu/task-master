@@ -3,7 +3,7 @@ import { existsSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { beforeAll, beforeEach, afterAll } from "vitest";
-import { prisma } from "../db.js";
+import { prisma } from "../../src/db.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const serverRoot = resolve(__dirname, "../..");

@@ -1,5 +1,10 @@
 {
-  // 本番ビルド用。型チェック・ESLint 用の tsconfig.json からテストを除いたもの。
+  // 本番ビルド用。src だけを dist/ に出力する（テストは含めない）。
   "extends": "./tsconfig.json",
-  "exclude": ["src/**/*.test.ts", "src/test"]
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
 }

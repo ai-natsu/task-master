@@ -37,7 +37,7 @@ npm run test:e2e   # Playwright E2E（server/e2e.db を自動初期化して起�
 | レイヤー | 対象 | 目的 | 詳細 |
 |---|---|---|---|
 | ユニット（純粋関数） | `client/src/utils/{tree,dnd,gantt}.ts`、`server/src/schemas.ts` — 副作用のないロジック | 変換・計算・検証規則の正しさを高速に検証 | [§3](#sec-3) |
-| API 統合 | `server/src/routes/*.ts` + Prisma + テスト用 SQLite | DB の挙動込みでしか守れないもの（制約・カスケード・集計・配線）を検証 | [§2](#sec-2) |
+| API 統合 | `server/src/routes/*.ts` + Prisma + テスト用 SQLite（`server/tests/integration/`） | DB の挙動込みでしか守れないもの（制約・カスケード・集計・配線）を検証 | [§2](#sec-2) |
 | コンポーネント | `client/src/components`・`pages` | API をモックし、描画とユーザー操作を検証 | [§4](#sec-4) |
 | E2E | 実サーバー + 実ブラウザ | 主要フローが通しで動くことを検証 | [§5](#sec-5) |
 
@@ -96,15 +96,22 @@ task-master/
 │  ├─ kanban.spec.ts           # E-2 ドラッグでのステータス変更・永続化
 │  └─ statuses.spec.ts         # E-4 ステータス追加 / E-5 削除制約
 ├─ server/
-│  ├─ vitest.config.ts         # env で DATABASE_URL="file:./test.db" を注入
-│  └─ src/
-│     ├─ app.ts                # createApp()（listen と分離し Supertest から使う）
-│     ├─ app.test.ts           # 配線の検証（health / 404 / CORS / json / mount）
-│     ├─ test/setup.ts         # test.db を作り直して migrate、各テスト前に全行削除
-│     ├─ test/factories.ts     # seedStatuses / makeProject / makeTask
-│     ├─ routes/*.test.ts      # API 統合テスト（Supertest）
-│     ├─ schemas.ts            # 全ルーターの zod スキーマ（export して単体テスト可能に）
-│     └─ schemas.test.ts       # zod スキーマの境界値（§3.2・DB 不要 = 高速）
+│  ├─ vitest.config.ts         # env で DATABASE_URL="file:./test.db" を注入。include は tests/ 配下
+│  ├─ tsconfig.json            # 型チェック・ESLint 用（src と tests）
+│  ├─ tsconfig.build.json      # 本番ビルド用（src のみ。テストは dist/ に出さない）
+│  ├─ src/                     # 本番コードのみ（テストは置かない）
+│  │  ├─ app.ts                # createApp()（listen と分離し Supertest から使う）
+│  │  └─ schemas.ts            # 全ルーターの zod スキーマ（export して単体テスト可能に）
+│  └─ tests/
+│     ├─ unit/
+│     │  └─ schemas.test.ts    # zod スキーマの境界値（§3.2・DB 不要 = 高速）
+│     ├─ integration/          # API 統合テスト（Supertest + test.db）
+│     │  ├─ app.test.ts        # 配線の検証（health / 404 / CORS / json / mount）
+│     │  ├─ errors.test.ts     # エラー応答の形式・メッセージ
+│     │  └─ projects / tasks / statuses / tags / holidays / stats .test.ts
+│     └─ helpers/
+│        ├─ setup.ts           # test.db を作り直して migrate、各テスト前に全行削除
+│        └─ factories.ts       # seedStatuses / makeProject / makeTask
 └─ client/
    ├─ vitest.config.ts         # environment: "jsdom"、Vite 設定を継承
    └─ src/
@@ -116,7 +123,8 @@ task-master/
       └─ components/*.test.tsx # コンポーネント
 ```
 
-- **切り分けの境界**: `e2e/` 配下＝Playwright、`src/**/*.test.ts(x)`＝Vitest。Vitest 設定の `include` を `src/` 配下に限定し、Playwright の `testDir` は `e2e/` に限定して、互いを拾わないようにする。
+- **切り分けの境界**: `e2e/` 配下＝Playwright、それ以外＝Vitest。Vitest の `include` は、server は `tests/` 配下、client は `src/` 配下に限定し、Playwright の `testDir` は `e2e/` に限定して、互いを拾わないようにする。
+- **置き場所の規則**: server のテストは `server/tests/`（`src/` には本番コードだけを置く）。client の単体テストは、対象のソースの隣に `*.test.ts(x)` で置く（Vite は読み込まれないファイルを出力に含めない）。本番ビルドにテストが混ざらないよう、server の本番ビルドは `tsconfig.build.json`（`src` のみ）を使う。
 - **テスト用 DB**: サーバー Vitest は `vitest.config.ts` の `test.env` で `DATABASE_URL`（`test.db`）を注入する。`db.ts` が PrismaClient を生成する前に値が確定している必要があるため、`.env` 読み込みではなくこの方式を採る。Playwright は `playwright.config.ts` の `webServer.env` で `e2e.db` を指定する。いずれも開発用 `dev.db` に触れない。
 
 ### 原則

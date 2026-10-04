@@ -25,13 +25,13 @@ export default tseslint.config(
   // ── ベース ──────────────────────────────────────────
   js.configs.recommended,
 
-  // ── 型情報つきルール（tsconfig の include が src のみなので src 配下に限定） ──
+  // ── 型情報つきルール（tsconfig の include 配下に限定：server は src と tests、client は src） ──
   ...tseslint.configs.recommendedTypeChecked.map((c) => ({
     ...c,
-    files: ["server/src/**/*.ts", "client/src/**/*.{ts,tsx}"],
+    files: ["server/src/**/*.ts", "server/tests/**/*.ts", "client/src/**/*.{ts,tsx}"],
   })),
   {
-    files: ["server/src/**/*.ts", "client/src/**/*.{ts,tsx}"],
+    files: ["server/src/**/*.ts", "server/tests/**/*.ts", "client/src/**/*.{ts,tsx}"],
     languageOptions: { parserOptions: { projectService: true } },
     rules: {
       "@typescript-eslint/no-floating-promises": "error", // await 漏れ
@@ -57,7 +57,7 @@ export default tseslint.config(
     files: [
       "**/*.test.{ts,tsx}",
       "e2e/**/*.ts",
-      "server/src/test/**/*.ts",
+      "server/tests/**/*.ts",
       "client/src/test/**/*.{ts,tsx}",
     ],
     rules: {

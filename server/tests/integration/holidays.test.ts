@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
-import "../test/setup.js";
-import { createApp } from "../app.js";
+import "../helpers/setup.js";
+import { createApp } from "../../src/app.js";
 
 const app = createApp();
 
