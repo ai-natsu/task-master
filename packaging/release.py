@@ -112,6 +112,8 @@ def stage_release(exe_path: Path, stage_dir: Path, version: str) -> Path:
     readme = (FILES / "README.txt").read_text(encoding="utf-8").replace("{version}", version)
     _write_text(folder / "README.txt", readme)
     _write_text(folder / "THIRD_PARTY_NOTICES.txt", build_notices())
+    # TaskMaster 自体のライセンス（AGPL-3.0）。メモ帳で読めるよう .txt にして同梱する
+    _write_text(folder / "LICENSE.txt", (ROOT / "LICENSE").read_text(encoding="utf-8"))
     shutil.copy2(FILES / "holidays_sample.csv", folder / "holidays_sample.csv")
     return folder
 
