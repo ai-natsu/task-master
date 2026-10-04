@@ -11,7 +11,7 @@
 
 - [配布とデータの保存場所](#配布とデータの保存場所)
 - [機能の概要](#機能の概要)
-- [セットアップ（開発者向け）](#セットアップ開発者向け)
+- [起動方法（開発者向け）](#起動方法開発者向け)
 - [使い方](#使い方)
 - [テスト・ビルド（開発者向け）](#テストビルド開発者向け)
 - [設計書](#設計書)
@@ -53,15 +53,53 @@
 ### ④ 設定
 ステータス（追加・改名・色・並べ替え・削除、「完了として扱う」）、祝日（追加・編集・削除・CSV 一括登録）、タグ（改名・色・削除）、言語（日本語／English）を管理する。
 
-## セットアップ（開発者向け）
+## 起動方法（開発者向け）
+
+配布版（`TaskMaster.exe`）の使い方は「配布とデータの保存場所」を参照。ここでは、ソースから動かす方法を示す。
+
+### 前提
+
+- Python 3.11 以上（Windows。Mac は近日対応予定）
+- 画面を開ける環境（ディスプレイ）
+
+### 初回だけ行う準備
+
+リポジトリのルートで実行する。
 
 ```bash
-pip install -e .[dev]      # 開発用の依存関係を含めてインストール
-python -m app.main         # 起動（初回はリポジトリ直下に taskmaster.db を作成）
-python seed.py             # 任意：サンプルデータ投入（既存データは全削除される）
+python -m venv .venv                 # 任意：仮想環境を作る
+.venv\Scripts\activate               # 仮想環境を有効にする（PowerShell / cmd。Git Bash は source .venv/Scripts/activate）
+pip install -e .[dev]                # 開発用の依存関係を含めてインストール
+python seed.py                       # 任意：サンプルデータを入れる（既存データは全削除される）
 ```
 
-開発には Python 3.11 以上が必要。
+### 起動する
+
+```bash
+python -m app.main
+```
+
+初回は、リポジトリ直下に `taskmaster.db`（データベース）を作成する。ステータスが 1 件も無い場合は、未着手／進行中／完了／取下げの 4 件が自動で入る。
+
+### 停止する
+
+ウィンドウを閉じる。
+
+### サンプルデータ（seed）を入れるタイミング
+
+- `python seed.py` は、**手動で、必要なときだけ**実行する。自動では実行されない。
+- 既存のプロジェクト・タスク・タグを**全削除**して、サンプルを入れ直す。実際のデータが入っているデータベースでは実行しない。
+- 配布版（exe）には含まれない。配布版は、初回起動時に空のデータベースを作る。
+- テストは、一時ファイルの専用データベースを使うので、seed は不要で、`taskmaster.db` にも触れない。
+
+### うまくいかないとき
+
+| 症状 | 対処 |
+|---|---|
+| `ModuleNotFoundError` | `pip install -e .[dev]` を実行したか確認する（仮想環境を有効にしているか） |
+| 画面が開かない・文字化けする | Python 3.11 以上か、Windows か確認する |
+| サンプルデータを入れ直したい | `python seed.py`（既存データは全削除される） |
+| データを初期状態に戻したい | `taskmaster.db` を削除して、再度起動する |
 
 ## 使い方
 
@@ -94,13 +132,17 @@ python seed.py             # 任意：サンプルデータ投入（既存デー
 ## テスト・ビルド（開発者向け）
 
 ```bash
-python -m pytest                  # テスト（ユニット＋SQLite 統合。GUI の自動テストは無し）
-python -m ruff check .            # 静的解析
+python -m pytest                              # 全テスト（単体・結合・UI 部品・E2E）
+python -m pytest -m "not gui and not e2e"     # 速い層だけ（単体・結合。画面を開かない）
+python -m pytest tests/gui                    # UI 部品のテスト（入力チェック・確認ダイアログなど）
+python -m pytest tests/e2e                    # E2E（画面遷移・モーダル。実際にウィンドウが開く）
+python -m ruff check .                        # 静的解析
 python packaging/build_exe.py     # packaging/dist/TaskMaster.exe を生成（初回は数分かかる）
 python packaging/build_zip.py     # 上記のビルド＋配布用 zip（packaging/dist/TaskMaster-<版>-win64.zip）を作成
 ```
 
-テスト・ビルドの詳細（構成・方針）は [システム設計書](docs/SYSTEM_DESIGN.md) を参照。
+UI 部品と E2E は、実際にウィンドウを開く（実行中は操作を控える）。画面を開けない環境では、自動でスキップされる。
+テストの方針・構成・実行方法は [テスト設計書](docs/TEST_DESIGN.md)、ビルドは [システム設計書](docs/SYSTEM_DESIGN.md) を参照。
 
 ## 設計書
 
@@ -108,4 +150,5 @@ python packaging/build_zip.py     # 上記のビルド＋配布用 zip（packagi
 |---|---|
 | [基本設計書](docs/BASIC_DESIGN.md) | 機能・画面・インターフェース・データ・エラー方式 |
 | [システム設計書](docs/SYSTEM_DESIGN.md) | アーキテクチャ・ディレクトリ構成・データの保存場所・ビルドと配布・運用 |
+| [テスト設計書](docs/TEST_DESIGN.md) | テストの方針・種類（単体・結合・UI 部品・E2E）・配置・実行方法・入力値の上限 |
 | [CLAUDE.md](CLAUDE.md) | 開発者向けの実装メモ |
