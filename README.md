@@ -81,7 +81,7 @@
 | 言語 | Python 3.11 以上 |
 | 画面 | CustomTkinter（Tk）。ツリーは `ttk.Treeview`、ガントチャートは `tk.Canvas` |
 | データベース | SQLite（標準ライブラリの `sqlite3`。ファイルは `taskmaster.db`） |
-| 主なライブラリ | customtkinter、tkcalendar（日付の選択）、charset-normalizer（CSV の文字コード判定）、Pillow |
+| 主なライブラリ | customtkinter、charset-normalizer（CSV の文字コード判定）、Pillow |
 | テスト | pytest（単体・結合・UI 部品・E2E） |
 | 静的解析 | ruff |
 | 配布 | Nuitka（Python を含む単一の `TaskMaster.exe` を作る） |

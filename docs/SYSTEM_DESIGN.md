@@ -45,7 +45,7 @@ app/
   i18n.py            # t()・言語の保持
   locales/en.py      # 英語辞書
   db/                # SQLite 直接操作のデータ層（schema.sql 含む）
-  logic/             # ツリー構築・D&D 計画・ガント計算・期限判定（純粋関数）
+  logic/             # ツリー構築・D&D 計画・ガント計算・期限判定・カレンダーの格子（純粋関数）
   ui/                # CustomTkinter 画面・ウィジェット
   assets/            # アイコン
 tests/
@@ -96,7 +96,7 @@ seed.py              # サンプルデータ投入（破壊的）
 | `TaskMaster.exe` | アプリ本体 |
 | `README.txt` | 利用者向けの案内（起動方法・データの保存場所・バックアップ・バージョンアップ・SmartScreen の警告について）。メモ帳で読めるよう UTF-8（BOM つき）・CRLF |
 | `LICENSE.txt` | TaskMaster 自体のライセンス（AGPL-3.0）の全文。リポジトリの `LICENSE` から作る。メモ帳で読めるよう CRLF |
-| `THIRD_PARTY_NOTICES.txt` | 利用ライブラリ（customtkinter・tkcalendar・Pillow・charset-normalizer・babel・darkdetect・packaging）の名前・版・ライセンス文書。ビルド時にインストール済みのパッケージから生成する。Python と Tcl/Tk は出典のみ |
+| `THIRD_PARTY_NOTICES.txt` | 利用ライブラリ（customtkinter・Pillow・charset-normalizer・darkdetect・packaging）の名前・版・ライセンス文書。ビルド時にインストール済みのパッケージから生成する。Python と Tcl/Tk は出典のみ |
 | `holidays_sample.csv` | 祝日の取り込み例（2026 年分）。設定画面の「CSV から読み込む」で使える |
 
 - TaskMaster 自体のライセンスは、AGPL-3.0 と商用ライセンスのデュアルライセンス（リポジトリ直下の `LICENSE` に AGPL-3.0 の全文、README の「ライセンス」に商用ライセンスの案内）。

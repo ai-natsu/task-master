@@ -58,9 +58,10 @@ def test_readme_has_version_data_location_and_is_notepad_friendly(release, fake_
 
 def test_notices_list_every_bundled_library_with_its_license(release):
     notices = release.build_notices()
-    for name in ("customtkinter", "tkcalendar", "pillow", "charset-normalizer", "babel"):
+    for name in ("customtkinter", "pillow", "charset-normalizer"):
         assert name.lower() in notices.lower()
-    assert "GPL" in notices  # tkcalendar（GPLv3）の表記が入っている
+    # GPL 系のライブラリ（tkcalendar）は使わない。TaskMaster 自体を、商用ライセンスでも提供するため
+    assert "tkcalendar" not in notices.lower()
     assert "Python Software Foundation" in notices
 
 
