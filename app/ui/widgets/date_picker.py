@@ -3,7 +3,7 @@
 - 入力欄に "2026-10-04" の形式で直接入力できる（Enter・フォーカス移動で確定）。
   日付として正しくない文字は、直前の正しい日付に戻す。
 - 右のカレンダーのアイコンを押すと、カレンダーが開く。
-  月曜始まり、土曜は青、日曜・祝日は赤、週番号つき。
+  月曜始まり、土曜は青、日曜・祝日は赤。
 - 年・月の見出しと曜日は、表示言語（日本語／英語）に合わせる。
 """
 
@@ -29,7 +29,7 @@ from app.ui import theme
 _FONT = (theme.FONT_FAMILY, 11)
 _BORDER = "#94a3b8"        # ポップアップの外枠・格子線
 _HEADER_BG = "#475569"     # 年月の見出し（slate-600）
-_WEEKNUM_BG = "#e2e8f0"    # 週番号の列（slate-200）
+_WEEKDAY_BG = "#e2e8f0"    # 曜日の行（slate-200）
 _CELL_BG = "#ffffff"
 _OTHER_MONTH_FG = "#94a3b8"
 _KIND_COLORS = {           # (文字色, 背景色)
@@ -129,24 +129,17 @@ class CalendarPopup(tk.Toplevel):
     def _build_grid(self, parent: tk.Frame) -> None:
         grid = tk.Frame(parent, bg=_BORDER)
         grid.pack()
-        tk.Label(grid, text="", bg=_WEEKNUM_BG, width=3, font=_FONT).grid(
-            row=0, column=0, padx=(0, 1), pady=(0, 1), sticky="nsew"
-        )
         self._weekday_labels = []
         for col in range(7):
-            label = tk.Label(grid, bg=_WEEKNUM_BG, width=4, font=_FONT)
-            label.grid(row=0, column=col + 1, padx=(0, 1), pady=(0, 1), sticky="nsew")
+            label = tk.Label(grid, bg=_WEEKDAY_BG, width=4, font=_FONT)
+            label.grid(row=0, column=col, padx=(0, 1), pady=(0, 1), sticky="nsew")
             self._weekday_labels.append(label)
-        self._week_labels = []
         self._day_labels: list[list[tk.Label]] = []
         for row in range(6):
-            week = tk.Label(grid, bg=_WEEKNUM_BG, fg="#64748b", width=3, font=_FONT)
-            week.grid(row=row + 1, column=0, padx=(0, 1), pady=(0, 1), sticky="nsew")
-            self._week_labels.append(week)
             cells = []
             for col in range(7):
                 cell = tk.Label(grid, width=4, font=_FONT, cursor="hand2")
-                cell.grid(row=row + 1, column=col + 1, padx=(0, 1), pady=(0, 1), sticky="nsew")
+                cell.grid(row=row + 1, column=col, padx=(0, 1), pady=(0, 1), sticky="nsew")
                 cell.bind("<Button-1>", self._on_pick)
                 cells.append(cell)
             self._day_labels.append(cells)
@@ -159,7 +152,6 @@ class CalendarPopup(tk.Toplevel):
             label.configure(text=name)
         holidays = self._holidays()
         for row, week in enumerate(month_grid(self._year, self._month)):
-            self._week_labels[row].configure(text=str(week[0].isocalendar().week))
             for col, day in enumerate(week):
                 cell = self._day_labels[row][col]
                 cell._date = day  # type: ignore[attr-defined]

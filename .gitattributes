@@ -1,2 +1,0 @@
-# スクリプトの改行コード（.cmd は CRLF）
-*.cmd text eol=crlf
