@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LIMITS } from "../constants/limits";
 import type { Project } from "../types";
 import { useT } from "../i18n";
 
@@ -65,6 +66,7 @@ export function ProjectFormModal({ open, mode, initial, onSubmit, onClose, error
                 nameError ? "border-red-400" : "border-slate-300 dark:border-slate-600"
               }`}
               placeholder={t("プロジェクト名")}
+              maxLength={LIMITS.projectName}
               aria-invalid={!!nameError}
             />
             {nameError && (
@@ -81,6 +83,7 @@ export function ProjectFormModal({ open, mode, initial, onSubmit, onClose, error
               rows={2}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
               placeholder={t("説明（任意）")}
+              maxLength={LIMITS.projectDescription}
             />
           </div>
           <div>

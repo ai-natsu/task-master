@@ -488,7 +488,7 @@ index: projectId / parentId / status / priority / dueDate
 | 親タスクが無い | 親タスクが見つかりません | Parent task not found | 400 | ValidationError |
 | ステータス不正 | 指定のステータスが存在しません | Invalid status | 400 | ValidationError |
 | ステータス未定義 | ステータスが1件もありません | No statuses defined | 400 | ValidationError |
-| 入力値不正（文字数・型） | 入力内容を確認してください（項目名と条件を併記） | Please check your input | 400（zod） | 画面側チェック |
+| 入力値不正（文字数・型） | 入力内容を確認してください（項目名と条件を併記） | Please check your input | 400（zod）。画面の入力欄にも文字数の上限（`maxlength`）を設定し、上限を超える入力はできない | 画面側チェック |
 | 必須項目が未入力 | {項目名}を入力してください | {field} is required. | 画面側チェック | 画面側チェック |
 | CSV の文字コード不明 | CSVの文字コードを判定できませんでした | Could not determine the CSV file's character encoding. | —（機能なし） | ValidationError |
 | タグ名重複 | タグが既に存在します | Tag already exists | 409 | ConflictError |

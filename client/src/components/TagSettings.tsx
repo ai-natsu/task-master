@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LIMITS } from "../constants/limits";
 import { useCreateTag, useDeleteTag, useTags, useUpdateTag } from "../api/tags";
 import { useT } from "../i18n";
 import { errorMessage } from "../utils/errorMessage";
@@ -48,6 +49,7 @@ function TagRow({
         onBlur={commit}
         onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
         aria-label={t("名前")}
+        maxLength={LIMITS.tagName}
         className="flex-1 rounded-lg border border-slate-300 px-3 py-1 text-sm dark:border-slate-600 dark:bg-slate-900"
       />
       <button
@@ -127,6 +129,7 @@ export function TagSettings() {
           }}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder={t("新しいタグ名")}
+          maxLength={LIMITS.tagName}
           className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
         />
         <button

@@ -345,7 +345,7 @@ npm run test:e2e   # Playwright E2E（専用 DB で、サーバーと画面を�
 | 種類 | 場所 | 内容 |
 |---|---|---|
 | 単体テスト（client） | `client/src/` 内、対象のソースの隣（`*.test.ts`） | `utils/`（ツリー・ドラッグ判定・期限・ガントなど）、`i18n`、フォーム値の変換 |
-| UI 部品テスト（client） | `client/src/components/` 内、対象のソースの隣（`*.test.tsx`） | Playwright CT。バッジ・フィルタ・統計・フォーム・確認ダイアログの表示と操作（API は `page.route` で固定値に差し替える） |
+| UI 部品テスト（client） | `client/src/components/` 内、対象のソースの隣（`*.test.tsx`） | Playwright CT。バッジ・フィルタ・統計・フォーム・確認ダイアログの表示と操作、入力値のチェック（必須・文字数の上限）（API は `page.route` で固定値に差し替える） |
 | 単体テスト（server） | `server/tests/unit/` | zod スキーマの境界値 |
 | 結合テスト（server） | `server/tests/integration/` | Supertest で API を検証（専用 DB `server/test.db` を各テスト前にリセット）。循環参照・統計（isDone 駆動）・アーカイブ除外・ステータス削除制約・エラー応答・配線（`app.test.ts`） |
 | E2E | `e2e/`（ルート直下） | Playwright。専用 DB `server/e2e.db` で、プロジェクト作成→サブタスク、カンバンのドラッグ、ステータス追加/削除制約、アーカイブ/復元（確認ダイアログ） |

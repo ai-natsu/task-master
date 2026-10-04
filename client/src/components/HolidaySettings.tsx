@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { LIMITS } from "../constants/limits";
 import { format } from "date-fns";
 import {
   useBulkHolidays,
@@ -46,6 +47,7 @@ function HolidayRow({
         onBlur={commit}
         onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
         aria-label={t("名称")}
+        maxLength={LIMITS.holidayName}
         className="flex-1 rounded-lg border border-slate-300 px-3 py-1 text-sm dark:border-slate-600 dark:bg-slate-900"
       />
       <button
@@ -141,6 +143,7 @@ export function HolidaySettings() {
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           placeholder={t("新しい祝日名")}
+          maxLength={LIMITS.holidayName}
           className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
         />
         <button

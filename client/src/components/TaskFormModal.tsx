@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LIMITS } from "../constants/limits";
 import type { Priority, Tag, Task } from "../types";
 import { PRIORITIES, PRIORITY_LABELS } from "../types";
 import { useCreateTag, useTags } from "../api/tags";
@@ -101,6 +102,7 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
                 titleError ? "border-red-400" : "border-slate-300 dark:border-slate-600"
               }`}
               placeholder={t("タスク名を入力")}
+              maxLength={LIMITS.taskTitle}
               aria-invalid={!!titleError}
             />
             {titleError && (
@@ -118,6 +120,7 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
               rows={3}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
               placeholder={t("詳細（任意）")}
+              maxLength={LIMITS.taskDescription}
             />
           </div>
 
@@ -212,6 +215,7 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
                 }}
                 onKeyDown={(e) => e.key === "Enter" && handleCreateTag()}
                 placeholder={t("新しいタグ")}
+                maxLength={LIMITS.tagName}
                 className="flex-1 rounded-lg border border-slate-300 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
               />
               <button

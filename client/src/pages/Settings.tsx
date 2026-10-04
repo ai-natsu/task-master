@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LIMITS } from "../constants/limits";
 import {
   useCreateStatus,
   useDeleteStatus,
@@ -84,6 +85,7 @@ function StatusRow({
           onChange={(e) => setLabel(e.target.value)}
           onBlur={saveLabel}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+          maxLength={LIMITS.statusLabel}
           className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
         />
 
@@ -178,6 +180,7 @@ export function Settings() {
             onChange={(e) => setNewLabel(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             placeholder={t("新しいステータス名（例: レビュー中）")}
+            maxLength={LIMITS.statusLabel}
             className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900"
           />
           <button
