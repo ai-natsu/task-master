@@ -28,6 +28,22 @@ jobs:
       - name: Build TaskMaster.app and zip
         run: python packaging/build_zip.py
 
+      - name: Smoke test (launch the app and check that it creates its database)
+        run: |
+          rm -rf /tmp/tm && mkdir /tmp/tm
+          ditto -x -k packaging/dist/TaskMaster-*-mac.zip /tmp/tm
+          rm -rf "$HOME/Library/Application Support/TaskMaster"
+          /tmp/tm/TaskMaster/TaskMaster.app/Contents/MacOS/TaskMaster > /tmp/tm/app.log 2>&1 &
+          APP_PID=$!
+          sleep 15
+          if ! kill -0 "$APP_PID" 2>/dev/null; then
+            echo "The app exited early:"; cat /tmp/tm/app.log; exit 1
+          fi
+          ls -la "$HOME/Library/Application Support/TaskMaster/"
+          test -f "$HOME/Library/Application Support/TaskMaster/taskmaster.db"
+          kill "$APP_PID"
+          cat /tmp/tm/app.log
+
       - uses: actions/upload-artifact@v4
         with:
           name: TaskMaster-mac
