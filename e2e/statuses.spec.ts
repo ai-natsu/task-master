@@ -5,7 +5,11 @@ test("E-4: adding a status makes it available in the task form", async ({ page }
   const label = uniqueName("状態");
   await page.goto("/settings");
   await page.getByPlaceholder("新しいステータス名（例: レビュー中）").fill(label);
-  await page.getByRole("button", { name: "追加" }).click();
+  await page
+    .locator("section")
+    .filter({ hasText: "ステータス設定" })
+    .getByRole("button", { name: "追加" })
+    .click();
   // New status row appears (input carries the label value).
   await expect(page.locator(`input[value="${label}"]`)).toBeVisible();
 

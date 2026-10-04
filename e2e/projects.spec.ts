@@ -13,8 +13,9 @@ test("E-1: create project, task, and subtask shows hierarchy", async ({ page }) 
   await page.getByPlaceholder("タスク名を入力").fill("子タスク");
   await page.getByRole("button", { name: "作成" }).click();
 
-  await expect(page.getByText("親タスク", { exact: true })).toBeVisible();
-  await expect(page.getByText("子タスク", { exact: true })).toBeVisible();
+  // 「親タスク」はフォームの項目名など、画面内の別の場所にも出るので、先頭の一致で確認する
+  await expect(page.getByText("親タスク", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("子タスク", { exact: true }).first()).toBeVisible();
 });
 
 // The row is the outermost div that contains both the project name and the
@@ -30,6 +31,7 @@ test("E-6: archive hides project from sidebar and restore brings it back", async
 
   // Archive from the list page.
   await projectRow(page, name).getByRole("button", { name: "アーカイブ" }).click();
+  await page.getByRole("button", { name: "アーカイブする" }).click(); // 確認ダイアログ
 
   // Gone from the sidebar navigation.
   await expect(page.locator("nav").getByText(name)).toHaveCount(0);
@@ -37,6 +39,7 @@ test("E-6: archive hides project from sidebar and restore brings it back", async
   // Show archived, then restore.
   await page.getByText("アーカイブ済みも表示").click();
   await projectRow(page, name).getByRole("button", { name: "復元" }).click();
+  await page.getByRole("button", { name: "復元する" }).click(); // 確認ダイアログ
 
   await expect(page.locator("nav").getByText(name)).toBeVisible();
 });
