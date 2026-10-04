@@ -7,6 +7,7 @@ from app.i18n import t
 from app.ui import theme
 from app.ui.errors import error_message, required_message
 from app.ui.widgets.field_error import FieldError
+from app.ui.widgets.limits import limit_entry, limit_textbox
 
 PALETTE = ["#6366f1", "#22c55e", "#ef4444", "#f59e0b", "#0ea5e9", "#a855f7", "#ec4899"]
 
@@ -28,10 +29,12 @@ class ProjectFormDialog(ctk.CTkToplevel):
         self.name_entry.insert(0, (initial or {}).get("name", ""))
         self.name_entry.focus_set()
         self._name_error = FieldError(self.name_entry)
+        limit_entry(self.name_entry, "project_name")
 
         ctk.CTkLabel(self, text=t("説明")).pack(anchor="w", padx=20, pady=(16, 4))
         self.description_text = ctk.CTkTextbox(self, height=80)
         self.description_text.pack(fill="x", padx=20)
+        limit_textbox(self.description_text, "project_description")
         self.description_text.insert("1.0", (initial or {}).get("description") or "")
 
         ctk.CTkLabel(self, text=t("色")).pack(anchor="w", padx=20, pady=(16, 4))

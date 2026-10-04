@@ -3,6 +3,7 @@
 import sqlite3
 
 from app.db.connection import generate_id, now_iso
+from app.db.validation import check_text
 from app.models import Project
 
 
@@ -43,6 +44,8 @@ def create_project(
     description: str | None = None,
     color: str | None = None,
 ) -> Project:
+    check_text(name, "名前", "project_name")
+    check_text(description, "説明", "project_description", required=False)
     max_order = conn.execute('SELECT MAX("order") FROM "Project"').fetchone()[0]
     order = (max_order if max_order is not None else -1) + 1
     project_id = generate_id()
@@ -67,6 +70,8 @@ def update_project(
     color: str | None = None,
     archived: bool | None = None,
 ) -> Project | None:
+    check_text(name, "名前", "project_name")
+    check_text(description, "説明", "project_description", required=False)
     if get_project(conn, project_id) is None:
         return None
     fields: list[str] = []

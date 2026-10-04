@@ -9,6 +9,7 @@ import sqlite3
 
 from app.db.connection import generate_id
 from app.db.errors import ConflictError, NotFoundError
+from app.db.validation import check_text
 from app.models import Status
 
 
@@ -33,6 +34,7 @@ def create_status(
     color: str | None = None,
     is_done: bool = False,
 ) -> Status:
+    check_text(label, "名前", "status_label")
     max_order = conn.execute('SELECT MAX("order") FROM "Status"').fetchone()[0]
     order = (max_order if max_order is not None else -1) + 1
     status_id = generate_id()
@@ -55,6 +57,7 @@ def update_status(
     color: str | None = None,
     is_done: bool | None = None,
 ) -> Status:
+    check_text(label, "名前", "status_label")
     row = conn.execute('SELECT * FROM "Status" WHERE id = ?', (status_id,)).fetchone()
     if row is None:
         raise NotFoundError("ステータスが見つかりません")

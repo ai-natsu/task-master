@@ -24,6 +24,7 @@ from app.ui.widgets.calendar_style import (
 )
 from app.ui.widgets.confirm_dialog import ask_confirm
 from app.ui.widgets.field_error import FieldError
+from app.ui.widgets.limits import limit_entry, limit_textbox
 
 
 class TaskFormDialog(ctk.CTkToplevel):
@@ -59,10 +60,12 @@ class TaskFormDialog(ctk.CTkToplevel):
         self.title_entry.insert(0, task.title if task else "")
         self.title_entry.focus_set()
         self._title_error = FieldError(self.title_entry)
+        limit_entry(self.title_entry, "task_title")
 
         ctk.CTkLabel(scroll, text=t("説明")).pack(anchor="w")
         self.description_text = ctk.CTkTextbox(scroll, height=70)
         self.description_text.pack(fill="x", pady=(0, 12))
+        limit_textbox(self.description_text, "task_description")
         if task and task.description:
             self.description_text.insert("1.0", task.description)
 
@@ -147,6 +150,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         new_tag_row = ctk.CTkFrame(scroll, fg_color="transparent")
         new_tag_row.pack(fill="x", pady=(0, 12))
         self.new_tag_entry = ctk.CTkEntry(new_tag_row, placeholder_text=t("新しいタグ"))
+        limit_entry(self.new_tag_entry, "tag_name")
         self.new_tag_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
         ctk.CTkButton(new_tag_row, text=t("追加"), width=60, command=self._add_tag).pack(
             side="left"
