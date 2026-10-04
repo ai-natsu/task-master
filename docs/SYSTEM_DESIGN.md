@@ -100,7 +100,7 @@ seed.py              # サンプルデータ投入（破壊的）
 | `holidays_sample.csv` | 祝日の取り込み例（2026 年分）。設定画面の「CSV から読み込む」で使える |
 
 - TaskMaster 自体のライセンスは、AGPL-3.0 と商用ライセンスのデュアルライセンス（リポジトリ直下の `LICENSE` に AGPL-3.0 の全文、README の「ライセンス」に商用ライセンスの案内）。
-- 対応 OS は Windows。Mac 版は近日対応予定（Mac 用のビルドは Mac 上でしかできないため、GitHub Actions の macOS 環境での生成を想定。データ保存場所は「アプリと同じフォルダ」が使えないため別の場所に変更が必要）。
+- 対応 OS は Windows と Mac。Mac 版は、Mac 上でしか作れないため、GitHub Actions の macOS 環境（`.github/workflows/build-mac.yml`）で、`TaskMaster.app` を作り、`ditto` で zip にする（`TaskMaster-<版>-mac.zip`）。Mac 版のデータは、`.app` の中に書けないため、`~/Library/Application Support/TaskMaster/taskmaster.db` に保存する。署名・公証は行っていないため、初回は「開く」の操作が必要（Mac 版の README.txt に記載）。
 
 ---
 

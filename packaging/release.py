@@ -11,6 +11,7 @@ README・ライブラリのライセンス表記・祝日 CSV の例を `TaskMas
 
 import importlib.metadata
 import shutil
+import subprocess
 import tomllib
 import zipfile
 from pathlib import Path
@@ -114,6 +115,53 @@ def stage_release(exe_path: Path, stage_dir: Path, version: str) -> Path:
     _write_text(folder / "LICENSE.txt", (ROOT / "LICENSE").read_text(encoding="utf-8"))
     shutil.copy2(FILES / "holidays_sample.csv", folder / "holidays_sample.csv")
     return folder
+
+
+def find_mac_app(dist: Path = DIST) -> Path:
+    """Nuitka が作った .app（フォルダ）を探す。"""
+    apps = sorted(dist.glob("*.app"))
+    if not apps:
+        raise FileNotFoundError(f".app が見つかりません: {dist}")
+    return apps[0]
+
+
+def stage_release_mac(app_path: Path, stage_dir: Path, version: str) -> Path:
+    """Mac 版：stage_dir/TaskMaster/ に、TaskMaster.app と、同梱する文書をそろえる。"""
+    if not app_path.exists():
+        raise FileNotFoundError(f"TaskMaster.app が見つかりません: {app_path}")
+    folder = stage_dir / FOLDER_NAME
+    if folder.exists():
+        shutil.rmtree(folder)
+    folder.mkdir(parents=True)
+
+    # .app の中には、実行ファイルの権限とシンボリックリンクがあるので、そのままコピーする
+    shutil.copytree(app_path, folder / "TaskMaster.app", symlinks=True)
+    readme = (FILES / "README_mac.txt").read_text(encoding="utf-8").replace("{version}", version)
+    _write_text(folder / "README.txt", readme)
+    _write_text(folder / "THIRD_PARTY_NOTICES.txt", build_notices())
+    _write_text(folder / "LICENSE.txt", (ROOT / "LICENSE").read_text(encoding="utf-8"))
+    shutil.copy2(FILES / "holidays_sample.csv", folder / "holidays_sample.csv")
+    return folder
+
+
+def make_zip_mac(folder: Path, zip_path: Path) -> Path:
+    """Mac 版の zip。実行ファイルの権限が消えないよう、zipfile ではなく ditto で作る。"""
+    zip_path.parent.mkdir(parents=True, exist_ok=True)
+    if zip_path.exists():
+        zip_path.unlink()
+    subprocess.run(
+        ["ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", str(folder), str(zip_path)],
+        check=True,
+    )
+    return zip_path
+
+
+def build_release_mac(app_path: Path | None = None, out_dir: Path | None = None) -> Path:
+    version = read_version()
+    app = app_path or find_mac_app()
+    out = out_dir or DIST
+    folder = stage_release_mac(app, out, version)
+    return make_zip_mac(folder, out / f"TaskMaster-{version}-mac.zip")
 
 
 def make_zip(folder: Path, zip_path: Path) -> Path:

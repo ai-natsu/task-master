@@ -15,6 +15,7 @@ from app.i18n import t
 from app.logic.tree import build_task_tree, flatten_with_depth
 from app.ui import theme
 from app.ui.errors import error_message, required_message
+from app.ui.platform_utils import bind_right_click
 from app.ui.widgets.badges import priority_label
 from app.ui.widgets.confirm_dialog import ask_confirm
 from app.ui.widgets.date_picker import DatePicker
@@ -285,9 +286,8 @@ class TaskFormDialog(ctk.CTkToplevel):
                 width=self._TAG_CHECKBOX_MIN_WIDTH,
             )
             checkbox.pack(side="left", padx=(0, 8), pady=(0, 4))
-            checkbox.bind(
-                "<Button-3>",
-                lambda e, tid=tag_id, nm=name: self._on_tag_right_click(e, tid, nm),
+            bind_right_click(
+                checkbox, lambda e, tid=tag_id, nm=name: self._on_tag_right_click(e, tid, nm)
             )
             used_width += checkbox_width
 

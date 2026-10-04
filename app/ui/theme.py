@@ -6,6 +6,8 @@ CustomTkinterの既定テーマはグレー寄りで、カード同士のコン�
 CustomTkinterのfg_color等にそのまま渡せる。
 """
 
+from app.ui import platform_utils
+
 BG = ("#f1f5f9", "#0f172a")            # アプリ全体の背景 (slate-100 / slate-950)
 SIDEBAR_BG = ("#ffffff", "#111827")     # サイドバー背景 (white / gray-900)
 CARD_BG = ("#ffffff", "#1e293b")        # カード背景 (white / slate-800)
@@ -25,4 +27,4 @@ ACCENT_HOVER = "#4f46e5"  # indigo-600
 # 選ばれてしまい意図せず古い見た目になる（実機検証で確認）。
 # "Yu Gothic UI" はWindows 10/11の日本語UI既定フォントで、この代替の
 # 揺れが起きず、欧文・数字も違和感なく表示できる。
-FONT_FAMILY = "Yu Gothic UI"
+FONT_FAMILY = platform_utils.FONT_FAMILY  # Mac は Hiragino Sans（app/ui/platform_utils.py）
