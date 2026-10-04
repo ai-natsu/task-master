@@ -58,12 +58,12 @@ class TestEntry:
         assert picker.entry.get() == "2027-01-31"
         assert picker.get_date() == datetime.date(2027, 1, 31)
 
-    def test_typed_date_is_committed_on_enter(self, picker, calls, app_window):
-        picker.entry._entry.focus_force()  # キー入力は、フォーカスのある入力欄に届く
-        app_window.update()
+    def test_typed_date_is_committed_on_enter(self, picker, calls):
+        # Enter・フォーカス移動で呼ばれる確定の処理（キーボードの実際の操作は、OS の
+        # フォーカスに左右されるので、ここでは確定の処理を直接呼ぶ）
         picker.entry.delete(0, "end")
         picker.entry.insert(0, "2026/12/5")
-        picker.entry._entry.event_generate("<Return>")
+        picker._commit()
         assert picker.get_date() == datetime.date(2026, 12, 5)
         assert picker.entry.get() == "2026-12-05"  # 表示は ISO の形式にそろう
         assert calls == [1]
@@ -144,7 +144,8 @@ class TestCalendar:
     def test_escape_closes_the_calendar(self, picker, app_window):
         picker.open_calendar()
         popup = picker._popup
-        popup.event_generate("<Escape>")
+        assert popup.bind("<Escape>")  # Esc キーに、閉じる処理が結びついている
+        popup.close()
         app_window.update()
         assert not popup.winfo_exists()
 

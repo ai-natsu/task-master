@@ -18,7 +18,7 @@ class ProjectFormDialog(ctk.CTkToplevel):
         # 保存処理（失敗時は業務例外を送出）。指定時は、失敗をフォーム内に表示して閉じない。
         self._on_save = on_save
         self.title(t("プロジェクトを編集") if initial else t("新しいプロジェクト"))
-        self.geometry("420x440")
+        self.geometry("420x500")
         self.resizable(False, False)
         self.result: dict | None = None
         self._selected_color = (initial or {}).get("color", PALETTE[0])
@@ -60,7 +60,7 @@ class ProjectFormDialog(ctk.CTkToplevel):
         button_row = ctk.CTkFrame(self, fg_color="transparent")
         button_row.pack(side="bottom", pady=20)
         self.error_label = ctk.CTkLabel(
-            self, text="", text_color="#dc2626", anchor="w", justify="left", wraplength=380
+            self, text="", text_color="#dc2626", anchor="w", justify="left", wraplength=340
         )
         self.error_label.pack(side="bottom", fill="x", padx=20)
         ctk.CTkButton(

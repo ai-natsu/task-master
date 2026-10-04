@@ -27,6 +27,15 @@ def statuses(conn):
     return ("TODO", "DONE")
 
 
+def pytest_collection_modifyitems(items):
+    """画面を開くテスト（gui・e2e）は、最後に実行する。
+
+    Tk のウィンドウ（AppWindow）は、1 つのプロセスで共有する。画面を使う単体テスト
+    （省略表示の測定など）が、別の Tk を作るので、共有のウィンドウが開く前に済ませる。
+    """
+    items.sort(key=lambda item: 1 if ("gui" in item.keywords or "e2e" in item.keywords) else 0)
+
+
 @pytest.fixture(scope="session")
 def app_window(tmp_path_factory):
     """実際のアプリ画面（AppWindow）。GUI テスト（tests/gui・tests/e2e）で共有する。

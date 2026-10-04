@@ -23,7 +23,13 @@ class FieldError:
     def show(self, message: str) -> None:
         self.entry.configure(border_color=ERROR_COLOR)
         self.label.configure(text=message)
-        self.label.pack(fill="x", after=self.entry, pady=(0, 6))
+        # 赤字の開始位置を、入力欄の左端に合わせる（入力欄と同じ左の余白を使う）
+        # （pack_info の値は、画面の拡大率をかけた後の値なので、元の大きさに戻してから渡す）
+        padx = self.entry.pack_info().get("padx", 0)
+        if isinstance(padx, (tuple, list)):
+            padx = padx[0]
+        padx = round(float(str(padx)) / self.entry._get_widget_scaling())
+        self.label.pack(fill="x", after=self.entry, padx=padx, pady=(0, 6))
         self.entry.focus_set()
 
     def clear(self) -> None:

@@ -92,7 +92,7 @@ class TestTaskForm:
 
     def test_new_tag_name_is_limited_to_50_characters(self, task_form, app_window):
         # プレースホルダは、入力欄にフォーカスが入ると消える（利用者が入力を始める状態にする）
-        task_form.new_tag_entry._entry.focus_force()
+        task_form.new_tag_entry._entry.event_generate("<FocusIn>")
         app_window.update()
         _type(task_form.new_tag_entry, "t" * 60)
         assert len(task_form.new_tag_entry.get()) == LIMITS["tag_name"] == 50
@@ -100,6 +100,36 @@ class TestTaskForm:
     def test_empty_new_tag_shows_required_error(self, task_form):
         task_form._add_tag()
         assert task_form.error_label.cget("text") == "名前を入力してください"
+
+
+def _text_left(widget, root) -> int:
+    """ウィジェットの文字の左端（フォームの左端からの距離）。"""
+    inner = getattr(widget, "_label", widget)
+    return inner.winfo_rootx() - root.winfo_rootx()
+
+
+class TestErrorMessageAlignment:
+    """エラーメッセージの開始位置は、フォームの入力欄の左端に合わせる。"""
+
+    TOLERANCE = 2  # ピクセル。部品ごとの内側の余白の差
+
+    def test_project_form(self, project_form, app_window):
+        project_form._submit()  # 名前が空 → 項目の下の赤字
+        project_form.error_label.configure(text="保存できませんでした")  # 保存失敗の赤字
+        project_form.update()
+        entry_left = _text_left(project_form.name_entry, project_form)
+        assert project_form.error_label.winfo_ismapped()  # 赤字を出す場所が、画面内にある
+        for label in (project_form._name_error.label, project_form.error_label):
+            assert abs(_text_left(label, project_form) - entry_left) <= self.TOLERANCE
+
+    def test_task_form(self, task_form, app_window):
+        task_form._submit()
+        task_form.error_label.configure(text="保存できませんでした")
+        task_form.update()
+        entry_left = _text_left(task_form.title_entry, task_form)
+        assert task_form.error_label.winfo_ismapped()
+        for label in (task_form._title_error.label, task_form.error_label):
+            assert abs(_text_left(label, task_form) - entry_left) <= self.TOLERANCE
 
 
 class TestTaskFormDates:
