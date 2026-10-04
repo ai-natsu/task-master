@@ -6,7 +6,7 @@
 
 - [画面要件](#画面要件)
 - [技術要件](#技術要件)
-- [起動方法](#起動方法)
+- [始め方](#始め方)
 - [使い方](#使い方)
 - [テスト](#テスト)
 - [ディレクトリ構成](#ディレクトリ構成)
@@ -107,14 +107,16 @@
 - Node.js（LTS推奨）
 - npm workspaces 構成（ルート / `server` / `client`）
 
-## 起動方法
+## 始め方
 
-### 前提
+### インストール手順
+
+#### 前提
 
 - Node.js（LTS 推奨）と npm
 - Windows / Mac / Linux（Windows では PowerShell または Git Bash）
 
-### 初回だけ行う準備
+#### インストール（初回だけ）
 
 リポジトリのルートで実行する。
 
@@ -134,7 +136,9 @@ cd ..
 | `DATABASE_URL` | `file:./dev.db` | データベースのファイル（SQLite。`server/prisma/` からの相対パス） |
 | `PORT` | `3001` | API サーバーのポート |
 
-### 起動する（開発用）
+### 起動手順
+
+#### 開発用に起動する
 
 ターミナルを 2 つ開き、それぞれで実行する。
 
@@ -150,11 +154,11 @@ cd ..
 - `http://localhost:3001/api/health` を開いて `{"ok":true}` と表示されれば、API サーバーは動いている。
 - ターミナルの表示が `Server listening on http://localhost:3001` なら、サーバーの起動は成功している。
 
-### 停止する
+#### 停止する
 
 それぞれのターミナルで `Ctrl + C`。
 
-### 本番用にビルドして動かす
+#### 本番用にビルドして動かす
 
 ```bash
 npm run build                                # server/dist/ と client/dist/ を作る
@@ -164,7 +168,7 @@ cd server && npm start                       # API サーバーを起動（node 
 - `client/dist/` は静的ファイル（HTML・JS・CSS）。配信用の Web サーバー（nginx など）で公開し、`/api/*` を API サーバーへ転送する。
 - 本番ビルドに、テストコードは含まれない（`server/tsconfig.build.json` は `src/` だけを出力する）。
 
-### うまくいかないとき
+#### うまくいかないとき
 
 | 症状 | 対処 |
 |---|---|
