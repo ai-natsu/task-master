@@ -25,7 +25,7 @@ from app.db.statuses import (
 from app.db.tags import count_tagged_tasks, create_tag, delete_tag, list_tags, update_tag
 from app.i18n import LANGUAGES, calendar_locale, format_date, get_language, set_language, t
 from app.ui import theme
-from app.ui.errors import error_message
+from app.ui.errors import error_message, required_message
 from app.ui.widgets.calendar_style import (
     apply_calendar_dropdown_icon,
     apply_locale_header_format,
@@ -319,6 +319,7 @@ class SettingsView(ctk.CTkScrollableFrame):
     def _add_status(self) -> None:
         label = self.new_label_entry.get().strip()
         if not label:
+            self.error_label.configure(text=required_message("名前"))
             return
         create_status(self.app.conn, label, color=self._new_color)
         self.new_label_entry.delete(0, "end")
@@ -391,6 +392,7 @@ class SettingsView(ctk.CTkScrollableFrame):
     def _add_holiday(self) -> None:
         name = self.new_holiday_name_entry.get().strip()
         if not name:
+            self.holiday_error_label.configure(text=required_message("名称"))
             return
         date = self.new_holiday_date.get_date().isoformat()
         upsert_holiday(self.app.conn, date, name)
@@ -503,6 +505,7 @@ class SettingsView(ctk.CTkScrollableFrame):
     def _add_tag(self) -> None:
         name = self.new_tag_entry.get().strip()
         if not name:
+            self.tag_error_label.configure(text=required_message("名前"))
             return
         try:
             create_tag(self.app.conn, name, color=self._new_tag_color)

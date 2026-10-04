@@ -154,4 +154,19 @@ TRANSLATIONS: dict[str, str] = {
         'Delete the tag "{name}"? It will be removed from {count} task(s).'
     ),
     "タグが既に存在します": "Tag already exists",
+    "{field}を入力してください": "{field} is required.",
+    "プロジェクトをアーカイブ": "Archive project",
+    "プロジェクトを復元": "Restore project",
+    (
+        "「{name}」をアーカイブしますか？"
+        "一覧では非表示になります（「アーカイブ済みも表示」で再表示できます）。"
+    ): (
+        'Archive "{name}"? It will be hidden from the list '
+        '(use "Show archived" to see it again).'
+    ),
+    "「{name}」を復元しますか？一覧に再表示されます。": (
+        'Restore "{name}"? It will appear in the list again.'
+    ),
+    "アーカイブする": "Archive",
+    "復元する": "Restore",
 }

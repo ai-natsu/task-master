@@ -20,3 +20,8 @@ def error_message(exc: BaseException) -> str:
 
 def show_error(parent, exc: BaseException) -> None:
     messagebox.showerror(t("エラー"), error_message(exc), parent=parent)
+
+
+def required_message(field: str) -> str:
+    """必須項目が未入力のときの共通メッセージ。field は日本語の項目名（「名前」など）。"""
+    return t("{field}を入力してください").format(field=t(field))

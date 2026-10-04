@@ -15,7 +15,7 @@ from app.db.tasks import create_task, list_tasks
 from app.i18n import calendar_locale, t
 from app.logic.tree import build_task_tree, flatten_with_depth
 from app.ui import theme
-from app.ui.errors import error_message
+from app.ui.errors import error_message, required_message
 from app.ui.widgets.badges import priority_label
 from app.ui.widgets.calendar_style import (
     apply_calendar_dropdown_icon,
@@ -23,6 +23,7 @@ from app.ui.widgets.calendar_style import (
     apply_weekend_holiday_styles,
 )
 from app.ui.widgets.confirm_dialog import ask_confirm
+from app.ui.widgets.field_error import FieldError
 
 
 class TaskFormDialog(ctk.CTkToplevel):
@@ -57,6 +58,7 @@ class TaskFormDialog(ctk.CTkToplevel):
         self.title_entry.pack(fill="x", pady=(0, 12))
         self.title_entry.insert(0, task.title if task else "")
         self.title_entry.focus_set()
+        self._title_error = FieldError(self.title_entry)
 
         ctk.CTkLabel(scroll, text=t("説明")).pack(anchor="w")
         self.description_text = ctk.CTkTextbox(scroll, height=70)
@@ -321,6 +323,7 @@ class TaskFormDialog(ctk.CTkToplevel):
     def _add_tag(self) -> None:
         name = self.new_tag_entry.get().strip()
         if not name:
+            self.error_label.configure(text=required_message("名前"))
             return
         tag = create_tag(self.conn, name)
         self._add_tag_checkbox(tag.id, tag.name, True)
@@ -329,6 +332,7 @@ class TaskFormDialog(ctk.CTkToplevel):
     def _submit(self) -> None:
         title = self.title_entry.get().strip()
         if not title:
+            self._title_error.show(required_message("タイトル"))
             return
         parent_label = self.parent_menu.get()
         parent_id = next(

@@ -5,7 +5,8 @@ import customtkinter as ctk
 from app.db.errors import AppError
 from app.i18n import t
 from app.ui import theme
-from app.ui.errors import error_message
+from app.ui.errors import error_message, required_message
+from app.ui.widgets.field_error import FieldError
 
 PALETTE = ["#6366f1", "#22c55e", "#ef4444", "#f59e0b", "#0ea5e9", "#a855f7", "#ec4899"]
 
@@ -26,6 +27,7 @@ class ProjectFormDialog(ctk.CTkToplevel):
         self.name_entry.pack(fill="x", padx=20)
         self.name_entry.insert(0, (initial or {}).get("name", ""))
         self.name_entry.focus_set()
+        self._name_error = FieldError(self.name_entry)
 
         ctk.CTkLabel(self, text=t("説明")).pack(anchor="w", padx=20, pady=(16, 4))
         self.description_text = ctk.CTkTextbox(self, height=80)
@@ -85,6 +87,7 @@ class ProjectFormDialog(ctk.CTkToplevel):
     def _submit(self) -> None:
         name = self.name_entry.get().strip()
         if not name:
+            self._name_error.show(required_message("名前"))
             return
         result = {
             "name": name,
