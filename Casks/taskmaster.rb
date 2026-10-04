@@ -8,7 +8,7 @@ cask "taskmaster" do
   homepage "https://github.com/ai-natsu/task-master"
 
   depends_on arch: :arm64
-  depends_on macos: ">= :monterey"
+  depends_on macos: :monterey
 
   app "TaskMaster/TaskMaster.app"
 
