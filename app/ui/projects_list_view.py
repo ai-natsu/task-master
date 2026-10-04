@@ -138,6 +138,21 @@ class ProjectsListView(ctk.CTkScrollableFrame):
             self.app.sidebar.refresh_projects()
 
     def _toggle_archive(self, project) -> None:
+        if project.archived:
+            title = t("プロジェクトを復元")
+            message = t(
+                "「{name}」を復元しますか？一覧に再表示されます。"
+            ).format(name=project.name)
+            confirm_label = t("復元する")
+        else:
+            title = t("プロジェクトをアーカイブ")
+            message = t(
+                "「{name}」をアーカイブしますか？"
+                "一覧では非表示になります（「アーカイブ済みも表示」で再表示できます）。"
+            ).format(name=project.name)
+            confirm_label = t("アーカイブする")
+        if not ask_confirm(self.app, title, message, confirm_label):
+            return
         update_project(self.app.conn, project.id, archived=not project.archived)
         self._refresh_list()
         self.app.sidebar.refresh_projects()

@@ -60,3 +60,17 @@ def test_all_business_errors_share_the_base_class():
 
     for cls in (NotFoundError, ValidationError, ConflictError, CycleError):
         assert issubclass(cls, AppError)
+
+
+def test_required_message_ja_and_en():
+    from app import i18n
+    from app.ui.errors import required_message
+
+    i18n.set_language("ja")
+    assert required_message("タイトル") == "タイトルを入力してください"
+    i18n.set_language("en")
+    try:
+        assert required_message("タイトル") == "Title is required."
+        assert required_message("名前") == "Name is required."
+    finally:
+        i18n.set_language("ja")
