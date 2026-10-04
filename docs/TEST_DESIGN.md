@@ -51,6 +51,7 @@ tests/
 ├─ unit/                   # 単体テスト
 │  ├─ test_tree / test_dnd / test_gantt / test_due     # app/logic の純粋関数
 │  ├─ test_i18n / test_errors / test_ellipsis          # 辞書・エラー文言・省略表示
+│  ├─ test_calendar_grid                               # カレンダーの格子・月の移動・色分け・日付の入力文字の解釈
 │  └─ test_release                                     # 配布 zip の組み立て
 ├─ integration/            # 結合テスト（データ層 + SQLite）
 │  ├─ test_projects_db / test_tasks_db / test_statuses_db / test_tags_db
@@ -58,7 +59,8 @@ tests/
 │  └─ test_validation_db                               # 文字数の上限・必須（§4）
 ├─ gui/                    # UI 部品のテスト（マーカー gui）
 │  ├─ test_limits.py       # 入力欄の文字数の上限（上限ちょうど・超過・貼り付け）
-│  └─ test_forms.py        # フォームの必須の赤字・上限、確認ダイアログ
+│  ├─ test_forms.py        # フォームの必須の赤字・上限、日付欄、確認ダイアログ
+│  └─ test_date_picker.py  # 日付入力欄とカレンダー（入力・確定・選択・色分け・言語）
 └─ e2e/                    # 画面遷移・操作のテスト（マーカー e2e）
    └─ test_navigation.py   # 画面遷移表 No.1〜12、設定画面のエラー表示
 ```
@@ -73,6 +75,7 @@ tests/
 
 - 入力欄の文字数の上限：上限ちょうどまで入力できる、上限を超える入力はできない、貼り付けは上限で切り詰められる。
 - フォーム：必須項目（タイトル・名前）が空・空白のみで保存すると、入力欄の下に赤字を出して赤枠にし、保存しない。入力し直すと消える。新しいタグ名が空のときの赤字。
+- 日付入力欄とカレンダー（自前の部品）：直接入力して確定（正しくない文字は元に戻る）、カレンダーでの選択、月・年の移動、土曜は青・日曜と祝日は赤、前後の月はグレー、Esc・再押下で閉じる、日本語／英語の見出し。
 - 確認ダイアログ：確定・キャンセル、確定ボタンの文言の差し替え。
 
 ### 3.3 E2E（`tests/e2e/`）

@@ -1,5 +1,7 @@
 """入力フォームの入力チェック（必須の赤字・文字数の上限）。V1 の CT「入力値のチェック」に相当。"""
 
+import datetime
+
 import pytest
 
 from app.constants import LIMITS
@@ -98,6 +100,27 @@ class TestTaskForm:
     def test_empty_new_tag_shows_required_error(self, task_form):
         task_form._add_tag()
         assert task_form.error_label.cget("text") == "名前を入力してください"
+
+
+class TestTaskFormDates:
+    def test_picking_a_date_enables_the_field_and_is_saved(self, task_form, app_window):
+        assert task_form.start_date_enabled.get() is False
+        assert task_form.start_date_entry.entry.cget("state") == "disabled"
+        task_form.start_date_enabled.set(True)
+        task_form.start_date_entry.configure(state="normal")
+        task_form.start_date_entry.set_date(datetime.date(2026, 10, 20))
+        task_form.title_entry.insert(0, "日付つき")
+        task_form._submit()
+        assert task_form.result["start_date"] == "2026-10-20"
+        assert task_form.result["due_date"] is None  # 「有効」でない日付は保存しない
+
+    def test_calendar_selection_turns_the_checkbox_on(self, task_form, app_window):
+        picker = task_form.due_date_entry
+        assert task_form.due_date_enabled.get() is False
+        picker._on_calendar_pick(datetime.date(2026, 11, 1))
+        assert task_form.due_date_enabled.get() is True
+        assert picker.entry.cget("state") == "normal"
+        assert picker.get_date() == datetime.date(2026, 11, 1)
 
 
 class TestConfirmDialog:

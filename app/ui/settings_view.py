@@ -4,7 +4,6 @@ import tkinter.colorchooser as colorchooser
 import tkinter.filedialog as filedialog
 
 import customtkinter as ctk
-from tkcalendar import DateEntry
 
 from app.db.errors import ConflictError, ValidationError
 from app.db.holidays import (
@@ -23,15 +22,11 @@ from app.db.statuses import (
     update_status,
 )
 from app.db.tags import count_tagged_tasks, create_tag, delete_tag, list_tags, update_tag
-from app.i18n import LANGUAGES, calendar_locale, format_date, get_language, set_language, t
+from app.i18n import LANGUAGES, format_date, get_language, set_language, t
 from app.ui import theme
 from app.ui.errors import error_message, required_message
-from app.ui.widgets.calendar_style import (
-    apply_calendar_dropdown_icon,
-    apply_locale_header_format,
-    apply_weekend_holiday_styles,
-)
 from app.ui.widgets.confirm_dialog import ask_confirm
+from app.ui.widgets.date_picker import DatePicker
 from app.ui.widgets.limits import limit_entry
 
 
@@ -133,15 +128,10 @@ class SettingsView(ctk.CTkScrollableFrame):
 
         holiday_add_row = ctk.CTkFrame(self, fg_color="transparent")
         holiday_add_row.pack(fill="x", pady=(10, 0))
-        holiday_date_locale = calendar_locale()
-        self.new_holiday_date = DateEntry(
-            holiday_add_row, date_pattern="yyyy-mm-dd", width=10,
-            font=(theme.FONT_FAMILY, 11), locale=holiday_date_locale,
-        )
-        apply_calendar_dropdown_icon(self.new_holiday_date)
-        apply_locale_header_format(self.new_holiday_date, holiday_date_locale)
-        apply_weekend_holiday_styles(
-            self.new_holiday_date, lambda: {h.date for h in list_holidays(self.app.conn)}
+        self.new_holiday_date = DatePicker(
+            holiday_add_row,
+            holidays=lambda: {h.date for h in list_holidays(self.app.conn)},
+            width=84,
         )
         self.new_holiday_date.pack(side="left", padx=(0, 8))
         self.new_holiday_name_entry = ctk.CTkEntry(

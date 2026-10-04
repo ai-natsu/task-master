@@ -25,14 +25,6 @@ def set_language(code: str) -> None:
     _current_language = code
 
 
-_CALENDAR_LOCALES = {"ja": "ja_JP", "en": "en_US"}
-
-
-def calendar_locale() -> str:
-    """tkcalendarの月名・曜日名表示に使うbabelロケール文字列。"""
-    return _CALENDAR_LOCALES[_current_language]
-
-
 def t(text: str) -> str:
     """現在の言語に翻訳する。未登録なら原文(日本語)をそのまま返す。"""
     table = _TABLES.get(_current_language)

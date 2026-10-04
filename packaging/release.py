@@ -25,8 +25,6 @@ BUNDLED_PACKAGES = [
     "customtkinter",
     "darkdetect",
     "packaging",
-    "tkcalendar",
-    "babel",
     "pillow",
     "charset-normalizer",
 ]
