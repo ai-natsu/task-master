@@ -76,7 +76,10 @@ export function TagSettings() {
 
   const handleAdd = () => {
     const trimmed = name.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setError(t("{field}を入力してください", { field: t("名前") }));
+      return;
+    }
     create.mutate(
       { name: trimmed, color },
       {

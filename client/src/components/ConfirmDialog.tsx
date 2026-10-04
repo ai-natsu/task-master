@@ -4,11 +4,15 @@ interface Props {
   open: boolean;
   title: string;
   message: string;
+  /** 確定ボタンの文言（省略時は「削除する」） */
+  confirmLabel?: string;
+  /** 危険な操作（削除など）は赤、通常の操作（アーカイブ・復元など）は藍色のボタンにする（省略時は赤） */
+  danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export function ConfirmDialog({ open, title, message, onConfirm, onCancel }: Props) {
+export function ConfirmDialog({ open, title, message, confirmLabel, danger = true, onConfirm, onCancel }: Props) {
   const t = useT();
   if (!open) return null;
   return (
@@ -25,9 +29,13 @@ export function ConfirmDialog({ open, title, message, onConfirm, onCancel }: Pro
           </button>
           <button
             onClick={onConfirm}
-            className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+            className={
+              danger
+                ? "rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+                : "rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+            }
           >
-            {t("削除する")}
+            {confirmLabel ?? t("削除する")}
           </button>
         </div>
       </div>

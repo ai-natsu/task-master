@@ -48,9 +48,14 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
   const { data: statuses = [] } = useStatuses();
   const createTag = useCreateTag({ inline: true });
   const [tagError, setTagError] = useState("");
+  // 必須項目（タイトル）が未入力のまま保存しようとしたときの、項目の下に出す赤字
+  const [titleError, setTitleError] = useState("");
 
   useEffect(() => {
-    if (open) setValue({ ...empty, ...initial });
+    if (open) {
+      setValue({ ...empty, ...initial });
+      setTitleError("");
+    }
   }, [open, initial]);
 
   if (!open) return null;
@@ -63,7 +68,10 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
   };
 
   const handleCreateTag = async () => {
-    if (!newTagName.trim()) return;
+    if (!newTagName.trim()) {
+      setTagError(t("{field}を入力してください", { field: t("名前") }));
+      return;
+    }
     setTagError("");
     try {
       const tag = await createTag.mutateAsync({ name: newTagName.trim() });
@@ -85,10 +93,21 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
             <input
               autoFocus
               value={value.title}
-              onChange={(e) => setValue((v) => ({ ...v, title: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
+              onChange={(e) => {
+                setValue((v) => ({ ...v, title: e.target.value }));
+                if (titleError) setTitleError("");
+              }}
+              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm dark:bg-slate-900 ${
+                titleError ? "border-red-400" : "border-slate-300 dark:border-slate-600"
+              }`}
               placeholder={t("タスク名を入力")}
+              aria-invalid={!!titleError}
             />
+            {titleError && (
+              <p role="alert" className="mt-1 text-xs text-red-600">
+                {titleError}
+              </p>
+            )}
           </div>
 
           <div>
@@ -220,7 +239,13 @@ export function TaskFormModal({ open, mode, initial, parentOptions, onSubmit, on
             {t("キャンセル")}
           </button>
           <button
-            onClick={() => value.title.trim() && onSubmit(value)}
+            onClick={() => {
+              if (!value.title.trim()) {
+                setTitleError(t("{field}を入力してください", { field: t("タイトル") }));
+                return;
+              }
+              void onSubmit(value);
+            }}
             className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
           >
             {mode === "create" ? t("作成") : t("保存")}

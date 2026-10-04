@@ -74,7 +74,14 @@ export function HolidaySettings() {
 
   const handleAdd = () => {
     const trimmed = name.trim();
-    if (!trimmed || !date) return;
+    if (!date) {
+      setError(t("{field}を入力してください", { field: t("日付") }));
+      return;
+    }
+    if (!trimmed) {
+      setError(t("{field}を入力してください", { field: t("名称") }));
+      return;
+    }
     upsert.mutate(
       { date, name: trimmed },
       { onSuccess: clearError, onError: (e) => setError(errorMessage(e, t)) }

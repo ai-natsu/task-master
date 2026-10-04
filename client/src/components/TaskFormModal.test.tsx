@@ -51,17 +51,27 @@ describe("TaskFormModal", () => {
     expect(screen.queryByPlaceholderText("タスク名を入力")).not.toBeInTheDocument();
   });
 
-  it("V-4b: title が空のまま送信しても onSubmit は呼ばれない", async () => {
+  it("V-4b: title が空のまま送信しても onSubmit は呼ばれず、必須の赤字を表示する", async () => {
     const { onSubmit } = setup();
     await userEvent.click(screen.getByRole("button", { name: "作成" }));
     expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("タイトルを入力してください");
   });
 
-  it("V-4c: title が空白のみでも onSubmit は呼ばれない", async () => {
+  it("V-4c: title が空白のみでも onSubmit は呼ばれず、必須の赤字を表示する", async () => {
     const { onSubmit } = setup();
     await userEvent.type(screen.getByPlaceholderText("タスク名を入力"), "   ");
     await userEvent.click(screen.getByRole("button", { name: "作成" }));
     expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("タイトルを入力してください");
+  });
+
+  it("V-4c2: 赤字は入力し直すと消える", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: "作成" }));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    await userEvent.type(screen.getByPlaceholderText("タスク名を入力"), "a");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("V-4d: title があれば onSubmit が入力値付きで呼ばれる", async () => {

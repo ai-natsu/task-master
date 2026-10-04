@@ -124,7 +124,10 @@ export function Settings() {
 
   const handleCreate = () => {
     const label = newLabel.trim();
-    if (!label) return;
+    if (!label) {
+      setStatusError(t("{field}を入力してください", { field: t("名前") }));
+      return;
+    }
     createStatus.mutate({ label, color: newColor }, statusHandlers);
     setNewLabel("");
   };

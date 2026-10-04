@@ -152,6 +152,14 @@ export const en: Record<string, string> = {
   "タグを削除": "Delete tag",
   "「{name}」タグを削除しますか？{count}件のタスクからこのタグが外れます。":
     'Delete the tag "{name}"? It will be removed from {count} task(s).',
+  "{field}を入力してください": "{field} is required.",
+  "プロジェクトをアーカイブ": "Archive project",
+  "プロジェクトを復元": "Restore project",
+  "「{name}」をアーカイブしますか？一覧では非表示になります（「アーカイブ済みも表示」で再表示できます）。":
+    'Archive "{name}"? It will be hidden from the list (use "Show archived" to see it again).',
+  "「{name}」を復元しますか？一覧に再表示されます。": 'Restore "{name}"? It will appear in the list again.',
+  "アーカイブする": "Archive",
+  "復元する": "Restore",
   "言語 / Language": "言語 / Language",
   "表示言語を切り替えます。この設定はこのブラウザに保存されます。":
     "Choose the display language. This setting is saved in this browser.",

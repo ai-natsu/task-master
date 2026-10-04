@@ -28,8 +28,12 @@ export function ProjectFormModal({ open, mode, initial, onSubmit, onClose, error
     color: initial?.color ?? COLORS[0],
   });
 
+  // 必須項目（名前）が未入力のまま保存しようとしたときの、項目の下に出す赤字
+  const [nameError, setNameError] = useState("");
+
   useEffect(() => {
     if (open) {
+      setNameError("");
       setValue({
         name: initial?.name ?? "",
         description: initial?.description ?? "",
@@ -53,10 +57,21 @@ export function ProjectFormModal({ open, mode, initial, onSubmit, onClose, error
             <input
               autoFocus
               value={value.name}
-              onChange={(e) => setValue((v) => ({ ...v, name: e.target.value }))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
+              onChange={(e) => {
+                setValue((v) => ({ ...v, name: e.target.value }));
+                if (nameError) setNameError("");
+              }}
+              className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm dark:bg-slate-900 ${
+                nameError ? "border-red-400" : "border-slate-300 dark:border-slate-600"
+              }`}
               placeholder={t("プロジェクト名")}
+              aria-invalid={!!nameError}
             />
+            {nameError && (
+              <p role="alert" className="mt-1 text-xs text-red-600">
+                {nameError}
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-500">{t("説明")}</label>
@@ -97,7 +112,13 @@ export function ProjectFormModal({ open, mode, initial, onSubmit, onClose, error
             {t("キャンセル")}
           </button>
           <button
-            onClick={() => value.name.trim() && onSubmit(value)}
+            onClick={() => {
+              if (!value.name.trim()) {
+                setNameError(t("{field}を入力してください", { field: t("名前") }));
+                return;
+              }
+              void onSubmit(value);
+            }}
             className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
           >
             {mode === "create" ? t("作成") : t("保存")}

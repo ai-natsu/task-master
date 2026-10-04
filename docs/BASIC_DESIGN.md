@@ -133,7 +133,7 @@ flowchart TD
 | SCR-05 | プロジェクト作成/編集 | （モーダル） | モーダル |
 | SCR-06 | タスク作成/編集 | （モーダル） | モーダル |
 | COM-01 | サイドバー | 共通 | 共通部品 |
-| COM-02 | 確認ダイアログ | 共通 | 共通部品（削除確認） |
+| COM-02 | 確認ダイアログ | 共通 | 共通部品（削除・アーカイブ・復元の確認） |
 
 ### 4.2 画面遷移図
 
@@ -164,7 +164,7 @@ flowchart LR
 | 9 | SCR-03 | 「+ 新しいタスク」 | SCR-06（作成） | モーダル |
 | 10 | SCR-03 | ツリー行・カンバンカードのクリック、ガントのバー/行名のダブルクリック | SCR-06（編集） | モーダル。ツリー・カンバンのダブルクリック、ガントのシングルクリックでは何も起きない（詳細は `docs/OPERATION_SPEC.md`）。ツリーは行末の「編集」ボタンでも開く |
 | 11 | SCR-03 | ツリー行末の「+サブ」ボタン | SCR-06（作成・親指定） | モーダル（V2 は右クリックメニュー） |
-| 12 | SCR-02, COM-01, SCR-03, SCR-04 | 削除操作 | COM-02 | ダイアログ。確認後に実行 |
+| 12 | SCR-02, COM-01, SCR-03, SCR-04 | 削除・アーカイブ/復元操作 | COM-02 | ダイアログ。確認後に実行 |
 
 ブラウザの戻る/進む、URL の直接入力でも画面を移動できる（V2 には無い）。
 
@@ -193,7 +193,7 @@ flowchart LR
 | I-0201 | プロジェクト追加ボタン | ボタン | SCR-05 を開く |
 | I-0202 | アーカイブ表示トグル | チェック | `includeArchived` の切替 |
 | I-0203 | プロジェクト行 | リンク | 名称・タスク件数・アーカイブ状態。クリックで SCR-03 |
-| I-0204 | アーカイブ/復元ボタン | ボタン | `PATCH /api/projects/:id {archived}` |
+| I-0204 | アーカイブ/復元ボタン | ボタン | COM-02 で確認後に `PATCH /api/projects/:id {archived}` |
 
 **取得/更新API**: `GET /api/projects`, `PATCH /api/projects/:id`
 
@@ -470,9 +470,10 @@ index: projectId / parentId / status / priority / dueDate
 | 場面 | 表示方法 | 実装 |
 |---|---|---|
 | 入力フォーム（SCR-05/06）の保存失敗 | モーダルを閉じず、保存ボタンの上に赤字で表示 | `TaskFormModal` / `ProjectFormModal` の `error` に表示（保存はフォームの `mutateAsync` で行い、失敗したら閉じない） |
+| 必須項目が未入力のまま保存・追加 | 保存・追加は行わず、入力欄の下に赤字で「{項目名}を入力してください」を表示する（入力フォームは入力欄を赤枠にもし、入力し直すと消える。設定画面は節の直下に表示） | `TaskFormModal` / `ProjectFormModal` の項目別エラー、設定画面の各節の赤字 |
 | 設定画面（SCR-04）の操作失敗 | 操作した節（ステータス/祝日/タグ）の直下に赤字で表示 | 設定画面の各節の赤字（ステータス・祝日・タグ） |
 | 一覧・ビュー上の操作失敗（削除・並べ替え・移動など） | エラーダイアログ（タイトル「エラー」、OK のみ） | `MutationCache` の共通ハンドラが `ErrorDialog` に表示（`meta.inline` の呼び出しは除く） |
-| 削除など取り消せない操作の事前確認 | 確認ダイアログ（COM-02） | 同左 |
+| 削除・アーカイブ・復元の事前確認 | 確認ダイアログ（COM-02）。削除は赤、アーカイブ・復元は通常色のボタン | 同左 |
 | 想定外のエラー（通信・DB など） | エラーダイアログ「予期しないエラーが発生しました。もう一度お試しください」 | 同上（通信できない場合などは共通の文言） |
 
 **共通メッセージ一覧**
@@ -488,6 +489,7 @@ index: projectId / parentId / status / priority / dueDate
 | ステータス不正 | 指定のステータスが存在しません | Invalid status | 400 | ValidationError |
 | ステータス未定義 | ステータスが1件もありません | No statuses defined | 400 | ValidationError |
 | 入力値不正（文字数・型） | 入力内容を確認してください（項目名と条件を併記） | Please check your input | 400（zod） | 画面側チェック |
+| 必須項目が未入力 | {項目名}を入力してください | {field} is required. | 画面側チェック | 画面側チェック |
 | CSV の文字コード不明 | CSVの文字コードを判定できませんでした | Could not determine the CSV file's character encoding. | —（機能なし） | ValidationError |
 | タグ名重複 | タグが既に存在します | Tag already exists | 409 | ConflictError |
 | 使用中ステータスの削除 | このステータスは {count} 件のタスクで使用中のため削除できません | This status is used by {count} tasks and cannot be deleted | 409 | ConflictError |
