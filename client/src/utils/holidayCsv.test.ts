@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import { parseDate, parseHolidayCsv, splitCsv } from "./holidayCsv";
 
@@ -46,5 +47,23 @@ describe("parseHolidayCsv", () => {
 
   it("どちらの文字コードでも読めないバイト列は null", () => {
     expect(parseHolidayCsv(new Uint8Array([0xff, 0xff, 0xfe, 0x80, 0x81, 0xff]).buffer)).toBeNull();
+  });
+});
+
+describe("サンプルの祝日 CSV（samples/holidays_sample.csv）", () => {
+  const file = readFileSync(new URL("../../../samples/holidays_sample.csv", import.meta.url));
+  const buffer = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
+
+  it("そのまま取り込める（BOM つき UTF-8、ヘッダー行つき）", () => {
+    const rows = parseHolidayCsv(buffer);
+    expect(rows).not.toBeNull();
+    expect(rows?.length).toBe(18);
+    expect(rows?.[0]).toEqual({ date: "2026-01-01", name: "元日" });
+  });
+
+  it("全ての日付が 2026 年で、重複がない", () => {
+    const rows = parseHolidayCsv(buffer) ?? [];
+    expect(rows.every((r) => r.date.startsWith("2026-"))).toBe(true);
+    expect(new Set(rows.map((r) => r.date)).size).toBe(rows.length);
   });
 });
