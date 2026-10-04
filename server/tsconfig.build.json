@@ -1,0 +1,5 @@
+{
+  // 本番ビルド用。型チェック・ESLint 用の tsconfig.json からテストを除いたもの。
+  "extends": "./tsconfig.json",
+  "exclude": ["src/**/*.test.ts", "src/test"]
+}
