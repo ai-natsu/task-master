@@ -40,7 +40,7 @@
 ```
 app/
   main.py            # エントリポイント
-  constants.py       # 区分値（優先度）
+  constants.py       # 区分値（優先度）、入力欄の文字数の上限（LIMITS）
   models.py          # データクラス
   i18n.py            # t()・言語の保持
   locales/en.py      # 英語辞書
@@ -49,8 +49,10 @@ app/
   ui/                # CustomTkinter 画面・ウィジェット
   assets/            # アイコン
 tests/
-  unit/              # app/logic・app/i18n のテスト
-  integration/       # app/db のテスト（一時 SQLite ファイル）
+  unit/              # 単体：app/logic・app/i18n などの純粋関数
+  integration/       # 結合：app/db（一時 SQLite ファイル）
+  gui/               # UI 部品：Tk ウィジェットの表示・入力チェック（マーカー gui）
+  e2e/               # E2E：画面遷移・モーダル・確認ダイアログ（マーカー e2e）
 packaging/
   build_exe.py       # Nuitka ビルドスクリプト
   build_zip.py       # 配布用 zip の作成（ビルド＋同梱物の整理）
@@ -103,9 +105,11 @@ seed.py              # サンプルデータ投入（破壊的）
 
 ## 5. テストと静的解析
 
-- **tests/unit**：`app/logic` の純粋関数（tree / dnd / gantt / due）と `app/i18n` を検証する。
-- **tests/integration**：`app/db/*.py` を一時ディレクトリの専用 SQLite ファイルに対して検証する。循環参照検出・統計（isDone 駆動・期限判定）・アーカイブ除外・ステータス削除制約・祝日 CSV・設定の CRUD を重点的にカバーする。開発用 `taskmaster.db` には触れない。
-- **GUI（`app/ui`）**：自動テストは無く、`python -m app.main` で手動確認する。
+- **tests/unit**：`app/logic` の純粋関数（tree / dnd / gantt / due）、`app/i18n`、エラー文言、省略表示を検証する。
+- **tests/integration**：`app/db/*.py` を一時ディレクトリの専用 SQLite ファイルに対して検証する。循環参照検出・統計（isDone 駆動・期限判定）・アーカイブ除外・ステータス削除制約・祝日 CSV・設定の CRUD・文字数の上限を重点的にカバーする。開発用 `taskmaster.db` には触れない。
+- **tests/gui**：入力欄の文字数の上限、フォームの必須の赤字、確認ダイアログを、実際の Tk ウィジェットで検証する。
+- **tests/e2e**：アプリ全体（`AppWindow`）を実際に動かし、画面遷移表に対応する遷移・モーダル・確認ダイアログを検証する。
+- 画面を開けない環境では、`tests/gui` と `tests/e2e` は自動でスキップされる。方針・ファイル配置・実行方法は [テスト設計書](TEST_DESIGN.md) を参照。
 - 静的解析は ruff（`python -m ruff check .`）。
 
 ---

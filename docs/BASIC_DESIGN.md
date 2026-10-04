@@ -33,7 +33,7 @@ TaskMaster V2 のデスクトップアプリ本体（画面・データ層・SQL
 | 本書 `docs/BASIC_DESIGN.md` | 基本設計（外部からどう見えるか） |
 | `docs/OPERATION_SPEC.md` | 操作仕様（クリック・ドラッグ・マウスオーバー。V1/V2 共通） |
 | `docs/SYSTEM_DESIGN.md` | システム方式設計（アーキテクチャ・ディレクトリ構成・ビルドと配布・運用） |
-| `README.md` | 概要・セットアップ・使い方・配布と保存場所 |
+| `README.md` | 概要・起動方法・使い方・配布と保存場所 |
 | `CLAUDE.md` | 開発者向けの実装メモ |
 
 ### 1.4 用語
@@ -516,7 +516,7 @@ index: projectId / parentId / status / priority / dueDate
 | 親タスクが無い | 親タスクが見つかりません | Parent task not found | 400 | ValidationError |
 | ステータス不正 | 指定のステータスが存在しません | Invalid status | 400 | ValidationError |
 | ステータス未定義 | ステータスが1件もありません | No statuses defined | 400 | ValidationError |
-| 入力値不正（文字数・型） | 入力内容を確認してください（項目名と条件を併記） | Please check your input | 400（zod） | 画面側チェック |
+| 入力値不正（文字数・型） | 入力内容を確認してください（項目名と条件を併記） | Please check your input | 400（zod）。画面の入力欄にも文字数の上限（`maxlength`）を設定し、上限を超える入力はできない | 画面の入力欄に上限を設定し、データ層（`ValidationError`）でも検査する |
 | 必須項目が未入力 | {項目名}を入力してください | {field} is required. | 画面側チェック | 画面側チェック |
 | CSV の文字コード不明 | CSVの文字コードを判定できませんでした | Could not determine the CSV file's character encoding. | —（機能なし） | ValidationError |
 | タグ名重複 | タグが既に存在します | Tag already exists | 409 | ConflictError |
