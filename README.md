@@ -422,7 +422,7 @@ python seed.py
 
 **実行する場所：** この章のコマンドは、**クローンしたリポジトリのルートディレクトリ**（5.1.4）で、**仮想環境を有効にした状態**で実行する。各コマンドの前に、そのフォルダへ移動するコマンドと、仮想環境を有効にするコマンドを書いている。
 
-詳細（種類・置き場所・方針・入力値の上限）は、[テスト設計書](docs/TEST_DESIGN.md) を参照。
+詳細（種類・置き場所・方針・入力値の上限）は、[テスト設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v2/TEST_DESIGN.md) を参照。
 
 ### 7.1 単体・結合テスト
 
@@ -512,7 +512,6 @@ python -m ruff check .
 │  └─ e2e/               # 画面遷移の E2E
 ├─ packaging/            # exe・.app・配布 zip の作成（build_exe.py / build_zip.py など）
 ├─ Casks/                # Homebrew の Cask（Mac 用のインストールの定義：taskmaster.rb）
-├─ docs/                 # 設計書
 ├─ seed.py               # サンプルデータの投入（既存データを全削除する）
 └─ pyproject.toml        # プロジェクト設定（依存ライブラリ、ruff、pytest）
 ```
@@ -523,9 +522,9 @@ python -m ruff check .
 
 | 文書 | 内容 |
 |---|---|
-| [基本設計書](docs/BASIC_DESIGN.md) | 機能・画面・インターフェース・データ・エラー方式 |
-| [システム設計書](docs/SYSTEM_DESIGN.md) | アーキテクチャ・ディレクトリ構成・データの保存場所・ビルドと配布・運用 |
-| [テスト設計書](docs/TEST_DESIGN.md) | テストの方針・種類（単体・結合・UI 部品・E2E）・配置・実行方法・入力値の上限 |
+| [基本設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v2/BASIC_DESIGN.md) | 機能・画面・インターフェース・データ・エラー方式 |
+| [システム設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v2/SYSTEM_DESIGN.md) | アーキテクチャ・ディレクトリ構成・データの保存場所・ビルドと配布・運用 |
+| [テスト設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v2/TEST_DESIGN.md) | テストの方針・種類（単体・結合・UI 部品・E2E）・配置・実行方法・入力値の上限 |
 
 ## 10. ライセンス
 
