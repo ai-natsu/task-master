@@ -428,7 +428,7 @@ kill 12345            # lsof の表示の PID（数字）を指定する
 
 **実行する場所：** この章のコマンドは、特に記載がない限り、**クローンしたリポジトリのルートディレクトリ**（3.1.4）で実行する。各コマンドの前に、そのフォルダへ移動する `cd <リポジトリのルートフォルダ>` を書いている。
 
-詳細（種類・置き場所・方針・ケース）は、[テスト設計書](docs/TEST_DESIGN.md) を参照。
+詳細（種類・置き場所・方針・ケース）は、[テスト設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v1/TEST_DESIGN.md) を参照。
 
 ### 5.1 単体・結合テスト（Vitest）
 
@@ -537,7 +537,6 @@ npm run check
 │  │  └─ test/             # テスト用の共通部品
 │  └─ vite.config.ts / vitest.config.ts / playwright-ct.config.ts / tailwind.config.js
 ├─ e2e/                    # E2E（Playwright）
-├─ docs/                   # 設計書（要件・基本設計・画面設計・テスト設計など）
 ├─ samples/                # サンプルのファイル（holidays_sample.csv：祝日の取り込みの例）
 └─ scripts/                # 補助スクリプト（画面キャプチャなど）
 ```
@@ -548,12 +547,12 @@ npm run check
 
 | 文書 | 内容 |
 |---|---|
-| [基本設計書](docs/BASIC_DESIGN.md) | 機能・画面・**API 仕様（§5）**・**データ設計（§6、ER図・テーブル定義）**・共通設計（バリデーション・エラー処理など） |
-| [画面設計書](docs/SCREEN_DESIGN.md) | 画面のレイアウトと項目 |
-| [操作仕様書](docs/OPERATION_SPEC.md) | クリック・ドラッグ・マウスオーバーの操作 |
-| [システム設計書](docs/SYSTEM_DESIGN.md) | アーキテクチャ・構成・セキュリティ・運用 |
-| [テスト設計書](docs/TEST_DESIGN.md) | **テストの実行方法**・種類と置き場所・方針・ケース |
-| [静的解析](docs/STATIC_ANALYSIS.md) | ESLint の方針・設定 |
+| [基本設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v1/BASIC_DESIGN.md) | 機能・画面・**API 仕様（§5）**・**データ設計（§6、ER図・テーブル定義）**・共通設計（バリデーション・エラー処理など） |
+| [画面設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v1/SCREEN_DESIGN.md) | 画面のレイアウトと項目 |
+| [操作仕様書](https://github.com/ai-natsu/task-master-docs/blob/main/v1/OPERATION_SPEC.md) | クリック・ドラッグ・マウスオーバーの操作 |
+| [システム設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v1/SYSTEM_DESIGN.md) | アーキテクチャ・構成・セキュリティ・運用 |
+| [テスト設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v1/TEST_DESIGN.md) | **テストの実行方法**・種類と置き場所・方針・ケース |
+| [静的解析](https://github.com/ai-natsu/task-master-docs/blob/main/v1/STATIC_ANALYSIS.md) | ESLint の方針・設定 |
 
 ## 8. ライセンス
 
