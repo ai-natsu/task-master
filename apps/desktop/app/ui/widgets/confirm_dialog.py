@@ -1,0 +1,58 @@
+"""汎用確認ダイアログ（旧 client/src/components/ConfirmDialog.tsx の移植）。"""
+
+import customtkinter as ctk
+
+from app.i18n import t
+from app.ui import theme
+
+
+class ConfirmDialog(ctk.CTkToplevel):
+    def __init__(self, parent, title: str, message: str, confirm_label: str | None = None):
+        super().__init__(parent)
+        self.title(title)
+        # 固定サイズ("380x180"等)にすると、メッセージが長い場合に折り返した
+        # 文章がウィンドウからはみ出して見切れてしまう(DPI拡大率によっては
+        # wraplengthとウィンドウ幅の対応がずれてさらに顕著になる)。ウィンドウ
+        # サイズを指定せず、折り返し済みラベルの実サイズに合わせて自動算出
+        # させることで、メッセージの長さによらず常に収まるようにする。
+        self.resizable(False, False)
+        self.confirmed = False
+
+        ctk.CTkLabel(self, text=message, wraplength=330, justify="left").pack(
+            padx=24, pady=(24, 16), fill="both", expand=True
+        )
+
+        button_row = ctk.CTkFrame(self, fg_color="transparent")
+        button_row.pack(pady=(0, 20))
+        ctk.CTkButton(
+            button_row,
+            text=t("キャンセル"),
+            fg_color="transparent",
+            text_color=("gray10", "gray90"),
+            hover_color=("gray85", "gray25"),
+            command=self._on_cancel,
+        ).pack(side="left", padx=6)
+        ctk.CTkButton(
+            button_row,
+            text=confirm_label if confirm_label is not None else t("削除する"),
+            fg_color=theme.ACCENT,
+            hover_color=theme.ACCENT_HOVER,
+            command=self._on_confirm,
+        ).pack(side="left", padx=6)
+
+        self.transient(parent)
+        self.grab_set()
+
+    def _on_confirm(self) -> None:
+        self.confirmed = True
+        self.destroy()
+
+    def _on_cancel(self) -> None:
+        self.confirmed = False
+        self.destroy()
+
+
+def ask_confirm(parent, title: str, message: str, confirm_label: str | None = None) -> bool:
+    dialog = ConfirmDialog(parent, title, message, confirm_label)
+    parent.wait_window(dialog)
+    return dialog.confirmed
