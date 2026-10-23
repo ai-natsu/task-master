@@ -613,9 +613,9 @@ task-master/
 
 | 文書 | 内容 |
 |---|---|
-| [基本設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v2/BASIC_DESIGN.md) | 機能・画面・インターフェース・データ・エラー方式 |
-| [システム設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v2/SYSTEM_DESIGN.md) | アーキテクチャ・ディレクトリ構成・データの保存場所・ビルドと配布・運用 |
-| [テスト設計書](https://github.com/ai-natsu/task-master-docs/blob/main/v2/TEST_DESIGN.md) | テストの方針・種類（単体・結合・UI 部品・E2E）・配置・実行方法・入力値の上限 |
+| [基本設計書](https://github.com/ai-natsu/task-master-docs/blob/main/design/desktop/BASIC_DESIGN.md) | 機能・画面・インターフェース・データ・エラー方式 |
+| [システム設計書](https://github.com/ai-natsu/task-master-docs/blob/main/architecture/desktop/SYSTEM_DESIGN.md) | アーキテクチャ・ディレクトリ構成・データの保存場所・ビルドと配布・運用 |
+| [テスト設計書](https://github.com/ai-natsu/task-master-docs/blob/main/development/desktop/TEST_DESIGN.md) | テストの方針・種類（単体・結合・UI 部品・E2E）・配置・実行方法・入力値の上限 |
 
 ## 12. ライセンス
 
