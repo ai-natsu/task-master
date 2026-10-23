@@ -50,8 +50,8 @@ describe("parseHolidayCsv", () => {
   });
 });
 
-describe("サンプルの祝日 CSV（samples/holidays_sample.csv）", () => {
-  const file = readFileSync(new URL("../../../samples/holidays_sample.csv", import.meta.url));
+describe("サンプルの祝日 CSV（shared/assets/holidays_sample.csv）", () => {
+  const file = readFileSync(new URL("../../../../../shared/assets/holidays_sample.csv", import.meta.url));
   const buffer = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
 
   it("そのまま取り込める（BOM つき UTF-8、ヘッダー行つき）", () => {

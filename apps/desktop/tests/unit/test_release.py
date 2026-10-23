@@ -71,7 +71,7 @@ def test_missing_exe_is_a_clear_error(release, tmp_path):
 
 
 def test_sample_holiday_csv_can_be_imported_by_the_app(release):
-    raw = (release.FILES / "holidays_sample.csv").read_bytes()
+    raw = (release.HOLIDAYS_SAMPLE).read_bytes()
     rows = parse_holiday_csv(raw)
     assert len(rows) == 18
     assert ("2026-01-01", "元日") in rows
