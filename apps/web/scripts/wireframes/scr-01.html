@@ -1,0 +1,52 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="common.css"></head><body>
+<div class="frame" id="frame">
+  <div data-comp="titlebar" data-text="ダッシュボード  ( / )"></div>
+  <div class="app">
+    <div data-comp="sidebar" data-active="dashboard"></div>
+    <div class="main">
+      <h1>ダッシュボード</h1>
+      <div class="grid g4" style="margin-bottom:10px">
+        <div class="card"><i class="id">0101</i><div class="lb">プロジェクト数</div><div class="v">3</div></div>
+        <div class="card"><i class="id">0102</i><div class="lb">直近7日の完了</div><div class="v green">5</div></div>
+      </div>
+      <div class="grid g4" style="margin-bottom:10px">
+        <div class="card"><i class="id">0103</i><div class="lb">タスク総数</div><div class="v">25</div></div>
+        <div class="card"><i class="id">0104</i><div class="lb">完了率</div><div class="v green">36%</div></div>
+        <div class="card"><i class="id">0105</i><div class="lb">期限超過</div><div class="v red-t">2 <span class="small muted" style="font-weight:400">（1件以上で赤字）</span></div></div>
+        <div class="card"><i class="id">0106</i><div class="lb">期限が近い（3日後まで）</div><div class="v amber-t">3</div></div>
+      </div>
+      <div class="grid g2" style="margin-bottom:10px">
+        <div class="card"><i class="id">0107</i><h3>ステータス別</h3>
+          <div class="row" style="margin-bottom:4px"><span class="pill s-todo" style="width:70px;text-align:center">未着手</span><span class="bar"><i style="width:30%"></i></span><span class="small muted">8</span></div>
+          <div class="row" style="margin-bottom:4px"><span class="pill s-doing" style="width:70px;text-align:center">進行中</span><span class="bar"><i style="width:36%"></i></span><span class="small muted">9</span></div>
+          <div class="row" style="margin-bottom:4px"><span class="pill s-review" style="width:70px;text-align:center">レビュー中</span><span class="bar"><i style="width:8%"></i></span><span class="small muted">2</span></div>
+          <div class="row"><span class="pill s-done" style="width:70px;text-align:center">完了</span><span class="bar"><i style="width:24%"></i></span><span class="small muted">6</span></div>
+        </div>
+        <div class="card"><i class="id">0108</i><h3>優先度別（緊急 → 低）</h3>
+          <div class="row" style="margin-bottom:4px"><span class="pill p-urgent" style="width:70px;text-align:center">緊急</span><span class="bar"><i style="width:12%"></i></span><span class="small muted">3</span></div>
+          <div class="row" style="margin-bottom:4px"><span class="pill p-high" style="width:70px;text-align:center">高</span><span class="bar"><i style="width:28%"></i></span><span class="small muted">7</span></div>
+          <div class="row" style="margin-bottom:4px"><span class="pill p-mid" style="width:70px;text-align:center">中</span><span class="bar"><i style="width:44%"></i></span><span class="small muted">11</span></div>
+          <div class="row"><span class="pill p-low" style="width:70px;text-align:center">低</span><span class="bar"><i style="width:16%"></i></span><span class="small muted">4</span></div>
+        </div>
+      </div>
+      <div class="grid g2" style="margin-bottom:12px">
+        <div class="card"><i class="id">0109</i><h3 class="red-t">期限超過のタスク（最大8件）</h3>
+          <div class="row" style="margin-bottom:5px"><span class="pill p-urgent">緊急</span><span class="trunc" style="flex:1">見積書の提出</span><span class="small muted trunc" style="max-width:70px">営業資料…</span><span class="small red-t" style="font-weight:600">2026年10月01日</span></div>
+          <div class="row" style="margin-bottom:5px"><span class="pill p-mid">中</span><span class="trunc" style="flex:1">アンケート集計</span><span class="small muted trunc" style="max-width:70px">社内ポー…</span><span class="small red-t" style="font-weight:600">2026年10月03日</span></div>
+          <div class="small muted">0件のとき：「期限超過のタスクはありません」</div></div>
+        <div class="card"><i class="id">0110</i><h3>期限が近いタスク（最大8件）</h3>
+          <div class="row" style="margin-bottom:5px"><span class="pill p-high">高</span><span class="trunc" style="flex:1">仕様レビュー</span><span class="small muted trunc" style="max-width:70px">新製品リ…</span><span class="small muted">2026年10月05日</span></div>
+          <div class="row" style="margin-bottom:5px"><span class="pill p-mid">中</span><span class="trunc" style="flex:1">デモ環境の準備</span><span class="small muted trunc" style="max-width:70px">新製品リ…</span><span class="small muted">2026年10月07日</span></div>
+          <div class="small muted">0件のとき：「予定されているタスクはありません」</div></div>
+      </div>
+      <h3>プロジェクト一覧</h3>
+      <div class="grid g3">
+        <div class="card"><i class="id">0111</i><div class="row"><span class="dot lg" style="background:#6366f1"></span><b class="trunc">新製品リリース</b></div><div class="small muted" style="margin-top:6px">12 件のタスク</div></div>
+        <div class="card"><div class="row"><span class="dot lg" style="background:#22c55e"></span><b class="trunc">社内ポータル刷新</b></div><div class="small muted" style="margin-top:6px">8 件のタスク</div></div>
+        <div class="card"><div class="row"><span class="dot lg" style="background:#f59e0b"></span><b class="trunc">営業資料の整備</b></div><div class="small muted" style="margin-top:6px">5 件のタスク</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">各リストは、未完了（「完了として扱う」でないステータス）のタスクだけを、期限の昇順に表示する。日付の形式は表示言語に従う（日本語 2026年10月05日／English 2026-10-05）。</div>
+</div>
+<script src="common.js"></script></body></html>
