@@ -77,19 +77,18 @@ Webアプリ版もあります。
 
 ## 3. バージョンについて
 
-TaskMaster には V1 と V2 の2つのバージョンがあります。今は、新旧でなく、V1がWebアプリ版、V2がデスクトップアプリ版です。
+TaskMaster には、Webアプリ版（`apps/web`）とデスクトップアプリ版（`apps/desktop`）の2つがあります。どちらも同じリポジトリに入っています。
 
-| | V1 | V2 |
+| | Web版（`apps/web`） | デスクトップ版（`apps/desktop`） |
 |---|---|---|
 | 形態 | Web アプリ版 | デスクトップアプリ版 |
 | 動かし方 | Node.js でサーバーを起動し、ブラウザで http://localhost:3001 を開く | `TaskMaster.exe`（Windows）か `TaskMaster.app`（Mac）を起動する |
 | 事前に入れるもの | Node.js 18 以上 | なし |
 | 主な技術 | Express・Prisma・React | Python・CustomTkinter |
-| データ | `server/prisma/dev.db`（SQLite。[9.3](#93-webアプリ版)） | `taskmaster.db`（SQLite。[9.1](#91-windows版)・[9.2](#92-mac版)） |
-| ブランチ | `develop/v1` | `develop/v2` |
-| リポジトリ | https://github.com/ai-natsu/task-master | https://github.com/ai-natsu/task-master |
+| データ | `apps/web/server/prisma/dev.db`（SQLite。[9.3](#93-webアプリ版)） | `taskmaster.db`（SQLite。[9.1](#91-windows版)・[9.2](#92-mac版)） |
+| ディレクトリ | `apps/web` | `apps/desktop` |
 
-V2 は、利用者が Node.js を入れずに1つの実行ファイルで使えるよう、V1 を Python で作り直したものです。機能は V1 とほぼ同じです。
+デスクトップ版は、利用者が Node.js を入れずに1つの実行ファイルで使えるよう、Web版を Python で作り直したものです。機能は Web版とほぼ同じです。
 
 ## 4. ロードマップ
 
@@ -103,12 +102,12 @@ V2 は、利用者が Node.js を入れずに1つの実行ファイルで使え�
 
 ## 5. インストール
 
-| 版 | バージョン | 入手先 |
+| 版 | 系統 | 入手先 |
 |---|---|---|
-| [Windows版](#51-windows版) | V2 | ビルドした zip：`packaging/dist/TaskMaster-<版>-win64.zip` |
-| [Mac版(Zip)](#52-mac版zip) | V2 | ビルドした zip：`packaging/dist/TaskMaster-<版>-mac.zip` |
-| [Mac版(Homebrew)](#53-mac版homebrew) | V2 | Homebrew |
-| [Webアプリ版](#54-webアプリ版) | V1 | ソースコードをクローンする |
+| [Windows版](#51-windows版) | desktop | ビルドした zip：`apps/desktop/packaging/dist/TaskMaster-<版>-win64.zip` |
+| [Mac版(Zip)](#52-mac版zip) | desktop | ビルドした zip：`apps/desktop/packaging/dist/TaskMaster-<版>-mac.zip` |
+| [Mac版(Homebrew)](#53-mac版homebrew) | desktop | Homebrew |
+| [Webアプリ版](#54-webアプリ版) | web | ソースコードをクローンする |
 
 
 ### 5.1 Windows版
@@ -173,8 +172,7 @@ Webサーバーのインストール手順は以下の通りです。
 
    ```bash
    git clone https://github.com/ai-natsu/task-master.git
-   cd task-master
-   git checkout develop/v1
+   cd task-master/apps/web
    ```
 
 3. 起動方法は [6.4](#64-webアプリ版) を参照。
@@ -221,7 +219,7 @@ xattr -dr com.apple.quarantine /Applications/TaskMaster.app
 
 ### 6.4 Webアプリ版
 - 起動手順
-1. [インストール手順](#54-webアプリ版)でクローンした `task-master` フォルダを開き、起動スクリプトを実行する。
+1. [インストール手順](#54-webアプリ版)でクローンした `task-master/apps/web` フォルダを開き、起動スクリプトを実行する。
 
    | 環境 | 起動スクリプト | 実行のしかた |
    |---|---|---|
@@ -419,7 +417,7 @@ xattr -dr com.apple.quarantine /Applications/TaskMaster.app
 
 ### 9.3 Webアプリ版
 
-データは、クローンした `task-master` フォルダの `server/prisma/dev.db` にあります。`server/.env` の `DATABASE_URL` を変えている場合は、そこに書いた場所になります。
+データは、クローンした `task-master/apps/web` フォルダの `server/prisma/dev.db` にあります。`server/.env` の `DATABASE_URL` を変えている場合は、そこに書いた場所になります。
 
 バックアップ：
 
@@ -460,7 +458,7 @@ xattr -dr com.apple.quarantine /Applications/TaskMaster.app
 | Mac | `ModuleNotFoundError` が出る | 仮想環境が有効になっていないか、ライブラリが入っていない。`source .venv/bin/activate` で仮想環境を有効にしてから `pip install -e .` を実行する。 |
 | Windows・Mac | ウィンドウが開かない、文字が化ける | Python が 3.11 以上か確認する。リモート接続など、画面を表示できない環境では動かない。 |
 
-Webアプリ版のほかの対処は、`develop/v1` ブランチの README を参照。
+Webアプリ版のほかの対処は、[apps/web/README.md](./apps/web/README.md) を参照。
 
 ## 11. 開発者向け
 
@@ -505,13 +503,12 @@ pip --version
 
 ```bash
 git clone https://github.com/ai-natsu/task-master.git
-cd task-master
-git checkout develop/v2
+cd task-master/apps/desktop
 ```
 
-Git を使わない場合は、GitHub のリポジトリのページでブランチを `develop/v2` にし、「Code」→「Download ZIP」でダウンロードして解凍してください。
+Git を使わない場合は、GitHub のリポジトリのページで「Code」→「Download ZIP」を選んでダウンロードし、解凍してください。解凍してできた `apps/desktop` フォルダを使います。
 
-できた `task-master` フォルダ（`pyproject.toml` がある所）を、以下「リポジトリのフォルダ」と呼びます。11章のコマンドはすべて、リポジトリのフォルダで実行します。
+`task-master/apps/desktop` フォルダ（`pyproject.toml` がある所）を、以下「リポジトリのフォルダ」と呼びます。11章のコマンドはすべて、リポジトリのフォルダで実行します。
 
 - Windows：エクスプローラーでリポジトリのフォルダを開き、アドレスバーに `powershell` と入力して Enter を押す。または、フォルダ内の何もない所を右クリックして「ターミナルで開く」を選ぶ
 - Mac：Finder でリポジトリのフォルダを右クリックし、「フォルダに新規ターミナル」を選ぶ
@@ -581,25 +578,31 @@ python -m ruff check .
 
 ```
 task-master/
-├─ app/                  # アプリ本体
-│  ├─ main.py            # エントリポイント
-│  ├─ constants.py       # 区分値（優先度）、入力欄の文字数の上限
-│  ├─ models.py          # データクラス
-│  ├─ i18n.py / locales/ # 多言語（日本語／英語）
-│  ├─ db/                # SQLite を直接扱うデータ層（schema.sql を含む）
-│  ├─ logic/             # ツリー構築・ドラッグ判定・ガント計算・期限判定（純粋関数）
-│  ├─ ui/                # CustomTkinter の画面・部品
-│  └─ assets/            # アイコン
-├─ tests/
-│  ├─ unit/              # 単体テスト
-│  ├─ integration/       # 結合テスト（データ層 + SQLite）
-│  ├─ gui/               # UI 部品のテスト
-│  └─ e2e/               # 画面遷移の E2E
-├─ packaging/            # exe・.app・配布 zip の作成（build_exe.py / build_zip.py など）
-├─ Casks/                # Homebrew の Cask（taskmaster.rb）
-├─ docs/                 # 設計書
-├─ seed.py               # サンプルデータの投入（既存データを全削除する）
-└─ pyproject.toml        # プロジェクト設定（依存ライブラリ、ruff、pytest）
+├─ apps/
+│  ├─ web/               # Webアプリ版（Express・Prisma・React）
+│  └─ desktop/           # デスクトップアプリ版（以下はこの中）
+│     ├─ app/            # アプリ本体
+│     │  ├─ main.py            # エントリポイント
+│     │  ├─ constants.py       # 区分値（優先度）、入力欄の文字数の上限
+│     │  ├─ models.py          # データクラス
+│     │  ├─ i18n.py / locales/ # 多言語（日本語／英語）
+│     │  ├─ db/                # SQLite を直接扱うデータ層（schema.sql を含む）
+│     │  ├─ logic/             # ツリー構築・ドラッグ判定・ガント計算・期限判定（純粋関数）
+│     │  ├─ ui/                # CustomTkinter の画面・部品
+│     │  └─ assets/            # アイコン
+│     ├─ tests/
+│     │  ├─ unit/              # 単体テスト
+│     │  ├─ integration/       # 結合テスト（データ層 + SQLite）
+│     │  ├─ gui/               # UI 部品のテスト
+│     │  └─ e2e/               # 画面遷移の E2E
+│     ├─ packaging/      # exe・.app・配布 zip の作成（build_exe.py / build_zip.py など）
+│     ├─ seed.py         # サンプルデータの投入（既存データを全削除する）
+│     └─ pyproject.toml  # プロジェクト設定（依存ライブラリ、ruff、pytest）
+├─ shared/               # 両アプリで共有するもの（design / assets / contracts）
+├─ Casks/                # Homebrew の Cask（taskmaster.rb。brew tap が直下を読むため、ここに置く）
+├─ .github/              # GitHub Actions のワークフロー
+├─ LICENSE
+└─ README.md
 ```
 
 データベース（`taskmaster.db`）、仮想環境（`.venv/`）、ビルドの出力（`packaging/dist/`）は Git に含めない。
