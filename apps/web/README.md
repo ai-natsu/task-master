@@ -195,15 +195,14 @@ npm -v       # 例：10.9.0
 
 どちらかの方法で、ソースコードを入手する。
 
-**実行する場所：** ソースコードを置きたいフォルダ（例：`C:\Users\あなたの名前\work`）でターミナルを開いて実行する。実行すると、そのフォルダの中に `task-master` フォルダができる。**この `task-master` フォルダが、以降の「クローンしたリポジトリのルートディレクトリ」である。**
+**実行する場所：** ソースコードを置きたいフォルダ（例：`C:\Users\あなたの名前\work`）でターミナルを開いて実行する。実行すると、そのフォルダの中に `task-master` フォルダができる。**その中の `task-master/apps/web` フォルダが、以降の「クローンしたリポジトリのルートディレクトリ」である。**
 
 ```bash
 git clone https://github.com/ai-natsu/task-master.git
-cd task-master
-git checkout develop/v1
+cd task-master/apps/web
 ```
 
-または、GitHub のリポジトリのページで、ブランチを `develop/v1` にして「Code」→「Download ZIP」を選び、ダウンロードした ZIP を解凍する。
+または、GitHub のリポジトリのページで「Code」→「Download ZIP」を選び、ダウンロードした ZIP を解凍する。解凍してできた `apps/web` フォルダを使う。
 
 #### 3.1.4 ターミナルの開き方
 
@@ -514,7 +513,7 @@ npm run check
 ## 6. ディレクトリ構成
 
 ```
-/（クローンしたリポジトリのルートディレクトリ。npm workspaces）
+apps/web/（クローンしたリポジトリのルートディレクトリ。npm workspaces）
 ├─ package.json / eslint.config.mjs / playwright.config.ts   # 全体の設定
 ├─ start.cmd / start.command / start.sh   # 起動スクリプト（Windows / Mac / Linux）
 ├─ server/                 # API（Express + Prisma + SQLite）
