@@ -102,10 +102,12 @@ TaskMaster には、Webアプリ版（`apps/web`）とデスクトップアプ�
 
 ## 5. インストール
 
+実行ファイル（`TaskMaster.exe`、`TaskMaster.app`）は、リポジトリには含まれていません。**GitHub の [Releases](https://github.com/ai-natsu/task-master/releases)** に、zip で置いてあります。最新版は [Releases の最新版](https://github.com/ai-natsu/task-master/releases/latest) の「Assets」から取得します。
+
 | 版 | 系統 | 入手先 |
 |---|---|---|
-| [Windows版](#51-windows版) | desktop | ビルドした zip：`apps/desktop/packaging/dist/TaskMaster-<版>-win64.zip` |
-| [Mac版(Zip)](#52-mac版zip) | desktop | ビルドした zip：`apps/desktop/packaging/dist/TaskMaster-<版>-mac.zip` |
+| [Windows版](#51-windows版) | desktop | [Releases](https://github.com/ai-natsu/task-master/releases/latest) の `TaskMaster-<版>-win64.zip`（自分でビルドした場合は `apps/desktop/packaging/dist/` にできる） |
+| [Mac版(Zip)](#52-mac版zip) | desktop | [Releases](https://github.com/ai-natsu/task-master/releases/latest) の `TaskMaster-<版>-mac.zip`（自分でビルドした場合は `apps/desktop/packaging/dist/` にできる） |
 | [Mac版(Homebrew)](#53-mac版homebrew) | desktop | Homebrew |
 | [Webアプリ版](#54-webアプリ版) | web | ソースコードをクローンする |
 
@@ -114,14 +116,14 @@ TaskMaster には、Webアプリ版（`apps/web`）とデスクトップアプ�
 
 Windows版TaskMasterのインストール手順は以下の通りです。
 
-1. `TaskMaster-<版>-win64.zip` を解凍する。`TaskMaster/` フォルダができる。
+1. [Releases](https://github.com/ai-natsu/task-master/releases/latest) から `TaskMaster-<版>-win64.zip` をダウンロードし、解凍する。`TaskMaster/` フォルダができる。
 2. `TaskMaster/` フォルダを好きな場所に置く。ただし `Program Files` など書き込みできない場所には置かない（データを保存できず、起動に失敗する）。
 
 ### 5.2 Mac版(Zip)
 
 Mac版(Zip)TaskMasterのインストール手順は以下の通りです。
 
-1. `TaskMaster-<版>-mac.zip` を解凍する。`TaskMaster/` フォルダができる。
+1. [Releases](https://github.com/ai-natsu/task-master/releases/latest) から `TaskMaster-<版>-mac.zip` をダウンロードし、解凍する。`TaskMaster/` フォルダができる。
 2. `TaskMaster/` フォルダを好きな場所に置く。
 
 ### 5.3 Mac版(Homebrew)
