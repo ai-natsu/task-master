@@ -1,0 +1,120 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Python（一般的な設定）
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
+pip-log.txt
+
+# Env & secrets（環境変数・認証情報・鍵・証明書は、リポジトリに含めない）
+.env
+.env.*
+!.env.example
+*.local
+secrets/
+*.secret
+*.secrets
+credentials*.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+.npmrc
+.pypirc
+.netrc
+
+# Database
+*.db
+*.db-journal
+server/prisma/*.db
+
+# Test artifacts
+# テスト・検証のレポート（Playwright の結果・HTML レポート、カバレッジ）はリポジトリに含めない
+test-results/
+playwright-report/
+blob-report/
+**/playwright/.cache/
+**/coverage/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Caches（ツールが自動で作る一時ファイル）
+.cache/
+.vite/
+.eslintcache
+.npm/
+.parcel-cache/
+.turbo/
+tmp/
+.temp/
+
+# OS 固有のファイル
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*~
+.directory
+.fuse_hidden*
+.Trash-*
+
+# IDE・エディタ固有のファイル
+.vscode/
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+.fleet/
+.history/
+*.swp
+*.swo
+*.bak
+*.tmp
+*.sakura-backup
+
+# Claude Code（設定・エージェント・スキル・開発者向けメモ）はリポジトリに含めない
+.claude/
+CLAUDE.md

@@ -1,0 +1,4 @@
+# スクリプトの改行コード（.cmd は CRLF、.sh・.command は LF）
+*.cmd text eol=crlf
+*.sh text eol=lf
+*.command text eol=lf

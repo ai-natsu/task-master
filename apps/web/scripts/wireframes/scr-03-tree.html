@@ -1,0 +1,38 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+.tr { display:flex; align-items:center; gap:8px; padding:7px 8px; border:1px solid transparent; border-radius:8px; position:relative; font-size:11.5px }
+.tr.hov { background:#fff; border-color:#cbd5e1 }
+.tr .hd { width:12px; color:#cbd5e1; text-align:center } .tr.hov .hd { color:#64748b }
+.tr .ex { width:12px; color:#94a3b8; text-align:center; position:relative }
+.tr .ti { flex:1; min-width:0; position:relative }
+.tr .st { width:70px; font-weight:600; font-size:11px; position:relative }
+.tr .pr { width:44px; text-align:center; position:relative }
+.tr .dt { width:82px; text-align:center; font-size:10px; color:#94a3b8; white-space:nowrap; position:relative }
+.tr .tg { width:92px; display:flex; gap:3px; position:relative }
+.tr .ac { width:104px; display:flex; gap:2px; visibility:hidden } .tr.hov .ac { visibility:visible }
+.done { text-decoration:line-through; color:#94a3b8 }
+.dropline { height:3px; background:#6366f1; margin:0 8px; position:relative }
+.zone { position:absolute; background:#eef2ff; color:#4338ca; padding:0 6px; border-radius:6px; font-weight:600; font-size:10px }
+</style></head><body>
+<div class="frame" id="frame">
+  <div data-comp="titlebar" data-text="プロジェクト詳細・ツリー  ( /projects/:id )"></div>
+  <div class="app">
+    <div data-comp="sidebar" data-active="pj"></div>
+    <div class="main">
+      <div data-comp="pv-top" data-tab="tree"></div>
+      <div style="position:relative">
+        <div class="tr" style="padding-top:16px"><i class="id" style="left:0;top:2px">0321</i><span class="hd">⠿</span><span class="ex"><i class="id" style="left:-4px;top:-10px">0322</i>▾</span><span class="ti"><i class="id" style="left:14px;top:-10px">0323</i>仕様の確定</span><span class="st" style="color:#1d4ed8"><i class="id" style="top:-12px">0324</i>進行中 ▾</span><span class="pr"><i class="id" style="top:-12px">0325</i><span class="pill p-high">高</span></span><span class="dt"><i class="id" style="top:-12px">0326</i>2026年09月20日</span><span class="dt"><i class="id" style="top:-12px">0327</i>2026年10月09日</span><span class="tg"><i class="id" style="top:-12px">0328</i><span class="tag">設計</span><span class="tag">重要</span></span><span class="ac"></span></div>
+        <div class="tr" style="padding-left:32px"><span class="hd">⠿</span><span class="ex"></span><span class="ti done">要件の洗い出し</span><span class="st" style="color:#047857">完了 ▾</span><span class="pr"><span class="pill p-mid">中</span></span><span class="dt">2026年09月20日</span><span class="dt">2026年09月25日</span><span class="tg"><span class="tag">設計</span></span><span class="ac"></span></div>
+        <div class="tr hov" style="padding-left:32px"><span class="hd">⠿</span><span class="ex">▾</span><span class="ti">レビュー会の実施</span><span class="st" style="color:#92400e">レビュー中 ▾</span><span class="pr"><span class="pill p-urgent">緊急</span></span><span class="dt">2026年09月28日</span><span class="dt" style="color:#dc2626;font-weight:700">2026年10月02日</span><span class="tg"><span class="tag">会議</span><span class="tag">調整</span><span class="tag gray">...</span></span>
+          <span class="ac"><span class="btn sm ghost" style="color:#94a3b8"><i class="id">0329</i>+サブ</span><span class="btn sm ghost" style="color:#94a3b8"><i class="id">0330</i>編集</span><span class="btn sm red"><i class="id">0331</i>削除</span></span></div>
+        <div class="tr" style="padding-left:56px"><span class="hd">⠿</span><span class="ex"></span><span class="ti">資料の事前配布</span><span class="st" style="color:#475569">未着手 ▾</span><span class="pr"><span class="pill p-low">低</span></span><span class="dt"></span><span class="dt">2026年10月01日</span><span class="tg"></span><span class="ac"></span></div>
+        <div class="dropline"><span class="zone" style="left:300px;top:-8px">ドラッグ中：ここに挿入（行の上端＝直前／下端＝直後）</span></div>
+        <div class="tr"><span class="hd">⠿</span><span class="ex">▸</span><span class="ti">デモ環境の準備</span><span class="st" style="color:#475569">未着手 ▾</span><span class="pr"><span class="pill p-mid">中</span></span><span class="dt">2026年10月05日</span><span class="dt">2026年10月16日</span><span class="tg"><span class="tag">環境</span></span><span class="ac"></span></div>
+        <div class="tr" style="outline:2px solid #6366f1;outline-offset:-2px"><span class="hd">⠿</span><span class="ex"></span><span class="ti">社内告知文の作成</span><span class="st" style="color:#475569">未着手 ▾</span><span class="pr"><span class="pill p-low">低</span></span><span class="dt"></span><span class="dt"></span><span class="tg"></span><span class="ac"></span><span class="zone" style="right:140px;top:8px">ドラッグ中：この行の子にする（中央）</span></div>
+      </div>
+      <div class="empty" style="margin-top:10px">0件のとき：「タスクがありません。「新しいタスク」から追加してください。」</div>
+    </div>
+  </div>
+  <div class="legend">⠿ ハンドルは、行にマウスを載せたときだけ表示する（ドラッグはハンドルだけ）。ボタン・セレクト以外の行内をクリックすると、編集（SCR-06）を開く。▾▸ で子タスクを開閉（既定は開く）。</div>
+</div>
+<script src="common.js"></script></body></html>

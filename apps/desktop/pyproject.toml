@@ -1,0 +1,44 @@
+[project]
+name = "taskmaster"
+version = "2.0.0"
+description = "TaskMaster デスクトップ版（Python + CustomTkinter）"
+license = "AGPL-3.0-only"
+requires-python = ">=3.11"
+dependencies = [
+    "customtkinter>=5.2",
+    "charset-normalizer>=3.3",
+    "Pillow>=10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "nuitka>=2.4",
+]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+# パッケージは app だけ。tests・packaging・docs などを、自動で検出して取り込まないようにする
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["db/schema.sql", "assets/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+markers = [
+    "gui: Tk の画面部品を実際に描画して検証するテスト（tests/gui）。画面を開けない環境ではスキップ",
+    "e2e: アプリ全体を実際に動かして、画面遷移・操作を検証するテスト（tests/e2e）。画面を開けない環境ではスキップ",
+]

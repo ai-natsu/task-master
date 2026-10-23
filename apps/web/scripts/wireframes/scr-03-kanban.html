@@ -1,0 +1,42 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<style>
+.cols { display:flex; gap:12px; overflow:hidden; position:relative; padding-bottom:4px }
+.col { width:236px; flex-shrink:0; min-height:300px; background:rgba(226,232,240,.55); border:1px solid #cbd5e1; border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px; position:relative }
+.ch { display:flex; align-items:center; justify-content:space-between; padding:0 2px; font-weight:700; font-size:12px }
+.cnt { background:#e2e8f0; border-radius:999px; padding:0 8px; font-size:10px; color:#475569 }
+.kc { background:#fff; border:1px solid #cbd5e1; border-radius:8px; padding:9px 10px; box-shadow:0 1px 2px rgba(0,0,0,.08); position:relative }
+.kc .t { font-weight:600; font-size:12px }
+.kc .m { display:flex; flex-wrap:wrap; gap:5px; align-items:center; margin-top:7px }
+.dragcard { position:absolute; left:318px; top:150px; width:220px; transform:rotate(3deg); box-shadow:0 6px 18px rgba(0,0,0,.3); outline:2px solid #818cf8; z-index:30 }
+</style></head><body>
+<div class="frame" id="frame">
+  <div data-comp="titlebar" data-text="プロジェクト詳細・カンバン  ( /projects/:id )"></div>
+  <div class="app">
+    <div data-comp="sidebar" data-active="pj"></div>
+    <div class="main">
+      <div data-comp="pv-top" data-tab="kanban"></div>
+      <div class="cols">
+        <div class="col"><div class="ch"><span class="row" style="gap:6px;position:relative"><i class="id" style="left:-8px">0341</i><span class="dot" style="background:#64748b"></span>未着手</span><span class="cnt">3</span></div>
+          <div class="kc"><i class="id">0342</i><div class="t trunc">デモ環境の準備</div><div class="m"><span class="pill p-mid">中</span><span class="tag">環境</span><span class="small muted">2026年10月16日</span></div></div>
+          <div class="kc"><div class="t trunc">社内告知文の作成</div><div class="m"><span class="pill p-low">低</span></div></div>
+          <div class="kc"><div class="t trunc">資料の事前配布</div><div class="m"><span class="pill p-low">低</span><span class="small muted">2026年10月01日</span></div></div>
+        </div>
+        <div class="col" style="background:#eef2ff;border-color:#818cf8"><div class="ch"><span class="row" style="gap:6px"><span class="dot" style="background:#3b82f6"></span>進行中</span><span class="cnt">2</span></div>
+          <div class="kc"><div class="t trunc">仕様の確定</div><div class="m"><span class="pill p-high">高</span><span class="tag">設計</span><span class="tag">重要</span><span class="small muted">2026年10月09日</span></div></div>
+          <div class="kc"><div class="t trunc">ログイン画面の実装</div><div class="m"><span class="pill p-mid">中</span><span class="tag">開発</span><span class="tag gray">...</span></div></div>
+          <div class="small" style="margin-top:auto;text-align:center;color:#4338ca">↑ 落とし先の列は枠と背景を強調</div>
+        </div>
+        <div class="col"><div class="ch"><span class="row" style="gap:6px"><span class="dot" style="background:#f59e0b"></span>レビュー中</span><span class="cnt">1</span></div>
+          <div class="kc"><div class="t trunc">レビュー会の実施</div><div class="m"><span class="pill p-urgent">緊急</span><span class="tag">会議</span><span class="small" style="color:#dc2626;font-weight:700">2026年10月02日</span></div></div>
+          <div class="empty" style="margin-top:auto;position:relative"><i class="id">0343</i>ここにドロップ<br>（0件の列に表示）</div>
+        </div>
+        <div class="col"><div class="ch"><span class="row" style="gap:6px"><span class="dot" style="background:#10b981"></span>完了</span><span class="cnt">1</span></div>
+          <div class="kc"><div class="t trunc" style="color:#94a3b8;text-decoration:line-through">要件の洗い出し</div><div class="m"><span class="pill p-mid">中</span></div></div>
+        </div>
+        <div class="kc dragcard"><div class="t trunc">デモ環境の準備</div><div class="m"><span class="pill p-mid">中</span><span class="tag">環境</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">列は、ステータス（設定画面の並び順）ごとで、幅は固定。収まらない分は横にスクロールする。カードをクリックすると編集（SCR-06）を開く。ドラッグ中は、元のカードを薄く残し、カードの複製を傾けて表示する。</div>
+</div>
+<script src="common.js"></script></body></html>
