@@ -460,8 +460,6 @@ xattr -dr com.apple.quarantine /Applications/TaskMaster.app
 | Mac | `ModuleNotFoundError` が出る | 仮想環境が有効になっていないか、ライブラリが入っていない。`source .venv/bin/activate` で仮想環境を有効にしてから `pip install -e .` を実行する。 |
 | Windows・Mac | ウィンドウが開かない、文字が化ける | Python が 3.11 以上か確認する。リモート接続など、画面を表示できない環境では動かない。 |
 
-Webアプリ版のほかの対処は、[apps/web/README.md](./apps/web/README.md) を参照。
-
 ## 11. 開発者向け
 
 ### 11.1 動作環境と使用技術

@@ -1,7 +1,7 @@
 """配布用 zip の作成。
 
-`python packaging/build_zip.py` から呼ぶ。ビルド済みの TaskMaster.exe と、利用者向けの
-README・ライブラリのライセンス表記・祝日 CSV の例を `TaskMaster/` フォルダにまとめて zip にする。
+`python packaging/build_zip.py` から呼ぶ。ビルド済みの TaskMaster.exe と、
+ライブラリのライセンス表記・祝日 CSV の例を `TaskMaster/` フォルダにまとめて zip にする。
 解凍すると `TaskMaster/` フォルダができ、その中の exe をそのまま起動できる。
 データ（taskmaster.db）は exe と同じフォルダに初回起動時に作られるので、zip には含めない。
 
@@ -19,7 +19,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 REPO_ROOT = ROOT.parent.parent  # LICENSE はリポジトリ直下に 1 つだけ置く
 DIST = ROOT / "packaging" / "dist"
-FILES = ROOT / "packaging" / "dist_files"
 HOLIDAYS_SAMPLE = REPO_ROOT / "shared" / "assets" / "holidays_sample.csv"
 FOLDER_NAME = "TaskMaster"
 
@@ -110,8 +109,6 @@ def stage_release(exe_path: Path, stage_dir: Path, version: str) -> Path:
     folder.mkdir(parents=True)
 
     shutil.copy2(exe_path, folder / "TaskMaster.exe")
-    readme = (FILES / "README.txt").read_text(encoding="utf-8").replace("{version}", version)
-    _write_text(folder / "README.txt", readme)
     _write_text(folder / "THIRD_PARTY_NOTICES.txt", build_notices())
     # TaskMaster 自体のライセンス（AGPL-3.0）。メモ帳で読めるよう .txt にして同梱する
     _write_text(folder / "LICENSE.txt", (REPO_ROOT / "LICENSE").read_text(encoding="utf-8"))
@@ -138,8 +135,6 @@ def stage_release_mac(app_path: Path, stage_dir: Path, version: str) -> Path:
 
     # .app の中には、実行ファイルの権限とシンボリックリンクがあるので、そのままコピーする
     shutil.copytree(app_path, folder / "TaskMaster.app", symlinks=True)
-    readme = (FILES / "README_mac.txt").read_text(encoding="utf-8").replace("{version}", version)
-    _write_text(folder / "README.txt", readme)
     _write_text(folder / "THIRD_PARTY_NOTICES.txt", build_notices())
     _write_text(folder / "LICENSE.txt", (REPO_ROOT / "LICENSE").read_text(encoding="utf-8"))
     shutil.copy2(HOLIDAYS_SAMPLE, folder / "holidays_sample.csv")

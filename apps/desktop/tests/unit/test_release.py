@@ -32,7 +32,6 @@ def test_zip_unpacks_into_a_taskmaster_folder_with_everything_needed(release, fa
         names = sorted(zf.namelist())
     assert names == [
         "TaskMaster/LICENSE.txt",
-        "TaskMaster/README.txt",
         "TaskMaster/THIRD_PARTY_NOTICES.txt",
         "TaskMaster/TaskMaster.exe",
         "TaskMaster/holidays_sample.csv",
@@ -45,15 +44,6 @@ def test_zip_does_not_contain_user_data(release, fake_exe, tmp_path):
         assert not [n for n in zf.namelist() if n.endswith(".db")]
 
 
-def test_readme_has_version_data_location_and_is_notepad_friendly(release, fake_exe, tmp_path):
-    folder = release.stage_release(fake_exe, tmp_path / "out", "9.9.9")
-    raw = (folder / "README.txt").read_bytes()
-    assert raw.startswith(b"\xef\xbb\xbf")  # UTF-8 BOM
-    assert b"\r\n" in raw
-    text = raw.decode("utf-8-sig")
-    assert "TaskMaster 9.9.9" in text
-    assert "{version}" not in text
-    assert "TaskMaster.exe と同じフォルダの「taskmaster.db」" in text
 
 
 def test_notices_list_every_bundled_library_with_its_license(release):
@@ -92,7 +82,6 @@ def test_mac_release_folder_has_the_app_and_the_documents(release, fake_app, tmp
     names = sorted(p.name for p in folder.iterdir())
     assert names == [
         "LICENSE.txt",
-        "README.txt",
         "THIRD_PARTY_NOTICES.txt",
         "TaskMaster.app",
         "holidays_sample.csv",
@@ -100,13 +89,6 @@ def test_mac_release_folder_has_the_app_and_the_documents(release, fake_app, tmp
     assert (folder / "TaskMaster.app" / "Contents" / "MacOS" / "TaskMaster").exists()
 
 
-def test_mac_readme_has_version_data_location_and_gatekeeper_note(release, fake_app, tmp_path):
-    folder = release.stage_release_mac(fake_app, tmp_path / "stage", "2.0.0")
-    text = (folder / "README.txt").read_bytes().decode("utf-8-sig")
-    assert "TaskMaster 2.0.0（Mac 版）" in text
-    assert "~/Library/Application Support/TaskMaster/taskmaster.db" in text
-    assert "開く" in text  # 初回に「開発元を検証できません」と出たときの開き方
-    assert "\r\n" in text  # メモ帳・テキストエディットで読める
 
 
 def test_missing_mac_app_is_a_clear_error(release, tmp_path):
